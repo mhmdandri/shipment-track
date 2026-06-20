@@ -1,0 +1,25 @@
+import {
+  Reminder,
+  Shipment,
+  ShipmentTask,
+  ActivityLog,
+} from "@/app/generated/prisma/client";
+
+export type ShipmentWithRelations = Shipment & {
+  tasks: ShipmentTask[];
+  reminders: Reminder[];
+  activityLogs: ActivityLog[];
+};
+
+export interface DashboardStats {
+  totalActive: number;
+  needActionToday: number;
+  overdueReminders: number;
+  etaThisWeek: number;
+}
+
+export interface ActionBoardData {
+  overdue: (Reminder & { shipment: Shipment })[];
+  today: (Reminder & { shipment: Shipment })[];
+  upcoming: (Reminder & { shipment: Shipment })[];
+}
