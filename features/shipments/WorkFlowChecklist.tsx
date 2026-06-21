@@ -5,7 +5,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { ShipmentWithRelations } from "@/lib";
-import { toggleTaskAction, updateTaskNoteAction } from "@/actions/shipment-action";
+import {
+  toggleTaskAction,
+  updateTaskNoteAction,
+} from "@/actions/shipment-action";
 import { useProgress } from "@bprogress/next";
 
 export function WorkflowChecklist({
@@ -29,11 +32,9 @@ export function WorkflowChecklist({
         <h3 className="font-bold text-foreground text-sm tracking-wide uppercase">
           Operational Step Checklist
         </h3>
-        {isPending && (
-          <Loader2 className="w-4 h-4 animate-spin text-primary" />
-        )}
+        {isPending && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
       </div>
-      <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-2">
+      <div className="space-y-2.5 max-h-150 overflow-y-auto pr-2">
         {shipment.tasks.map((task) => (
           <div
             key={task.id}
@@ -83,7 +84,11 @@ export function WorkflowChecklist({
                 }}
                 className="text-xs text-muted-foreground hover:text-primary font-medium transition-colors shrink-0"
               >
-                {editingTaskId === task.id ? "Cancel" : task.notes ? "Edit Note" : "+ Add Note"}
+                {editingTaskId === task.id
+                  ? "Cancel"
+                  : task.notes
+                    ? "Edit Note"
+                    : "+ Add Note"}
               </button>
             </div>
 
@@ -103,7 +108,11 @@ export function WorkflowChecklist({
                     startProgress();
                     startTransition(async () => {
                       try {
-                        const res = await updateTaskNoteAction(task.id, shipment.id, noteText);
+                        const res = await updateTaskNoteAction(
+                          task.id,
+                          shipment.id,
+                          noteText,
+                        );
                         if (res.success) {
                           setEditingTaskId(null);
                         }

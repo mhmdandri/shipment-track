@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Anchor, CalendarDays, Ship } from "lucide-react";
 
+import { ShipmentWithTasks } from "@/lib";
+
 interface UpcomingEtaPipelineProps {
-  shipments: any[];
+  shipments: ShipmentWithTasks[];
 }
 
 export function UpcomingEtaPipeline({ shipments }: UpcomingEtaPipelineProps) {

@@ -29,7 +29,7 @@ export default async function ShipmentsPage({ searchParams }: PageProps) {
   const take = 20;
   const skip = (page - 1) * take;
 
-  const { items, total } = await repo.findAll({
+  const { items } = await repo.findAll({
     search,
     status,
     sortByEta,

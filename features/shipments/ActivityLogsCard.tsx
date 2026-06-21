@@ -12,7 +12,7 @@ export function ActivityLogsCard({ logs }: { logs: ActivityLog[] }) {
         </h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto max-h-[500px] pr-2">
+      <div className="flex-1 overflow-y-auto max-h-125 pr-2">
         {logs.length === 0 ? (
           <div className="text-center py-8 text-xs font-semibold text-muted-foreground">
             No logged events for this file.
@@ -22,13 +22,13 @@ export function ActivityLogsCard({ logs }: { logs: ActivityLog[] }) {
             {logs.map((log) => (
               <div key={log.id} className="relative group">
                 {/* Timeline Node */}
-                <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 border-primary bg-card group-hover:bg-primary transition-colors" />
+                <div className="absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full border-2 border-primary bg-card group-hover:bg-primary transition-colors" />
 
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-bold text-muted-foreground block font-mono">
                     {format(new Date(log.createdAt), "dd MMM yyyy HH:mm:ss")}
                   </span>
-                  <p className="text-xs font-semibold text-foreground leading-relaxed break-words">
+                  <p className="text-xs font-semibold text-foreground leading-relaxed warp-break-words">
                     {log.message}
                   </p>
                 </div>

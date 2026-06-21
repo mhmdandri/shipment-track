@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ClipboardList } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 
+import { ShipmentWithTasks } from "@/lib";
+
 interface IncompleteTasksSummaryProps {
-  shipments: any[];
+  shipments: ShipmentWithTasks[];
 }
 
 export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProps) {
@@ -58,7 +60,7 @@ export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProp
                     <div className="flex justify-between items-start gap-2">
                       <div>
                         <span className="font-bold text-foreground block">{shipment.jobNo}</span>
-                        <span className="text-xs text-muted-foreground block truncate max-w-[220px]">
+                        <span className="text-xs text-muted-foreground block truncate max-w-55">
                           {shipment.consignee}
                         </span>
                       </div>
@@ -116,7 +118,7 @@ export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProp
 
                   return (
                     <tr key={shipment.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="p-4 max-w-[200px]">
+                      <td className="p-4 max-w-50">
                         <span className="text-foreground font-bold block truncate">
                           {shipment.jobNo}
                         </span>
@@ -131,7 +133,7 @@ export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProp
                               {nextPendingTask.title}
                             </span>
                             {nextPendingTask.notes && (
-                              <span className="text-xs text-muted-foreground block italic truncate max-w-[250px]">
+                              <span className="text-xs text-muted-foreground block italic truncate max-w-62.5">
                                 📝 {nextPendingTask.notes}
                               </span>
                             )}
@@ -140,8 +142,8 @@ export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProp
                           <span className="text-muted-foreground text-xs font-semibold">None</span>
                         )}
                       </td>
-                      <td className="p-4 min-w-[150px]">
-                        <div className="space-y-1.5 max-w-[200px]">
+                      <td className="p-4 min-w-37.5">
+                        <div className="space-y-1.5 max-w-50">
                           <div className="flex items-center justify-between text-xs font-bold text-muted-foreground">
                             <span>{progressPercentage}% Completed</span>
                           </div>

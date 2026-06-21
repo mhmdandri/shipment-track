@@ -3,9 +3,10 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ArrowUpDown } from "lucide-react";
+import { Shipment } from "@/app/generated/prisma/client";
 
 interface ShipmentTableProps {
-  data: any[];
+  data: Shipment[];
   search: string;
   status: string;
   sortByEta: string;
@@ -53,15 +54,15 @@ export function ShipmentTable({
                     {item.blNo}
                   </span>
                   {/* Show consignee on mobile below job no */}
-                  <span className="md:hidden text-xs text-muted-foreground block mt-1 truncate max-w-[150px]">
+                  <span className="md:hidden text-xs text-muted-foreground block mt-1 truncate max-w-37.5">
                     {item.consignee}
                   </span>
                 </td>
                 <td className="p-3 lg:p-4 hidden md:table-cell">
-                  <span className="text-foreground block truncate max-w-[12rem]">
+                  <span className="text-foreground block truncate max-w-48">
                     {item.consignee}
                   </span>
-                  <span className="text-xs text-muted-foreground block truncate max-w-[12rem] mt-0.5">
+                  <span className="text-xs text-muted-foreground block truncate max-w-48 mt-0.5">
                     from {item.shipper}
                   </span>
                 </td>

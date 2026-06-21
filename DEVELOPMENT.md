@@ -306,8 +306,54 @@ Replaced the traditional HTML form search with a customized client-side **`Shipm
 | [`features/dashboard/IncompleteTasksSummary.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/IncompleteTasksSummary.tsx) | **[NEW]** Summary table component with progress bars, next milestone metrics, and a dedicated mobile card list view. |
 | [`features/dashboard/UpcomingEtaPipeline.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/UpcomingEtaPipeline.tsx) | **[NEW]** Chronological timeline grid display with proximity arrival status countdown tags and a mobile-first grid container. |
 | [`app/page.tsx`](file:///d:/Project/Nextjs/shipment-track/app/page.tsx) | **[MODIFIED]** Parallel-fetched active shipments and integrated the new sections beneath the ReminderBoard. |
+### v1.5.0 — 2026-06-21: Shipment Creation Form UX Redesign & Component Decomposition
 
+**Feature**: Restructured the shipment creation form into a modern, mobile-first responsive split layout with a real-time visual shipment manifest preview sidebar, and decomposed it into strictly-typed subcomponents.
 
+#### 1. Split-Screen Layout (Side Alignment)
+*   **Problem**: The original shipment creation form was centered in a narrow container (`max-w-4xl mx-auto`), wasting horizontal layout space and offering no operational context to CS staff during data entry.
+*   **Solution**: Redesigned the form to use a responsive, side-aligned split layout (`grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full`). The input panels sit on the left (spanning 8 columns on large viewports), while a sticky visual shipment manifest preview card sits on the right (spanning 4 columns).
 
+#### 2. Modular Component Decomposition & Strict Typing (Zero `any`)
+*   **Problem**: The original form component (`ShipmentForm.tsx`) was very long and housed input elements, dates manipulation, validation styling, and state management in a single place. Additionally, the codebase contained type helpers that were loosely typed.
+*   **Solution**: Decomposed the form into five single-responsibility subcomponents located under `features/shipments/components/`:
+    1.  [`LogisticsSection.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/LogisticsSection.tsx): Job Reference & Bill of Lading inputs.
+    2.  [`EntitiesSection.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/EntitiesSection.tsx): Shipper & Consignee inputs.
+    3.  [`VesselRouteSection.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/VesselRouteSection.tsx): Voyage details and ports (POL/POD) inputs.
+    4.  [`SchedulesSection.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/SchedulesSection.tsx): Calendar date inputs (ETD/ETA).
+    5.  [`LivePreviewCard.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/LivePreviewCard.tsx): Graphical manifest card displaying route maps (POL 🚢 POD), dynamic transit days calculation, and auto-ingestion status trackers.
+*   **Type Safety**: Strictly typed all props using React Hook Form interfaces (`UseFormRegister`, `FieldErrors`, and `UseFormSetValue`) and precise union types (e.g. `Date | string | null | undefined`), eliminating the use of the `any` type completely.
 
+#### 3. Mobile-First Responsiveness
+*   The parent grid structure stacks sections vertically on mobile viewports (`grid-cols-1`) and aligns them side-by-side on desktop environments (`lg:grid-cols-12`). Internal form inputs also stack vertically on small devices and split horizontally on tablet/desktop viewports (`grid grid-cols-1 md:grid-cols-2`).
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`features/shipments/components/LogisticsSection.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/LogisticsSection.tsx) | **[NEW]** Modular inputs for Job No & BL No. |
+| [`features/shipments/components/EntitiesSection.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/EntitiesSection.tsx) | **[NEW]** Modular inputs for Shipper & Consignee. |
+| [`features/shipments/components/VesselRouteSection.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/VesselRouteSection.tsx) | **[NEW]** Modular inputs for Vessel & Routing. |
+| [`features/shipments/components/SchedulesSection.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/SchedulesSection.tsx) | **[NEW]** Modular inputs for ETD/ETA. |
+| [`features/shipments/components/LivePreviewCard.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/components/LivePreviewCard.tsx) | **[NEW]** Interactive preview sidebar with dynamic route progress and pipeline checkers. |
+| [`features/shipments/ShipmentForm.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/ShipmentForm.tsx) | **[MODIFIED]** Refactored to coordinate states, imports, and submit callbacks. |
+
+### v1.5.1 — 2026-06-21: Global Codebase Type Safety & Elimination of 'any'
+
+**Feature**: Performed a global codebase review to replace all remaining loose `any` types in pages, components, repositories, and services with specific, type-safe structures.
+
+#### 1. Dashboard Components & Type Index
+*   **Reminder Card** ([ReminderCard.tsx](file:///d:/Project/Nextjs/shipment-track/features/dashboard/ReminderCard.tsx)): Replaced the loose `item: any` prop signature with `item: Reminder & { shipment: Shipment }` imported from the Prisma Client.
+*   **Active Shipment Schedules & Tasks** ([UpcomingEtaPipeline.tsx](file:///d:/Project/Nextjs/shipment-track/features/dashboard/UpcomingEtaPipeline.tsx), [IncompleteTasksSummary.tsx](file:///d:/Project/Nextjs/shipment-track/features/dashboard/IncompleteTasksSummary.tsx)):
+    *   Defined and exported a new `ShipmentWithTasks` type in [`lib/index.ts`](file:///d:/Project/Nextjs/shipment-track/lib/index.ts) representing `Shipment & { tasks: ShipmentTask[] }`.
+    *   Replaced all occurrences of `shipments: any[]` with `shipments: ShipmentWithTasks[]`, matching the exact return values from `DashboardService.getActiveShipments()`.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`lib/index.ts`](file:///d:/Project/Nextjs/shipment-track/lib/index.ts) | **[MODIFIED]** Added and exported `ShipmentWithTasks` type definition. |
+| [`features/dashboard/ReminderCard.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/ReminderCard.tsx) | **[MODIFIED]** Typed the `item` prop using Prisma reminder and shipment relation models. |
+| [`features/dashboard/UpcomingEtaPipeline.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/UpcomingEtaPipeline.tsx) | **[MODIFIED]** Replaced `any[]` with `ShipmentWithTasks[]`. |
+| [`features/dashboard/IncompleteTasksSummary.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/IncompleteTasksSummary.tsx) | **[MODIFIED]** Replaced `any[]` with `ShipmentWithTasks[]`. |
 

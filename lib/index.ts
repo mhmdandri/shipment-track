@@ -11,6 +11,10 @@ export type ShipmentWithRelations = Shipment & {
   activityLogs: ActivityLog[];
 };
 
+export type ShipmentWithTasks = Shipment & {
+  tasks: ShipmentTask[];
+};
+
 export interface DashboardStats {
   totalActive: number;
   needActionToday: number;

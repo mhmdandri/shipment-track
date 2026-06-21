@@ -30,7 +30,7 @@ export function ReminderBoard({ data }: { data: ActionBoardData }) {
       {columns.map((col, idx) => (
         <div
           key={idx}
-          className={`p-4 rounded-2xl border ${col.bg} h-[480px] flex flex-col`}
+          className={`p-4 rounded-2xl border ${col.bg} h-120 flex flex-col`}
         >
           <div className="flex items-center justify-between mb-4 px-1 pb-1 border-b border-border/10 shrink-0">
             <h3

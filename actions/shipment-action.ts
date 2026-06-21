@@ -16,10 +16,11 @@ export async function createShipmentAction(formData: unknown) {
     revalidatePath("/shipments");
     revalidatePath("/");
     return { success: true, data: result };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to create shipment";
     return {
       success: false,
-      error: error.message || "Failed to create shipment",
+      error: errorMessage,
     };
   }
 }
@@ -35,10 +36,11 @@ export async function toggleTaskAction(
     revalidatePath(`/shipments/${shipmentId}`);
     revalidatePath("/");
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to update pipeline task";
     return {
       success: false,
-      error: error.message || "Failed to update pipeline task",
+      error: errorMessage,
     };
   }
 }
@@ -53,10 +55,11 @@ export async function updateTaskNoteAction(
     revalidatePath(`/shipments/${shipmentId}`);
     revalidatePath("/");
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to update step note";
     return {
       success: false,
-      error: error.message || "Failed to update step note",
+      error: errorMessage,
     };
   }
 }
@@ -71,7 +74,8 @@ export async function toggleReminderAction(
     revalidatePath("/");
     if (shipmentId) revalidatePath(`/shipments/${shipmentId}`);
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: "Failed to update action step priority" };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to update action step priority";
+    return { success: false, error: errorMessage };
   }
 }

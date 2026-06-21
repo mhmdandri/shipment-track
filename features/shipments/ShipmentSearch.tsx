@@ -10,7 +10,13 @@ export function ShipmentSearch({ defaultValue }: { defaultValue: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [value, setValue] = useState(defaultValue);
+  const [prevDefaultValue, setPrevDefaultValue] = useState(defaultValue);
   const [isPending, startTransition] = useTransition();
+
+  if (defaultValue !== prevDefaultValue) {
+    setValue(defaultValue);
+    setPrevDefaultValue(defaultValue);
+  }
 
   useEffect(() => {
     // Avoid running effect on initial mount if defaultValue matches value
@@ -35,11 +41,6 @@ export function ShipmentSearch({ defaultValue }: { defaultValue: string }) {
       clearTimeout(handler);
     };
   }, [value, defaultValue, pathname, searchParams, router]);
-
-  // Keep state in sync if defaultValue changes from external navigation/reset
-  useEffect(() => {
-    setValue(defaultValue);
-  }, [defaultValue]);
 
   return (
     <div className="w-full flex-1 flex items-center gap-3 bg-muted px-3 py-1.5 rounded-xl border border-border">

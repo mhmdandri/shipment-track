@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ArrowUpRight } from "lucide-react";
+import { Reminder, Shipment } from "@/app/generated/prisma/client";
 import { ResolveReminderButton } from "./ResolveReminderButton";
 
 // Semua warna menggunakan token semantik Shadcn — tidak ada hard-coded color classes
@@ -13,7 +14,7 @@ const priorityVariants: Record<string, string> = {
   URGENT: "bg-destructive/10 text-destructive border-destructive/30 animate-pulse",
 };
 
-export function ReminderCard({ item }: { item: any }) {
+export function ReminderCard({ item }: { item: Reminder & { shipment: Shipment } }) {
   return (
     <div className="p-4 bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col gap-3">
       {/* Header row: title + priority badge */}

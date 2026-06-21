@@ -2,13 +2,17 @@ import {
   PrismaClient,
   Shipment,
   ShipmentStatus,
+  ShipmentTask,
+  Reminder,
+  ActivityLog,
+  Prisma,
 } from "@/app/generated/prisma/client";
 import { ShipmentWithRelations } from "@/lib";
 
 export class ShipmentRepository {
   constructor(private prisma: PrismaClient) { }
 
-  async create(data: any): Promise<ShipmentWithRelations> {
+  async create(data: Prisma.ShipmentCreateInput): Promise<ShipmentWithRelations> {
     return this.prisma.shipment.create({
       data,
       include: { tasks: true, reminders: true, activityLogs: true },
@@ -26,7 +30,7 @@ export class ShipmentRepository {
     });
   }
 
-  async createActivityLog(shipmentId: string, message: string): Promise<any> {
+  async createActivityLog(shipmentId: string, message: string): Promise<ActivityLog> {
     return this.prisma.activityLog.create({
       data: { shipmentId, message },
     });
@@ -39,7 +43,7 @@ export class ShipmentRepository {
     skip: number;
     take: number;
   }) {
-    const where: any = {};
+    const where: Prisma.ShipmentWhereInput = {};
     if (params.status) {
       where.status = params.status;
     }
@@ -85,33 +89,33 @@ export class ShipmentRepository {
     completed: boolean,
     completedAt: Date | null,
     notes?: string,
-  ): Promise<any> {
+  ): Promise<ShipmentTask> {
     return this.prisma.shipmentTask.update({
       where: { id: taskId },
       data: { completed, completedAt, notes },
     });
   }
 
-  async updateReminder(id: string, completed: boolean): Promise<any> {
+  async updateReminder(id: string, completed: boolean): Promise<Reminder> {
     return this.prisma.reminder.update({
       where: { id },
       data: { completed },
     });
   }
 
-  async findReminderById(id: string): Promise<any> {
+  async findReminderById(id: string): Promise<Reminder | null> {
     return this.prisma.reminder.findUnique({
       where: { id },
     });
   }
 
-  async findReminderByTitle(shipmentId: string, title: string): Promise<any> {
+  async findReminderByTitle(shipmentId: string, title: string): Promise<Reminder | null> {
     return this.prisma.reminder.findFirst({
       where: { shipmentId, title },
     });
   }
 
-  async findTaskByTitle(shipmentId: string, title: string): Promise<any> {
+  async findTaskByTitle(shipmentId: string, title: string): Promise<ShipmentTask | null> {
     return this.prisma.shipmentTask.findFirst({
       where: { shipmentId, title },
     });

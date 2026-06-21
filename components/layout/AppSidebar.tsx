@@ -12,7 +12,7 @@ export function AppSidebar() {
       {/* Mobile hamburger button */}
       <button
         id="sidebar-toggle"
-        className="lg:hidden fixed top-4 left-4 z-[60] p-2 rounded-lg bg-sidebar text-sidebar-foreground border border-sidebar-border shadow-md"
+        className="lg:hidden fixed top-4 left-4 z-60 p-2 rounded-lg bg-sidebar text-sidebar-foreground border border-sidebar-border shadow-md"
         onClick={() => setOpen((v) => !v)}
         aria-label="Toggle navigation"
       >
