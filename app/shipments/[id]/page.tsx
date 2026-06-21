@@ -25,19 +25,19 @@ export default async function ShipmentDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-6 p-8 min-h-screen bg-slate-50/30">
+    <div className="space-y-6 p-4 pt-16 lg:pt-6 lg:p-8 min-h-screen bg-background">
       <div className="flex items-center gap-3">
         <Link
           href="/shipments"
-          className="p-2 border rounded-xl bg-white hover:bg-slate-50 shadow-sm transition-all text-slate-600"
+          className="p-2 border border-border rounded-xl bg-card hover:bg-muted shadow-sm transition-all text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">
+          <h1 className="text-2xl font-black tracking-tight text-foreground">
             File Inspection: {shipment.jobNo}
           </h1>
-          <p className="text-xs font-mono text-slate-400">
+          <p className="text-xs font-mono text-muted-foreground">
             System Database Primary Key Ref: {shipment.id}
           </p>
         </div>

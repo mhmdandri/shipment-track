@@ -55,7 +55,10 @@ export class ShipmentRepository {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.shipment.findMany({
         where,
-        orderBy: params.sortByEta ? { eta: params.sortByEta } : undefined,
+        orderBy: [
+          { status: "asc" },
+          { eta: params.sortByEta ?? "asc" },
+        ],
         skip: params.skip,
         take: params.take,
       }),

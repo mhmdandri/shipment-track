@@ -8,42 +8,46 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
       title: "Active Shipments",
       value: stats.totalActive,
       icon: Ship,
-      color: "text-blue-600 bg-blue-50 border-blue-100",
+      iconClass: "text-blue-600",
+      bgClass: "bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900",
     },
     {
       title: "Need Action Today",
       value: stats.needActionToday,
       icon: Clock,
-      color: "text-amber-600 bg-amber-50 border-amber-100",
+      iconClass: "text-amber-600",
+      bgClass: "bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900",
     },
     {
       title: "Overdue Reminders",
       value: stats.overdueReminders,
       icon: AlertTriangle,
-      color: "text-rose-600 bg-rose-50 border-rose-100",
+      iconClass: "text-destructive",
+      bgClass: "bg-destructive/10 border-destructive/20",
     },
     {
       title: "ETA This Week",
       value: stats.etaThisWeek,
       icon: Calendar,
-      color: "text-emerald-600 bg-emerald-50 border-emerald-100",
+      iconClass: "text-emerald-600",
+      bgClass: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900",
     },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
       {cards.map((c, i) => (
-        <Card key={i} className="shadow-sm border border-slate-100">
+        <Card key={i} className="shadow-sm border border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {c.title}
             </CardTitle>
-            <div className={`p-2 rounded-lg border ${c.color}`}>
-              <c.icon className="w-4 h-4" />
+            <div className={`p-2 rounded-lg border ${c.bgClass}`}>
+              <c.icon className={`w-4 h-4 ${c.iconClass}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-slate-900">
+            <div className="text-2xl font-bold tracking-tight text-foreground">
               {c.value}
             </div>
           </CardContent>

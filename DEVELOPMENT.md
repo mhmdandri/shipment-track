@@ -22,6 +22,11 @@ An action-oriented board split into three columns:
 *   **Today's Action Board**: Displays reminders due today, sorted by priority (`URGENT` > `HIGH` > `MEDIUM` > `LOW`).
 *   **Upcoming Actions Pipeline**: Lists the next 15 upcoming incomplete reminders due after today, helping CS plan ahead.
 
+#### C. Quick-Action Resolve on Reminder Cards
+Each reminder card on the dashboard now contains an inline action row at the bottom with two controls:
+*   **"Resolve" Button** (`ResolveReminderButton`): A one-click button that immediately marks the reminder as `completed = true` via a Server Action. While the action is in-flight, the button shows a spinner and is disabled to prevent double-submission. On success, both the dashboard (`/`) and the related shipment detail page (`/shipments/[id]`) are revalidated automatically.
+*   **"View Detail" Link**: A secondary link that navigates CS directly to the full `/shipments/[id]` page for deeper inspection without leaving the dashboard.
+
 ---
 
 ### 1.2. Shipments File Ledger (`/shipments`)
@@ -172,3 +177,31 @@ To add new fields (e.g., `containerNo` or `consigneeEmail`) to shipments:
     pnpm prisma migrate dev --name add-container-no
     ```
 3.  Update the validator schema in [lib/validator.ts](file:///d:/Project/Nextjs/shipment-track/lib/validator.ts) to handle input fields inside the creation form.
+
+---
+
+## 5. Changelog
+
+### v1.1.0 — 2026-06-21: Quick-Action Resolve on Dashboard Reminder Cards
+
+**Feature**: Added a "Resolve" quick-action button directly on each reminder card in the Exception & Action Board on the main dashboard.
+
+#### Problem
+Previously, CS staff had to navigate from the dashboard into the full shipment detail page (`/shipments/[id]`) just to mark a reminder as resolved. This added unnecessary navigation friction for a simple one-click operation.
+
+#### Solution
+Added an inline action row at the bottom of every `ReminderCard` on the dashboard containing:
+1.  A **"Resolve" button** that calls the existing `toggleReminderAction` Server Action with a `completed: true` payload.
+2.  A **"View Detail" link** for quick navigation to the shipment detail page when deeper context is needed.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`features/dashboard/ResolveReminderButton.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/ResolveReminderButton.tsx) | **[NEW]** Client component with `useTransition` for pending state UX (spinner + disabled state while Server Action is in flight). |
+| [`features/dashboard/ReminderCard.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/ReminderCard.tsx) | **[MODIFIED]** Removed `"use server"` directive and old `<form>` toggle pattern. Restructured layout to include the new action row. Added `View Detail` link via `next/link`. |
+
+#### Architecture Notes
+*   `ResolveReminderButton` is a `"use client"` component intentionally separated from `ReminderCard` so that `ReminderCard` itself remains a lightweight server-renderable component (no `"use client"` directive needed on the card itself).
+*   The `toggleReminderAction` Server Action already handles `revalidatePath("/")` and `revalidatePath("/shipments/[id]")`, so no additional cache invalidation was needed.
+*   The `shipmentId` is passed through from `item.shipment.id` to allow per-shipment path revalidation.

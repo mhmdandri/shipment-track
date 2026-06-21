@@ -41,10 +41,10 @@ export function ShipmentForm() {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-8 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-4xl mx-auto"
+      className="space-y-8 bg-card p-4 lg:p-8 rounded-2xl border border-border shadow-sm max-w-4xl mx-auto"
     >
       {errMessage && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-sm font-medium">
+        <div className="p-4 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg text-sm font-medium">
           {errMessage}
         </div>
       )}
@@ -56,10 +56,9 @@ export function ShipmentForm() {
             id="jobNo"
             {...register("jobNo")}
             placeholder="e.g., JID20260001"
-            className="focus-visible:ring-cyan-500"
           />
           {errors.jobNo && (
-            <p className="text-xs text-rose-600 font-medium">
+            <p className="text-xs text-destructive font-medium">
               {errors.jobNo.message}
             </p>
           )}
@@ -71,10 +70,9 @@ export function ShipmentForm() {
             id="blNo"
             {...register("blNo")}
             placeholder="e.g., COSU612345678"
-            className="focus-visible:ring-cyan-500"
           />
           {errors.blNo && (
-            <p className="text-xs text-rose-600 font-medium">
+            <p className="text-xs text-destructive font-medium">
               {errors.blNo.message}
             </p>
           )}
@@ -86,10 +84,9 @@ export function ShipmentForm() {
             id="shipper"
             {...register("shipper")}
             placeholder="Global Export Logistics Corp"
-            className="focus-visible:ring-cyan-500"
           />
           {errors.shipper && (
-            <p className="text-xs text-rose-600 font-medium">
+            <p className="text-xs text-destructive font-medium">
               {errors.shipper.message}
             </p>
           )}
@@ -101,10 +98,9 @@ export function ShipmentForm() {
             id="consignee"
             {...register("consignee")}
             placeholder="Local Distribution Imports Pt"
-            className="focus-visible:ring-cyan-500"
           />
           {errors.consignee && (
-            <p className="text-xs text-rose-600 font-medium">
+            <p className="text-xs text-destructive font-medium">
               {errors.consignee.message}
             </p>
           )}
@@ -116,10 +112,9 @@ export function ShipmentForm() {
             id="vessel"
             {...register("vessel")}
             placeholder="COSCO SHIPPING ALPS V.045E"
-            className="focus-visible:ring-cyan-500"
           />
           {errors.vessel && (
-            <p className="text-xs text-rose-600 font-medium">
+            <p className="text-xs text-destructive font-medium">
               {errors.vessel.message}
             </p>
           )}
@@ -131,10 +126,9 @@ export function ShipmentForm() {
             id="portOfLoading"
             {...register("portOfLoading")}
             placeholder="Shanghai (CNSHA)"
-            className="focus-visible:ring-cyan-500"
           />
           {errors.portOfLoading && (
-            <p className="text-xs text-rose-600 font-medium">
+            <p className="text-xs text-destructive font-medium">
               {errors.portOfLoading.message}
             </p>
           )}
@@ -146,10 +140,9 @@ export function ShipmentForm() {
             id="portOfDischarge"
             {...register("portOfDischarge")}
             placeholder="Tanjung Priok (IDTPK)"
-            className="focus-visible:ring-cyan-500"
           />
           {errors.portOfDischarge && (
-            <p className="text-xs text-rose-600 font-medium">
+            <p className="text-xs text-destructive font-medium">
               {errors.portOfDischarge.message}
             </p>
           )}
@@ -167,10 +160,9 @@ export function ShipmentForm() {
                   e.target.value ? new Date(e.target.value) : new Date(),
                 )
               }
-              className="focus-visible:ring-cyan-500"
             />
             {errors.etd && (
-              <p className="text-xs text-rose-600 font-medium">
+              <p className="text-xs text-destructive font-medium">
                 {errors.etd.message}
               </p>
             )}
@@ -186,10 +178,9 @@ export function ShipmentForm() {
                   e.target.value ? new Date(e.target.value) : new Date(),
                 )
               }
-              className="focus-visible:ring-cyan-500"
             />
             {errors.eta && (
-              <p className="text-xs text-rose-600 font-medium">
+              <p className="text-xs text-destructive font-medium">
                 {errors.eta.message}
               </p>
             )}
@@ -197,17 +188,17 @@ export function ShipmentForm() {
         </div>
       </div>
 
-      <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+      <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
         <Link
           href="/shipments"
-          className="inline-flex items-center gap-2 text-sm text-slate-600 font-medium px-4 py-2 border rounded-xl hover:bg-slate-50"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground font-medium px-4 py-2 border border-border rounded-xl hover:bg-muted transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Cancel
         </Link>
         <Button
           type="submit"
           disabled={isPending}
-          className="bg-cyan-600 hover:bg-cyan-700 text-white font-medium px-6 rounded-xl shadow-md transition-colors"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-6 rounded-xl shadow-md transition-colors"
         >
           {isPending ? (
             <>

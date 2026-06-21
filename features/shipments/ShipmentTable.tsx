@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ArrowUpDown } from "lucide-react";
 
 interface ShipmentTableProps {
@@ -17,81 +18,86 @@ export function ShipmentTable({
   sortByEta,
 }: ShipmentTableProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs uppercase tracking-wider">
-              <th className="p-4">Job No / BL No</th>
-              <th className="p-4">Consignee & Shipper</th>
-              <th className="p-4">
+            <tr className="bg-muted border-b border-border text-muted-foreground font-semibold text-xs uppercase tracking-wider">
+              <th className="p-3 lg:p-4">Job No / BL No</th>
+              <th className="p-3 lg:p-4 hidden md:table-cell">Consignee & Shipper</th>
+              <th className="p-3 lg:p-4">
                 <Link
                   href={`/shipments?search=${search}&status=${status}&sortByEta=${sortByEta === "asc" ? "desc" : "asc"}`}
-                  className="flex items-center gap-1 hover:text-slate-900 transition-colors"
+                  className="flex items-center gap-1 hover:text-foreground transition-colors"
                 >
-                  ETA Schedule <ArrowUpDown className="w-3.5 h-3.5" />
+                  ETA <ArrowUpDown className="w-3.5 h-3.5" />
                 </Link>
               </th>
-              <th className="p-4">Current Workflow Stage</th>
-              <th className="p-4">Next Required Milestone</th>
-              <th className="p-4">Operational Status</th>
-              <th className="p-4 text-right">Actions</th>
+              <th className="p-3 lg:p-4 hidden lg:table-cell">Workflow Stage</th>
+              <th className="p-3 lg:p-4 hidden lg:table-cell">Next Milestone</th>
+              <th className="p-3 lg:p-4 hidden sm:table-cell">Status</th>
+              <th className="p-3 lg:p-4 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-sm text-slate-700 font-medium">
+          <tbody className="divide-y divide-border text-sm text-foreground font-medium">
             {data.map((item) => (
               <tr
                 key={item.id}
-                className="hover:bg-slate-50/70 transition-colors"
+                className="hover:bg-muted/50 transition-colors"
               >
-                <td className="p-4">
-                  <span className="text-slate-900 font-bold block">
+                <td className="p-3 lg:p-4">
+                  <span className="text-foreground font-bold block">
                     {item.jobNo}
                   </span>
-                  <span className="text-xs text-slate-400 block font-mono mt-0.5">
+                  <span className="text-xs text-muted-foreground block font-mono mt-0.5">
                     {item.blNo}
                   </span>
-                </td>
-                <td className="p-4">
-                  <span className="text-slate-900 block truncate max-w-50">
+                  {/* Show consignee on mobile below job no */}
+                  <span className="md:hidden text-xs text-muted-foreground block mt-1 truncate max-w-[150px]">
                     {item.consignee}
                   </span>
-                  <span className="text-xs text-slate-400 block truncate max-w-50 mt-0.5">
+                </td>
+                <td className="p-3 lg:p-4 hidden md:table-cell">
+                  <span className="text-foreground block truncate max-w-[12rem]">
+                    {item.consignee}
+                  </span>
+                  <span className="text-xs text-muted-foreground block truncate max-w-[12rem] mt-0.5">
                     from {item.shipper}
                   </span>
                 </td>
-                <td className="p-4 font-semibold text-slate-900">
+                <td className="p-3 lg:p-4 font-semibold text-foreground whitespace-nowrap">
                   {format(new Date(item.eta), "dd MMM yyyy")}
                 </td>
-                <td className="p-4">
+                <td className="p-3 lg:p-4 hidden lg:table-cell">
                   <Badge
                     variant="secondary"
-                    className="bg-cyan-50 text-cyan-800 border-cyan-100 text-xs px-2.5 py-1"
+                    className="bg-secondary text-secondary-foreground border-border text-xs px-2.5 py-1"
                   >
                     {item.currentStep}
                   </Badge>
                 </td>
-                <td className="p-4 text-amber-700 font-semibold text-xs">
+                <td className="p-3 lg:p-4 hidden lg:table-cell text-muted-foreground font-semibold text-xs">
                   {item.nextAction}
                 </td>
-                <td className="p-4">
+                <td className="p-3 lg:p-4 hidden sm:table-cell">
                   <Badge
                     variant="outline"
                     className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase ${item.status === "ACTIVE"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : "bg-slate-100 text-slate-600 border-slate-300"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : item.status === "COMPLETED"
+                        ? "bg-muted text-muted-foreground border-border"
+                        : "bg-secondary text-secondary-foreground border-border"
                       }`}
                   >
                     {item.status}
                   </Badge>
                 </td>
-                <td className="p-4 text-right">
-                  <Link
-                    href={`/shipments/${item.id}`}
-                    className="inline-flex items-center gap-1.5 text-xs text-cyan-600 hover:text-cyan-700 font-bold hover:underline transition-all"
-                  >
-                    Inspect File <ArrowUpRight className="w-3.5 h-3.5" />
-                  </Link>
+                <td className="p-3 lg:p-4 text-right">
+                  <Button variant="ghost" size="xs" asChild>
+                    <Link href={`/shipments/${item.id}`}>
+                      Inspect <ArrowUpRight />
+                    </Link>
+                  </Button>
                 </td>
               </tr>
             ))}

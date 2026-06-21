@@ -13,12 +13,12 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="space-y-8 p-8 min-h-screen bg-slate-50/30">
+    <div className="space-y-6 p-4 pt-16 lg:pt-6 lg:p-8 min-h-screen bg-background">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-black tracking-tight text-slate-900">
+        <h1 className="text-2xl font-black tracking-tight text-foreground">
           Import Export CS Command Dashboard
         </h1>
-        <p className="text-sm text-slate-500 font-medium">
+        <p className="text-sm text-muted-foreground font-medium">
           Real-time status updates and exception management queues.
         </p>
       </div>
