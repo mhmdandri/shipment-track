@@ -4,6 +4,25 @@ import { ShipmentFormValues } from "@/lib/validator";
 import { REMINDER_TEMPLATES, WORKFLOW_STEPS } from "@/lib/workflow";
 import { ShipmentStatus } from "@/app/generated/prisma/enums";
 
+function getMatchingTaskTitle(reminderTitle: string): string | null {
+  if (reminderTitle === "Check Draft PIB") return "Draft PIB";
+  if (reminderTitle === "Monitor BC 1.1") return "BC 1.1 Available";
+  return reminderTitle; // For exact matches
+}
+
+function getMatchingReminderTitle(taskTitle: string): string | null {
+  if (taskTitle === "Draft PIB") return "Check Draft PIB";
+  if (taskTitle === "BC 1.1 Available") return "Monitor BC 1.1";
+  if (
+    taskTitle === "Request Invoice DO" ||
+    taskTitle === "Payment Finance" ||
+    taskTitle === "Confirm Draft PIB"
+  ) {
+    return taskTitle;
+  }
+  return null;
+}
+
 export class ShipmentService {
   constructor(private repo: ShipmentRepository) { }
 
@@ -49,6 +68,7 @@ export class ShipmentService {
     shipmentId: string,
     completed: boolean,
     notes?: string,
+    skipReminderUpdate = false,
   ) {
     const completedAt = completed ? new Date() : null;
     await this.repo.updateTask(taskId, completed, completedAt, notes);
@@ -91,6 +111,32 @@ export class ShipmentService {
 
     if (status === ShipmentStatus.COMPLETED) {
       await this.repo.createActivityLog(shipmentId, "Shipment file fully completed and archived.");
+    }
+
+    // Sync to reminder if not skipped
+    if (!skipReminderUpdate && task) {
+      const reminderTitle = getMatchingReminderTitle(task.title);
+      if (reminderTitle) {
+        const reminder = await this.repo.findReminderByTitle(shipmentId, reminderTitle);
+        if (reminder && reminder.completed !== completed) {
+          await this.repo.updateReminder(reminder.id, completed);
+        }
+      }
+    }
+  }
+
+  async toggleReminderProgress(reminderId: string, completed: boolean) {
+    await this.repo.updateReminder(reminderId, completed);
+
+    const reminder = await this.repo.findReminderById(reminderId);
+    if (!reminder) return;
+
+    const taskTitle = getMatchingTaskTitle(reminder.title);
+    if (taskTitle) {
+      const task = await this.repo.findTaskByTitle(reminder.shipmentId, taskTitle);
+      if (task && task.completed !== completed) {
+        await this.toggleTaskProgress(task.id, reminder.shipmentId, completed, undefined, true);
+      }
     }
   }
 

@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { ShipmentWithRelations } from "@/lib";
 import { toggleTaskAction, updateTaskNoteAction } from "@/actions/shipment-action";
+import { useProgress } from "@bprogress/next";
 
 export function WorkflowChecklist({
   shipment,
@@ -13,6 +14,7 @@ export function WorkflowChecklist({
   shipment: ShipmentWithRelations;
 }) {
   const [isPending, startTransition] = useTransition();
+  const { start: startProgress, stop: stopProgress } = useProgress();
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
 
@@ -46,8 +48,13 @@ export function WorkflowChecklist({
                 checked={task.completed}
                 disabled={isPending}
                 onCheckedChange={(checked) => {
+                  startProgress();
                   startTransition(async () => {
-                    await toggleTaskAction(task.id, shipment.id, !!checked);
+                    try {
+                      await toggleTaskAction(task.id, shipment.id, !!checked);
+                    } finally {
+                      stopProgress();
+                    }
                   });
                 }}
                 className="h-4.5 w-4.5 rounded border-border mt-0.5"
@@ -93,10 +100,15 @@ export function WorkflowChecklist({
                 <button
                   type="button"
                   onClick={() => {
+                    startProgress();
                     startTransition(async () => {
-                      const res = await updateTaskNoteAction(task.id, shipment.id, noteText);
-                      if (res.success) {
-                        setEditingTaskId(null);
+                      try {
+                        const res = await updateTaskNoteAction(task.id, shipment.id, noteText);
+                        if (res.success) {
+                          setEditingTaskId(null);
+                        }
+                      } finally {
+                        stopProgress();
                       }
                     });
                   }}

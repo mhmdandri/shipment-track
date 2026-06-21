@@ -205,3 +205,79 @@ Added an inline action row at the bottom of every `ReminderCard` on the dashboar
 *   `ResolveReminderButton` is a `"use client"` component intentionally separated from `ReminderCard` so that `ReminderCard` itself remains a lightweight server-renderable component (no `"use client"` directive needed on the card itself).
 *   The `toggleReminderAction` Server Action already handles `revalidatePath("/")` and `revalidatePath("/shipments/[id]")`, so no additional cache invalidation was needed.
 *   The `shipmentId` is passed through from `item.shipment.id` to allow per-shipment path revalidation.
+
+### v1.2.0 — 2026-06-21: Multi-column Sort & Global Progress Loading Integration
+
+**Feature**: Added secondary sorting configuration to the Shipment File Ledger, and implemented a global progress loading indicator for page navigations and Server Action transitions.
+
+#### 1. Multi-column Sort (Status + ETA)
+*   **Problem**: Shipments list was sorted only by ETA, resulting in active shipments being mixed with completed or cancelled ones.
+*   **Solution**: Modified `ShipmentRepository.findAll` to implement multi-column sorting: sorting by `status` alphabetically first (`ACTIVE` → `CANCELLED` → `COMPLETED` matching our operational preference), followed by `eta` as a secondary sorting criterion.
+*   **Shadcn Compliance**: Updated status badges color styling to use semantically compliant Shadcn class styles.
+
+#### 2. Progress Loading Indicator (BProgress)
+*   **Problem**: No visual feedback was shown when transitioning between routes or waiting for asynchronous database writes (Server Actions) to complete.
+*   **Solution**: Integrated `@bprogress/next` (modern TypeScript replacement for NProgress).
+    *   Configured the global provider in [`components/layout/Providers.tsx`](file:///d:/Project/Nextjs/shipment-track/components/layout/Providers.tsx) to use the Shadcn CSS token `var(--primary)` and a thin layout size (`3px`), ensuring color coordination with the active theme (including dark and light modes).
+    *   Hooked manual controls (`useProgress` API) into components executing Server Actions (creating a shipment, toggling task checklist status, updating task notes, resolving dashboard reminders) using React's transition states.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`repositories/shipment-repository.ts`](file:///d:/Project/Nextjs/shipment-track/repositories/shipment-repository.ts) | **[MODIFIED]** Updated `findAll` sorting logic using multi-column `orderBy` array. |
+| [`features/shipments/ShipmentTable.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/ShipmentTable.tsx) | **[MODIFIED]** Replaced custom tailwind/emerald badge styles with Shadcn compliant tokens. |
+| [`components/layout/Providers.tsx`](file:///d:/Project/Nextjs/shipment-track/components/layout/Providers.tsx) | **[MODIFIED]** Refactored progress loading to target `var(--primary)` color token instead of static color. |
+| [`features/dashboard/ResolveReminderButton.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/ResolveReminderButton.tsx) | **[MODIFIED]** Injected `useProgress` manual triggers within transition handlers. |
+| [`features/shipments/WorkFlowChecklist.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/WorkFlowChecklist.tsx) | **[MODIFIED]** Integrated progress hooks for task status toggles and note submission events. |
+| [`features/shipments/ShipmentForm.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/ShipmentForm.tsx) | **[MODIFIED]** Hooked progress triggers during tracker pipeline provisioning. |
+
+### v1.2.1 — 2026-06-21: Bidirectional Synchronization Between Reminders and Workflow Tasks
+
+**Feature**: Connected reminders on the dashboard with tasks in the shipment workflow.
+
+#### Problem
+Previously, marking a reminder as "Resolved" on the dashboard only updated the `Reminder` record itself, leaving the corresponding operational shipment workflow task incomplete and the overall shipment progress percentage unchanged.
+
+#### Solution
+Implemented bidirectional mapping and automatic synchronization between reminders and workflow tasks:
+1.  **Reminder to Task Sync**: Resolving a reminder (e.g. clicking "Resolve" on the dashboard) automatically resolves the matching workflow task and recalculates the shipment's current step, next action, and status (including logging to Activity Logs).
+2.  **Task to Reminder Sync**: Toggling a task's status on the shipment checklist page automatically updates the completion status of the corresponding reminder, removing it from the dashboard's active exception queues.
+
+#### Mapping Logic
+*   `Check Draft PIB` (Reminder) ↔ `Draft PIB` (Task)
+*   `Monitor BC 1.1` (Reminder) ↔ `BC 1.1 Available` (Task)
+*   `Request Invoice DO` (Reminder) ↔ `Request Invoice DO` (Task)
+*   `Payment Finance` (Reminder) ↔ `Payment Finance` (Task)
+*   `Confirm Draft PIB` (Reminder) ↔ `Confirm Draft PIB` (Task)
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`repositories/shipment-repository.ts`](file:///d:/Project/Nextjs/shipment-track/repositories/shipment-repository.ts) | **[MODIFIED]** Added `findReminderById`, `findReminderByTitle`, and `findTaskByTitle` query helpers. |
+| [`service/shipment-service.ts`](file:///d:/Project/Nextjs/shipment-track/service/shipment-service.ts) | **[MODIFIED]** Added bidirectional synchronization logic inside `toggleTaskProgress` and implemented `toggleReminderProgress`. |
+| [`actions/shipment-action.ts`](file:///d:/Project/Nextjs/shipment-track/actions/shipment-action.ts) | **[MODIFIED]** Updated `toggleReminderAction` server action to route through the service's sync method (`toggleReminderProgress`). |
+
+### v1.3.0 — 2026-06-21: Debounced Client-Side Search for Shipment File Ledger
+
+**Feature**: Implemented real-time debounced search on the shipments page, removing the need for manual form submission (pressing Enter).
+
+#### Problem
+CS staff had to type their search term and press Enter to trigger the search form, causing full page reloads and providing no visual progress indicators while results were loading.
+
+#### Solution
+Replaced the traditional HTML form search with a customized client-side **`ShipmentSearch`** component:
+1.  **State Debounce**: Holds local state and triggers route replacement only after `400ms` of typing inactivity.
+2.  **Interactive Transitions**: Uses React's `useTransition` hook combined with `@bprogress/next`'s custom router to trigger the top-page progress bar during query updates.
+3.  **Inline Loader**: Shows an animated spinner inside the search input instead of the static search icon while the database query is in-flight.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`features/shipments/ShipmentSearch.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/ShipmentSearch.tsx) | **[NEW]** Debounced client-side input component using transitions and `@bprogress/next`'s custom router. |
+| [`app/shipments/page.tsx`](file:///d:/Project/Nextjs/shipment-track/app/shipments/page.tsx) | **[MODIFIED]** Replaced the HTML `<form>` search input with the new `<ShipmentSearch>` component. |
+
+
+

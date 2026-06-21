@@ -67,7 +67,7 @@ export async function toggleReminderAction(
   shipmentId?: string,
 ) {
   try {
-    await repo.updateReminder(id, completed);
+    await service.toggleReminderProgress(id, completed);
     revalidatePath("/");
     if (shipmentId) revalidatePath(`/shipments/${shipmentId}`);
     return { success: true };

@@ -1,9 +1,10 @@
 import { ShipmentTable } from "@/features/shipments/ShipmentTable";
 import LinkNext from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { ShipmentStatus } from "../generated/prisma/enums";
 import { ShipmentRepository } from "@/repositories/shipment-repository";
 import { Button } from "@/components/ui/button";
+import { ShipmentSearch } from "@/features/shipments/ShipmentSearch";
 import prisma from "@/lib/prisma";
 
 export const revalidate = 0;
@@ -55,19 +56,7 @@ export default async function ShipmentsPage({ searchParams }: PageProps) {
       </div>
 
       <div className="bg-card border border-border rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center gap-4">
-        <form
-          method="GET"
-          action="/shipments"
-          className="w-full flex-1 flex items-center gap-3 bg-muted px-3 py-1.5 rounded-xl border border-border"
-        >
-          <Search className="w-4 h-4 text-muted-foreground" />
-          <input
-            name="search"
-            defaultValue={search}
-            placeholder="Search by Job Number, BL, Consignee or Shipper..."
-            className="bg-transparent border-none text-sm w-full focus:outline-none text-foreground font-medium placeholder:text-muted-foreground"
-          />
-        </form>
+        <ShipmentSearch defaultValue={search} />
       </div>
 
       <ShipmentTable

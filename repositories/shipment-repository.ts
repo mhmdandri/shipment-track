@@ -98,4 +98,22 @@ export class ShipmentRepository {
       data: { completed },
     });
   }
+
+  async findReminderById(id: string): Promise<any> {
+    return this.prisma.reminder.findUnique({
+      where: { id },
+    });
+  }
+
+  async findReminderByTitle(shipmentId: string, title: string): Promise<any> {
+    return this.prisma.reminder.findFirst({
+      where: { shipmentId, title },
+    });
+  }
+
+  async findTaskByTitle(shipmentId: string, title: string): Promise<any> {
+    return this.prisma.shipmentTask.findFirst({
+      where: { shipmentId, title },
+    });
+  }
 }

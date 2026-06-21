@@ -62,7 +62,10 @@ export function AppSidebar() {
           </nav>
         </div>
         <div className="border-t border-sidebar-border px-6 py-4 text-xs text-sidebar-foreground/40 font-mono">
-          v1.2.0-Prod • Stable
+          <p className="text-center">
+            <span className="font-semibold">CS EKSIM</span> by
+            <span className="font-semibold"> mohaproject</span> © 2026
+          </p>
         </div>
       </aside>
     </>

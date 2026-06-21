@@ -11,10 +11,12 @@ import { createShipmentAction } from "@/actions/shipment-action";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useProgress } from "@bprogress/next";
 
 export function ShipmentForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const { start: startProgress, stop: stopProgress } = useProgress();
   const [errMessage, setErrMessage] = useState<string | null>(null);
 
   const {
@@ -28,12 +30,17 @@ export function ShipmentForm() {
 
   const onSubmit = (values: ShipmentFormValues) => {
     setErrMessage(null);
+    startProgress();
     startTransition(async () => {
-      const res = await createShipmentAction(values);
-      if (res.success) {
-        router.push("/shipments");
-      } else {
-        setErrMessage(res.error || "An operations ingestion error occurred.");
+      try {
+        const res = await createShipmentAction(values);
+        if (res.success) {
+          router.push("/shipments");
+        } else {
+          setErrMessage(res.error || "An operations ingestion error occurred.");
+        }
+      } finally {
+        stopProgress();
       }
     });
   };

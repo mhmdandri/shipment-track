@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { CheckCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toggleReminderAction } from "@/actions/shipment-action";
+import { useProgress } from "@bprogress/next";
 
 interface ResolveReminderButtonProps {
   reminderId: string;
@@ -15,10 +16,16 @@ export function ResolveReminderButton({
   shipmentId,
 }: ResolveReminderButtonProps) {
   const [isPending, startTransition] = useTransition();
+  const { start, stop } = useProgress();
 
   const handleResolve = () => {
+    start();
     startTransition(async () => {
-      await toggleReminderAction(reminderId, true, shipmentId);
+      try {
+        await toggleReminderAction(reminderId, true, shipmentId);
+      } finally {
+        stop();
+      }
     });
   };
 
