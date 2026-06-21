@@ -26,15 +26,15 @@ export function ReminderBoard({ data }: { data: ActionBoardData }) {
   ];
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-start">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 items-start">
       {columns.map((col, idx) => (
         <div
           key={idx}
-          className={`p-4 rounded-2xl border ${col.bg} min-h-[18rem] flex flex-col`}
+          className={`p-4 rounded-2xl border ${col.bg} h-[480px] flex flex-col`}
         >
-          <div className="flex items-center justify-between mb-4 px-1">
+          <div className="flex items-center justify-between mb-4 px-1 pb-1 border-b border-border/10 shrink-0">
             <h3
-              className={`font-bold text-sm tracking-wide uppercase ${col.titleColor}`}
+              className={`font-bold text-xs tracking-wider uppercase ${col.titleColor}`}
             >
               {col.title}
             </h3>
@@ -42,7 +42,7 @@ export function ReminderBoard({ data }: { data: ActionBoardData }) {
               {col.items.length}
             </span>
           </div>
-          <div className="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1">
+          <div className="space-y-3 flex-1 overflow-y-auto pr-1">
             {col.items.length === 0 ? (
               <div className="h-full flex items-center justify-center py-12">
                 <EmptyState

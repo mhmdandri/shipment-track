@@ -1,5 +1,7 @@
 import { DashboardCards } from "@/features/dashboard/DashboardCard";
 import { ReminderBoard } from "@/features/dashboard/ReminderBoard";
+import { IncompleteTasksSummary } from "@/features/dashboard/IncompleteTasksSummary";
+import { UpcomingEtaPipeline } from "@/features/dashboard/UpcomingEtaPipeline";
 import { DashboardService } from "@/service/dashboard-service";
 import prisma from "@/lib/prisma";
 export const revalidate = 0;
@@ -7,9 +9,10 @@ export const revalidate = 0;
 const service = new DashboardService(prisma);
 
 export default async function DashboardPage() {
-  const [stats, boardData] = await Promise.all([
+  const [stats, boardData, activeShipments] = await Promise.all([
     service.getMetrics(),
     service.getActionBoard(),
+    service.getActiveShipments(),
   ]);
 
   return (
@@ -25,6 +28,10 @@ export default async function DashboardPage() {
       <DashboardCards stats={stats} />
       <div className="pt-2">
         <ReminderBoard data={boardData} />
+      </div>
+      <div className="space-y-6">
+        <IncompleteTasksSummary shipments={activeShipments} />
+        <UpcomingEtaPipeline shipments={activeShipments} />
       </div>
     </div>
   );

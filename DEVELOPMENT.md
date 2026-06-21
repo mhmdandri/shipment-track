@@ -279,5 +279,35 @@ Replaced the traditional HTML form search with a customized client-side **`Shipm
 | [`features/shipments/ShipmentSearch.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/ShipmentSearch.tsx) | **[NEW]** Debounced client-side input component using transitions and `@bprogress/next`'s custom router. |
 | [`app/shipments/page.tsx`](file:///d:/Project/Nextjs/shipment-track/app/shipments/page.tsx) | **[MODIFIED]** Replaced the HTML `<form>` search input with the new `<ShipmentSearch>` component. |
 
+### v1.4.0 — 2026-06-21: Dashboard UX Overhaul (Scrollable Reminders, Incomplete Tasks Table, ETA Pipeline)
+
+**Feature**: Redesigned the main dashboard with a unified height structure for reminder boards, added an active pipeline tasks summary table, and created a visual ETA schedule pipeline.
+
+#### 1. Fixed-Height Scrollable Reminder Columns
+*   **Problem**: If there were many reminders, the reminder columns would grow indefinitely, breaking the dashboard layout.
+*   **Solution**: Fixed the column card height to `h-[480px]` in [`features/dashboard/ReminderBoard.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/ReminderBoard.tsx) and enabled internal overflow scrolling (`overflow-y-auto`), ensuring headers stay pinned at the top.
+
+#### 2. Active Pipeline Tasks Summary Table
+*   **Problem**: CS managers needed a central view of all incomplete operational tasks across active files without clicking into individual shipment detail pages.
+*   **Solution**: Created [`features/dashboard/IncompleteTasksSummary.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/IncompleteTasksSummary.tsx) to query and render active shipments.
+*   **Mobile-First Design**: Implemented a responsive multi-layout view. On mobile screens (`md:hidden`), it displays a clean, readable card list where each card houses the job number, progress details, and next milestones. On desktop (`hidden md:table`), it switches to a full structured table layout to optimize larger screen spaces.
+
+#### 3. Upcoming ETA Pipeline Schedule
+*   **Problem**: Tracking incoming vessel dates was scattered across pages.
+*   **Solution**: Created [`features/dashboard/UpcomingEtaPipeline.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/UpcomingEtaPipeline.tsx) to render a visual schedule grid of active job numbers sorted chronologically by ETA. Proximity-colored countdown badges indicate if arrivals are today, tomorrow, upcoming, or overdue.
+*   **Mobile-First Design**: Configured padding to be responsive (`p-4 sm:p-5`) and designed the grid layout to scale from a single column (`grid-cols-1`) on mobile, two columns on tablets, and three to four columns on desktop.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`features/dashboard/ReminderBoard.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/ReminderBoard.tsx) | **[MODIFIED]** Configured fixed card height (`480px`), explicit mobile-first grid, and overflow scrolling inside the item list wrapper. |
+| [`service/dashboard-service.ts`](file:///d:/Project/Nextjs/shipment-track/service/dashboard-service.ts) | **[MODIFIED]** Added `getActiveShipments` query method to fetch active files with their incomplete tasks. |
+| [`features/dashboard/IncompleteTasksSummary.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/IncompleteTasksSummary.tsx) | **[NEW]** Summary table component with progress bars, next milestone metrics, and a dedicated mobile card list view. |
+| [`features/dashboard/UpcomingEtaPipeline.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/UpcomingEtaPipeline.tsx) | **[NEW]** Chronological timeline grid display with proximity arrival status countdown tags and a mobile-first grid container. |
+| [`app/page.tsx`](file:///d:/Project/Nextjs/shipment-track/app/page.tsx) | **[MODIFIED]** Parallel-fetched active shipments and integrated the new sections beneath the ReminderBoard. |
+
+
+
 
 

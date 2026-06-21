@@ -68,4 +68,17 @@ export class DashboardService {
 
     return { overdue, today, upcoming };
   }
+
+  async getActiveShipments() {
+    return this.prisma.shipment.findMany({
+      where: { status: "ACTIVE" },
+      include: {
+        tasks: {
+          where: { completed: false },
+          orderBy: { stepOrder: "asc" },
+        },
+      },
+      orderBy: { eta: "asc" },
+    });
+  }
 }
