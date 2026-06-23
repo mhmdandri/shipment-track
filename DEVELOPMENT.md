@@ -357,3 +357,114 @@ Replaced the traditional HTML form search with a customized client-side **`Shipm
 | [`features/dashboard/UpcomingEtaPipeline.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/UpcomingEtaPipeline.tsx) | **[MODIFIED]** Replaced `any[]` with `ShipmentWithTasks[]`. |
 | [`features/dashboard/IncompleteTasksSummary.tsx`](file:///d:/Project/Nextjs/shipment-track/features/dashboard/IncompleteTasksSummary.tsx) | **[MODIFIED]** Replaced `any[]` with `ShipmentWithTasks[]`. |
 
+### v1.6.0 — 2026-06-23: Shipping Line Live Tracker (ONE API Integration & Berthing Port Summary)
+
+**Feature**: Built a shipping line tracking system that allows Customer Service agents to track shipping containers in real-time from Ocean Network Express (ONE) API, visualizes transit routes, resolves port terminals, and links directly from the shipments ledger.
+
+#### 1. Live Carrier Integration & CORS Bypass
+- **Server Action** ([track-action.ts](file:///d:/Project/Nextjs/shipment-track/actions/track-action.ts)): Implemented a server-side action to query the ONE live tracking API. This prevents browser CORS policy blocks by routing queries server-to-server.
+- **Milestone Code Translation**: Built a dictionary map to resolve carrier codes (like `E061`, `E089`, `E105`) into clear customer-facing milestones ("Loaded on Vessel", "Cargo Discharged", "Import Gate Out").
+- **Terminal Resolution**: Added logic to parse container current locations and map them to Tanjung Priok's main terminals (JICT, KOJA, NPCT1, TER3, TMAL).
+
+#### 2. Visual Shipping manifests & Timelines
+- **Live Tracker Page** ([page.tsx](file:///d:/Project/Nextjs/shipment-track/app/tracker/page.tsx)): Designed a URL-syncing tracking dashboard page (`/tracker`) with Suspense fallback loading skeletons and clean empty states.
+- **Route Progress Stepper**: Implemented a responsive manifest visualizer that animates a ship icon moving along the transit lane depending on actual container progress (Origin Port 🚢 Mid Sea 🚢 Destination Port).
+- **Milestone Steppers**: Formatted a progress bar utilizing Lucide-react specific indicators (`PackageOpen` ➡️ `ArrowRightLeft` ➡️ `Anchor` ➡️ `Ship` ➡️ `Truck` ➡️ `CheckCircle2`) to represent container state progress.
+- **Detailed Timelines**: Created toggleable lists showing the detailed actual and planned log entries for each container.
+
+#### 3. Navigation & Table Integration
+- **Sidebar Integration** ([AppSidebar.tsx](file:///d:/Project/Nextjs/shipment-track/components/layout/AppSidebar.tsx)): Added the "Carrier Live Track" link to the primary system sidebar.
+- **Shortcut Links** ([ShipmentTable.tsx](file:///d:/Project/Nextjs/shipment-track/features/shipments/ShipmentTable.tsx)): Embedded direct "Live Track 🚢" links in the shipments ledger rows. Clicking these automatically loads the corresponding live query on the tracker page.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`actions/track-action.ts`](file:///d:/Project/Nextjs/shipment-track/actions/track-action.ts) | **[NEW]** Live carrier tracking server-side logic and translation mappings. |
+| [`app/tracker/page.tsx`](file:///d:/Project/Nextjs/shipment-track/app/tracker/page.tsx) | **[NEW]** Live tracker route controller, suspense boundary, and empty states. |
+| [`features/tracker/TrackerForm.tsx`](file:///d:/Project/Nextjs/shipment-track/features/tracker/TrackerForm.tsx) | **[NEW]** Search form component utilizing Shadcn Select UI primitives and transition load states. |
+| [`features/tracker/TrackerResults.tsx`](file:///d:/Project/Nextjs/shipment-track/features/tracker/TrackerResults.tsx) | **[NEW]** Stepper routes, milestone indicators, and detailed chronological timelines. |
+| [`components/layout/AppSidebar.tsx`](file:///d:/Project/Nextjs/shipment-track/components/layout/AppSidebar.tsx) | **[MODIFIED]** Added search route shortcut in navigation. |
+| [`features/shipments/ShipmentTable.tsx`](file:///d:/Project/Nextjs/shipment-track/features/shipments/ShipmentTable.tsx) | **[MODIFIED]** Injected quick tracking links inside rows. |
+| [`.env`](file:///d:/Project/Nextjs/shipment-track/.env) | **[MODIFIED]** Fixed PostgreSQL loopback connections on Node 24. |
+
+### v1.6.1 — 2026-06-23: Shadcn Select Layout Alignment & Server-Side Rendering (SSR) Optimization
+
+**Feature**: Perfected the layout styling and server-side rendering support for the Shadcn Select components in the Live Tracker Search Form.
+
+#### Improvements
+1. **Height & Alignment Correction**: Added explicit `!h-10` height overrides to the `SelectTrigger` elements. This bypasses default Radix/Shadcn size attributes (which restrict triggers to `h-8` / `32px` tall), ensuring the dropdown triggers align perfectly with the `h-10` (`40px`) height of reference input text fields and tracking action buttons.
+2. **Server-Side Hydration Pre-rendering**: Injected the dynamic text values (`Ocean Network Express (ONE)` / `Booking Number (BKG_NO)`) as children inside `<SelectValue>`. This forces Next.js to pre-render the active select option on the server response, eliminating blank select fields or visual layout shifts during client-side hydration.
+3. **Grid Column Spacing & Symmetry Fix**: Replaced the mismatched block margins and spacing with a uniform flexbox-gap layout (`flex flex-col gap-1.5`) across all three grid columns, aligning the top and bottom bounds of all form controls perfectly.
+4. **Input Field Style Match**: Styled the text input field with `bg-background border border-border` to replace the default transparent border and shaded background, matching the look, border thickness, and background color of the select triggers.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`features/tracker/TrackerForm.tsx`](file:///d:/Project/Nextjs/shipment-track/features/tracker/TrackerForm.tsx) | **[MODIFIED]** Optimized height overrides, unified gap structures, matching background/borders, and added server-side label pre-rendering logic to select controls. |
+
+### v1.7.0 — 2026-06-23: Evergreen Marine (EMC) Live Tracking Integration
+
+**Feature**: Added live tracking support for **Evergreen Marine (EMC)** containers using direct HTML servlet queries, rendering detailed container event timelines and route maps.
+
+#### Improvements
+1. **Direct Servlet POST Client**: Implemented a server-side client inside `actions/track-action.ts` to perform form POST queries directly to Evergreen's ShipmentLink portal servlet (`https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do`). This bypasses standard browser CORS restrictions and resolves queries by B/L, Booking, or Container numbers.
+2. **HTML Metadata Parser**: Added a parser to extract B/L information (ETA, POL, POD, place of delivery, active vessel/voyage reference) and the container reference array from the returned HTML body.
+3. **Dynamic Detailed Container Moves Lookup**: For every container resolved, the server action automatically issues a secondary POST query representing `TYPE=CntrMove` to retrieve the complete history of movement events (date, moves description, terminal location, active vessel/voyage details) for that specific container.
+4. **Milestone Stepper Integration**: Added `"received"` as a keyword in the visual tracker results milestones, mapping Evergreen's `Received (FCL)` status correctly to the visual `Gate In` stepper.
+5. **Form Integration**: Enabled **Evergreen Marine (EMC)** as an active, queryable carrier in the shipping line select dropdown in `TrackerForm.tsx`.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`actions/track-action.ts`](file:///d:/Project/Nextjs/shipment-track/actions/track-action.ts) | **[MODIFIED]** Implemented Evergreen server-side fetch, dynamic metadata parser, and detailed container moves query integration. |
+| [`features/tracker/TrackerForm.tsx`](file:///d:/Project/Nextjs/shipment-track/features/tracker/TrackerForm.tsx) | **[MODIFIED]** Enabled Evergreen Marine (EMC) selection option in dropdown menus. |
+| [`features/tracker/TrackerResults.tsx`](file:///d:/Project/Nextjs/shipment-track/features/tracker/TrackerResults.tsx) | **[MODIFIED]** Added "received" to the Gate In milestone keywords mapping. |
+
+### v1.7.1 — 2026-06-23: Estimated ETA Display for In-Transit Shipments
+
+**Feature**: Added live tracker visual indicators for estimated arrival dates when a shipment/container is still in transit (not yet arrived or discharged at destination).
+
+#### Improvements
+1. **POD Card ETA indicator**: Displays `Est. ETA: [Date]` with a yellow pulsing clock icon on the destination port card in the route visualization panel when the cargo is in transit. Displays `Arrived: [Date]` in green with a check icon when actually discharged.
+2. **Stepper Milestone Fallback**: If a container has not reached the "Discharged" milestone, but a top-level cargo-manifest-level ETA exists from the carrier (e.g. Evergreen), the stepper displays `Est: [Date]` under the "Discharged" milestone label.
+3. **Pulsing Indicator Dot**: Displays estimated milestones with an amber dashed border, light amber background, and a pulsing animation, helping users visually distinguish between actual completed events and future estimated arrivals.
+4. **Clean Milestone Date Formatting**: Added a `formatMilestoneDate` helper inside `ContainerRow` to format dates containing time as `dd MMM HH:mm` and date-only strings (like top-level ETAs) as `dd MMM yyyy`.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`features/tracker/TrackerResults.tsx`](file:///d:/Project/Nextjs/shipment-track/features/tracker/TrackerResults.tsx) | **[MODIFIED]** Updated POD card template, milestone mappings, and milestone stepper to support in-transit estimated ETA rendering. |
+
+### v1.7.2 — 2026-06-23: Evergreen Live Tracking Parser Optimization & Container Search Support
+
+**Feature**: Fixed the ETA discrepancy where the live tracker fell back to the ETD/onboard date (June 18th) by introducing a highly resilient, single-regex ETA parser. Added full tracking support for container-only searches directly from the main page table.
+
+#### Improvements
+1. **Resilient Regex ETA Parser**: Replaced the two-stage regex logic with a single, highly flexible regex `Estimated Date of Arrival(?:\s+at\s+Destination)?\s*:\s*(?:<[^>]+>\s*)*([A-Z]{3}-\d{2}-\d{4}|\d{4}-\d{2}-\d{2})` that correctly extracts the carrier-provided ETA (June 24th, 2026) across all page formats, even if HTML tags or spacing vary.
+2. **Container Search Moves Extraction**: Enabled parsing container tracking info and moves directly from the 8-column layout of the main page table for `CNTR_NO` queries (where pop-up detail servlet links are omitted by the carrier).
+3. **Strict Type-Safety Verification**: Verified that the entire project compiles clean with zero typescript compile warnings/errors or ESLint rules violations, strictly avoiding any loose `any` types.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`actions/track-action.ts`](file:///d:/Project/Nextjs/shipment-track/actions/track-action.ts) | **[MODIFIED]** Enhanced ETA parsing regex and implemented container-only parsing support for CNTR_NO queries with explicit TypeScript typing. |
+
+### v1.7.3 — 2026-06-23: HTML Character Entity Decoding Fix
+
+**Feature**: Fixed the issue where voyage names (encoded in Chinese character entities like `&#x9577;`) and container type labels (encoded with hex space entities like `&#x20;`) appeared literally/broken in the user interface.
+
+#### Improvements
+1. **Unicode & Hex Entity Decoder**: Rewrote `decodeHtml` inside `actions/track-action.ts` to recursively decode hexadecimal references (`&#x...;`), decimal references (`&#...;`), and standard named entities (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&nbsp;`) into standard Unicode character strings before returning them to the React frontend.
+2. **Explicit Typings**: Explicitly typed all replacement variables in the decoder callbacks to preserve strict type-safety.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`actions/track-action.ts`](file:///d:/Project/Nextjs/shipment-track/actions/track-action.ts) | **[MODIFIED]** Implemented robust unicode and named entity decoding inside the `decodeHtml` helper. |
+
