@@ -54,17 +54,6 @@ export function ShipmentTable({
                     <span className="text-xs text-muted-foreground font-mono">
                       {item.blNo}
                     </span>
-                    {item.blNo && item.blNo.trim() !== "" && (
-                      <Link
-                        href={`/tracker?carrier=ONE&search_type=BL_NO&search_text=${encodeURIComponent(
-                          item.blNo.trim()
-                        )}`}
-                        className="inline-flex items-center gap-0.5 text-[10px] font-extrabold text-primary hover:underline hover:text-primary/80 transition-colors"
-                        title="Live track this shipment on ONE Line"
-                      >
-                        Live Track 🚢
-                      </Link>
-                    )}
                   </div>
                   {/* Show consignee on mobile below job no */}
                   <span className="md:hidden text-xs text-muted-foreground block mt-1 truncate max-w-37.5">
