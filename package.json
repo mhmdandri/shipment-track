@@ -47,6 +47,11 @@
   "pnpm": {
     "overrides": {
       "zod": "3.25.76"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "esbuild",
+      "prisma"
+    ]
   }
 }
