@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutDashboard, Ship, Menu, X, Search } from "lucide-react";
+import { LayoutDashboard, Ship, Menu, X, Search, ListTodo } from "lucide-react";
 import { useState } from "react";
 
 export function AppSidebar() {
@@ -58,7 +58,14 @@ export function AppSidebar() {
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
             >
               <Ship className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
-              <span className="text-sm font-medium">Shipments Catalog</span>
+              <span className="font-semibold tracking-wide">Shipments</span>
+            </Link>
+            <Link
+              href="/todos"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
+            >
+              <ListTodo className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
+              <span className="font-semibold tracking-wide">My Todos</span>
             </Link>
             <Link
               href="/tracker"

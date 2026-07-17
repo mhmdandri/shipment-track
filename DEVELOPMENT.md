@@ -488,3 +488,30 @@ Replaced the traditional HTML form search with a customized client-side **`Shipm
 | [`features/shipments/TodoListCard.tsx`](file:///c:/Project/shipment-track/features/shipments/TodoListCard.tsx) | **[NEW]** Client component for the ad-hoc todo list. |
 | [`app/shipments/[id]/page.tsx`](file:///c:/Project/shipment-track/app/shipments/[id]/page.tsx) | **[MODIFIED]** Injected `TodoListCard` into the right column layout. |
 
+### v1.9.0 — 2026-07-17: Export Shipment Workflow & Dashboard Monitoring Segregation
+
+**Feature**: Differentiated Import vs Export shipment logic across the dashboard, milestone trackers, and creation pipeline.
+
+#### Improvements
+1. **Database Enums & Validation**: Expanded the Prisma schema to distinguish `ShipmentType` (IMPORT vs EXPORT). Modified the Zod schema to mandate specific dates per type (e.g., `openCy`, `closeSi`, `closeCy`, `etd` for EXPORT; `eta` for IMPORT).
+2. **Workflow Segregation**: Created separate operational checklist templates in `lib/workflow.ts` for Import vs Export shipments. 
+3. **Dashboard Adjustments**: Fixed progress calculations and milestone trackers (`UpcomingEtaPipeline`, `IncompleteTasksSummary`) on the dashboard to reflect `openCy` and `etd` for Export shipments instead of just `eta`.
+
+### v1.10.0 — 2026-07-17: Shipment Quick View Dialog & Dashboard Layout Refinements
+
+**Feature**: Added a fast summary modal to view shipment progress, pending tasks, and latest activity directly from the Shipments ledger without navigating to the details page.
+
+#### Improvements
+1. **Quick View Dialog**: Created `ShipmentQuickViewDialog` that opens dynamically from the Shipment Table. It fetches data via a dedicated `getShipmentQuickViewAction`.
+2. **Dashboard Reordering**: Reorganized `app/page.tsx` to display Summary Cards first, followed by Upcoming ETA Pipeline, Incomplete Tasks, and Overdue Reminder Boards at the bottom.
+3. **Strict Typings**: Replaced all instances of `any` with strictly cast models using Prisma types and Zod inputs, completely eliminating ESLint and TS errors across the codebase.
+
+### v1.11.0 — 2026-07-17: Daily Todo List Board (Independent of Shipments)
+
+**Feature**: Introduced a dedicated "My Todos" workspace for Customer Service agents to map out daily, ad-hoc tasks completely isolated from specific shipments.
+
+#### Improvements
+1. **Database Expansion**: Added `DailyTodo` model to Prisma schema.
+2. **Interactive Optimistic UI**: Built `/todos` route with a `TodoList` client component that provides instant feedback when adding, checking, or deleting tasks via `useTransition`.
+3. **Date Formatting**: Integrated `date-fns` to format the `createdAt` timestamp (e.g. `17 Jul 2026, 15:30`) neatly underneath each active task.
+4. **Sidebar Navigation**: Added a direct link to the new feature in `AppSidebar.tsx`.

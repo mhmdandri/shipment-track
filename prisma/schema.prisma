@@ -119,3 +119,11 @@ model Todo {
 
   @@index([shipmentId])
 }
+
+model DailyTodo {
+  id        String   @id @default(uuid())
+  text      String
+  isDone    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
