@@ -18,6 +18,11 @@ enum ShipmentStatus {
   CANCELLED
 }
 
+enum ShipmentType {
+  IMPORT
+  EXPORT
+}
+
 enum Priority {
   LOW
   MEDIUM
@@ -36,6 +41,11 @@ model Shipment {
   portOfDischarge String
   eta             DateTime
   etd             DateTime
+  etb             DateTime?
+  openCy          DateTime?
+  closeSi         DateTime?
+  closeCy         DateTime?
+  type            ShipmentType   @default(IMPORT)
   currentStep     Int            @default(0) // Matches your current Int setup
   nextAction      String         @default("Check ETA & Port") // <-- ADD THIS LINE HERE
   status          ShipmentStatus @default(ACTIVE)
@@ -45,6 +55,7 @@ model Shipment {
   tasks        ShipmentTask[]
   reminders    Reminder[]
   activityLogs ActivityLog[]
+  todos        Todo[]
 
   @@index([status])
   @@index([eta])
@@ -94,4 +105,17 @@ model Reminder {
 
   @@index([shipmentId])
   @@index([completed, dueDate])
+}
+
+model Todo {
+  id         String   @id @default(uuid())
+  shipmentId String
+  text       String
+  isDone     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
 }

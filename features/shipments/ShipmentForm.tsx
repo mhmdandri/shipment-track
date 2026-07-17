@@ -33,6 +33,7 @@ export function ShipmentForm() {
   } = useForm<ShipmentFormValues>({
     resolver: zodResolver(shipmentSchema),
     defaultValues: {
+      type: "IMPORT",
       jobNo: "",
       blNo: "",
       shipper: "",
@@ -75,13 +76,13 @@ export function ShipmentForm() {
 
       {/* Left Column: Form Sections (Stacked on mobile, 8-cols on large screens) */}
       <div className="lg:col-span-7 xl:col-span-8 space-y-6 w-full">
-        <LogisticsSection register={register} errors={errors} />
+        <LogisticsSection register={register} errors={errors} setValue={setValue} typeValue={watchedValues.type || "IMPORT"} />
         
         <EntitiesSection register={register} errors={errors} />
         
         <VesselRouteSection register={register} errors={errors} />
         
-        <SchedulesSection register={register} errors={errors} setValue={setValue} />
+        <SchedulesSection errors={errors} setValue={setValue} />
 
         {/* Action Buttons */}
         <div className="pt-4 flex items-center justify-end gap-3 w-full">
@@ -119,6 +120,10 @@ export function ShipmentForm() {
           portOfDischarge={watchedValues.portOfDischarge}
           etd={watchedValues.etd}
           eta={watchedValues.eta}
+          etb={watchedValues.etb}
+          openCy={watchedValues.openCy}
+          closeSi={watchedValues.closeSi}
+          closeCy={watchedValues.closeCy}
         />
       </div>
     </form>

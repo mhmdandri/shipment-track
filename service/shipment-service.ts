@@ -1,44 +1,74 @@
 import { subDays, startOfDay } from "date-fns";
 import { ShipmentRepository } from "@/repositories/shipment-repository";
-import { ShipmentFormValues } from "@/lib/validator";
-import { REMINDER_TEMPLATES, WORKFLOW_STEPS } from "@/lib/workflow";
-import { ShipmentStatus } from "@/app/generated/prisma/enums";
+import { ShipmentFormValues, UpdateShipmentDatesValues } from "@/lib/validator";
+import { IMPORT_REMINDER_TEMPLATES, EXPORT_REMINDER_TEMPLATES, IMPORT_WORKFLOW_STEPS, EXPORT_WORKFLOW_STEPS } from "@/lib/workflow";
+import { ShipmentStatus, Prisma } from "@/app/generated/prisma/client";
 
 function getMatchingTaskTitle(reminderTitle: string): string | null {
-  if (reminderTitle === "Check Draft PIB") return "Draft PIB";
-  if (reminderTitle === "Monitor BC 1.1") return "BC 1.1 Available";
-  return reminderTitle; // For exact matches
+  const map: Record<string, string> = {
+    "Check Draft PIB": "Draft PIB",
+    "Request Invoice DO": "Request Invoice DO",
+    "Payment Finance": "Payment Finance",
+    "Confirm Draft PIB": "Confirm Draft PIB",
+    "Monitor BC 1.1": "BC 1.1 Available",
+    "Monitor Cargo Readiness": "Check Cargo Readiness for Stuffing",
+    "Request Trucking & Stuffing": "Request Trucking",
+    "Customs Clearance (PEB)": "Customs Clearance (PEB)",
+    "Monitor Container Gate In": "Container Gate In (CY)",
+    "Vessel Departure (ETD)": "Vessel Departure (ETD)",
+  };
+  return map[reminderTitle] || null;
 }
 
 function getMatchingReminderTitle(taskTitle: string): string | null {
-  if (taskTitle === "Draft PIB") return "Check Draft PIB";
-  if (taskTitle === "BC 1.1 Available") return "Monitor BC 1.1";
-  if (
-    taskTitle === "Request Invoice DO" ||
-    taskTitle === "Payment Finance" ||
-    taskTitle === "Confirm Draft PIB"
-  ) {
-    return taskTitle;
-  }
-  return null;
+  const map: Record<string, string> = {
+    "Draft PIB": "Check Draft PIB",
+    "Request Invoice DO": "Request Invoice DO",
+    "Payment Finance": "Payment Finance",
+    "Confirm Draft PIB": "Confirm Draft PIB",
+    "BC 1.1 Available": "Monitor BC 1.1",
+    "Check Cargo Readiness for Stuffing": "Monitor Cargo Readiness",
+    "Request Trucking": "Request Trucking & Stuffing",
+    "Customs Clearance (PEB)": "Customs Clearance (PEB)",
+    "Container Gate In (CY)": "Monitor Container Gate In",
+    "Vessel Departure (ETD)": "Vessel Departure (ETD)",
+  };
+  return map[taskTitle] || null;
 }
 
 export class ShipmentService {
   constructor(private repo: ShipmentRepository) { }
 
+  async updateShipmentDates(id: string, values: UpdateShipmentDatesValues) {
+    const data: Prisma.ShipmentUpdateInput = {};
+    if (values.eta) data.eta = new Date(values.eta);
+    if (values.etd) data.etd = new Date(values.etd);
+    if (values.openCy !== undefined) data.openCy = values.openCy ? new Date(values.openCy) : null;
+    if (values.closeSi !== undefined) data.closeSi = values.closeSi ? new Date(values.closeSi) : null;
+    if (values.closeCy !== undefined) data.closeCy = values.closeCy ? new Date(values.closeCy) : null;
+
+    const shipment = await this.repo.updateShipment(id, data);
+    await this.repo.createActivityLog(id, "Shipment schedules have been manually updated.");
+    return shipment;
+  }
+
   async createShipment(values: ShipmentFormValues) {
-    const tasks = WORKFLOW_STEPS.map((step, index) => ({
+    const isExport = values.type === "EXPORT";
+    const workflowSteps = isExport ? EXPORT_WORKFLOW_STEPS : IMPORT_WORKFLOW_STEPS;
+
+    const tasks = workflowSteps.map((step, index) => ({
       title: step,
       stepOrder: index,
       completed: false,
     }));
 
-    const reminders = REMINDER_TEMPLATES.map((template) => ({
+    const reminderTemplates = isExport ? EXPORT_REMINDER_TEMPLATES : IMPORT_REMINDER_TEMPLATES;
+    const baseDate = isExport ? (values.openCy ? new Date(values.openCy) : new Date(values.etd)) : new Date(values.eta);
+
+    const reminders = reminderTemplates.map((template) => ({
       title: template.title,
       priority: template.priority,
-      dueDate: startOfDay(
-        subDays(new Date(values.eta), template.daysBeforeEta),
-      ),
+      dueDate: startOfDay(subDays(baseDate, template.daysBeforeEta)),
       completed: false,
     }));
 
@@ -52,8 +82,13 @@ export class ShipmentService {
       portOfDischarge: values.portOfDischarge,
       eta: new Date(values.eta),
       etd: new Date(values.etd),
+      etb: values.etb ? new Date(values.etb) : null,
+      openCy: values.openCy ? new Date(values.openCy) : null,
+      closeSi: values.closeSi ? new Date(values.closeSi) : null,
+      closeCy: values.closeCy ? new Date(values.closeCy) : null,
+      type: values.type,
       currentStep: 0,
-      nextAction: WORKFLOW_STEPS[1] || "None",
+      nextAction: workflowSteps[1] || "None",
       status: ShipmentStatus.ACTIVE,
       tasks: { create: tasks },
       reminders: { create: reminders },
@@ -94,7 +129,8 @@ export class ShipmentService {
     }
 
     let currentStep = 0;
-    let nextAction: string = WORKFLOW_STEPS[1] || "None";
+    const workflowSteps = shipment.type === "EXPORT" ? EXPORT_WORKFLOW_STEPS : IMPORT_WORKFLOW_STEPS;
+    let nextAction: string = workflowSteps[1] || "None";
     let status: ShipmentStatus = ShipmentStatus.ACTIVE;
 
     if (lastCompletedIndex !== -1) {

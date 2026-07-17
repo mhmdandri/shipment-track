@@ -15,7 +15,14 @@ export class ShipmentRepository {
   async create(data: Prisma.ShipmentCreateInput): Promise<ShipmentWithRelations> {
     return this.prisma.shipment.create({
       data,
-      include: { tasks: true, reminders: true, activityLogs: true },
+      include: { tasks: true, reminders: true, activityLogs: true, todos: true },
+    }) as unknown as Promise<ShipmentWithRelations>;
+  }
+
+  async updateShipment(id: string, data: Prisma.ShipmentUpdateInput): Promise<Shipment> {
+    return this.prisma.shipment.update({
+      where: { id },
+      data,
     });
   }
 
@@ -26,6 +33,7 @@ export class ShipmentRepository {
         tasks: { orderBy: { stepOrder: "asc" } },
         reminders: { orderBy: { dueDate: "asc" } },
         activityLogs: { orderBy: { createdAt: "desc" } },
+        todos: { orderBy: { createdAt: "asc" } },
       },
     });
   }

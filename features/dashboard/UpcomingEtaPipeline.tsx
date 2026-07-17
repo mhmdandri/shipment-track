@@ -15,9 +15,16 @@ interface UpcomingEtaPipelineProps {
 export function UpcomingEtaPipeline({ shipments }: UpcomingEtaPipelineProps) {
   const now = startOfDay(new Date());
 
-  // Sort shipments chronologically by ETA
+  const getTargetDate = (shipment: ShipmentWithTasks) => {
+    if (shipment.type === "EXPORT") {
+      return shipment.openCy ? new Date(shipment.openCy) : new Date(shipment.etd);
+    }
+    return new Date(shipment.eta);
+  };
+
+  // Sort shipments chronologically by target date (ETA for Import, Open CY/ETD for Export)
   const sortedShipments = [...shipments].sort(
-    (a, b) => new Date(a.eta).getTime() - new Date(b.eta).getTime()
+    (a, b) => getTargetDate(a).getTime() - getTargetDate(b).getTime()
   );
 
   return (
@@ -39,8 +46,9 @@ export function UpcomingEtaPipeline({ shipments }: UpcomingEtaPipelineProps) {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sortedShipments.map((shipment) => {
-              const etaDate = new Date(shipment.eta);
-              const daysDiff = differenceInCalendarDays(etaDate, now);
+              const isExport = shipment.type === "EXPORT";
+              const targetDate = getTargetDate(shipment);
+              const daysDiff = differenceInCalendarDays(targetDate, now);
 
               // Calculate status badge style based on proximity of ETA
               let badgeColor = "bg-muted text-muted-foreground border-border";
@@ -97,11 +105,16 @@ export function UpcomingEtaPipeline({ shipments }: UpcomingEtaPipelineProps) {
                   <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2 mt-auto">
                     <div className="flex flex-col">
                       <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                        ETA Arrival
+                        {isExport ? (shipment.openCy ? "Open CY" : "ETD Departure") : "ETA Arrival"}
                       </span>
                       <span className="text-xs font-bold text-foreground">
-                        {format(etaDate, "dd MMM yyyy")}
+                        {format(targetDate, "dd MMM yyyy")}
                       </span>
+                      {isExport && shipment.openCy && (
+                        <span className="text-[9px] text-muted-foreground mt-0.5">
+                          ETD: {format(new Date(shipment.etd), "dd MMM yyyy")}
+                        </span>
+                      )}
                     </div>
                     <Button variant="ghost" size="icon-xs" className="rounded-lg hover:bg-muted" asChild>
                       <Link href={`/shipments/${shipment.id}`} title="Inspect Shipment">

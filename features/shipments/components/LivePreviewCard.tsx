@@ -11,6 +11,10 @@ interface LivePreviewCardProps {
   portOfDischarge?: string;
   etd?: Date | string | null;
   eta?: Date | string | null;
+  etb?: Date | string | null;
+  openCy?: Date | string | null;
+  closeSi?: Date | string | null;
+  closeCy?: Date | string | null;
 }
 
 export function LivePreviewCard({
@@ -23,13 +27,17 @@ export function LivePreviewCard({
   portOfDischarge = "",
   etd,
   eta,
+  etb,
+  openCy,
+  closeSi,
+  closeCy,
 }: LivePreviewCardProps) {
-  const formatDate = (dateVal: Date | string | null | undefined): string => {
+  const formatDate = (dateVal: Date | string | null | undefined, includeTime = false): string => {
     if (!dateVal) return "";
     try {
       const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
       if (isNaN(d.getTime())) return "";
-      return format(d, "dd MMM yyyy");
+      return format(d, includeTime ? "dd MMM yyyy HH:mm" : "dd MMM yyyy");
     } catch {
       return "";
     }
@@ -182,6 +190,57 @@ export function LivePreviewCard({
           </span>
         </div>
       </div>
+
+      {/* Export Schedule Summary */}
+      {(openCy || closeSi || closeCy || etb) && (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs border-t border-border pt-4">
+          <div className="col-span-2 space-y-0.5">
+            <span className="text-[9px] font-bold text-orange-500 uppercase tracking-wider block">
+              Export Schedules
+            </span>
+          </div>
+          {etb && (
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
+                ETB
+              </span>
+              <span className="font-bold text-foreground truncate block">
+                {formatDate(etb)}
+              </span>
+            </div>
+          )}
+          {openCy && (
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
+                Open CY
+              </span>
+              <span className="font-bold text-foreground truncate block">
+                {formatDate(openCy, true)}
+              </span>
+            </div>
+          )}
+          {closeSi && (
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
+                Close SI
+              </span>
+              <span className="font-bold text-foreground truncate block">
+                {formatDate(closeSi, true)}
+              </span>
+            </div>
+          )}
+          {closeCy && (
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">
+                Close CY
+              </span>
+              <span className="font-bold text-foreground truncate block">
+                {formatDate(closeCy, true)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Automated Ingestions Checklist */}
       <div className="border-t border-border pt-4 space-y-2.5">

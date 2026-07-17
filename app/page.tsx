@@ -26,12 +26,12 @@ export default async function DashboardPage() {
         </p>
       </div>
       <DashboardCards stats={stats} />
+      <div className="space-y-6 pt-2">
+        <UpcomingEtaPipeline shipments={activeShipments} />
+        <IncompleteTasksSummary shipments={activeShipments} />
+      </div>
       <div className="pt-2">
         <ReminderBoard data={boardData} />
-      </div>
-      <div className="space-y-6">
-        <IncompleteTasksSummary shipments={activeShipments} />
-        <UpcomingEtaPipeline shipments={activeShipments} />
       </div>
     </div>
   );

@@ -3,12 +3,14 @@ import {
   Shipment,
   ShipmentTask,
   ActivityLog,
+  Todo,
 } from "@/app/generated/prisma/client";
 
 export type ShipmentWithRelations = Shipment & {
   tasks: ShipmentTask[];
   reminders: Reminder[];
   activityLogs: ActivityLog[];
+  todos: Todo[];
 };
 
 export type ShipmentWithTasks = Shipment & {

@@ -1,22 +1,41 @@
-import { UseFormRegister, FieldErrors } from "react-hook-form";
+import { UseFormRegister, FieldErrors, UseFormSetValue } from "react-hook-form";
 import { FileText } from "lucide-react";
 import { ShipmentFormValues } from "@/lib/validator";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface LogisticsSectionProps {
   register: UseFormRegister<ShipmentFormValues>;
   errors: FieldErrors<ShipmentFormValues>;
+  setValue: UseFormSetValue<ShipmentFormValues>;
+  typeValue: "IMPORT" | "EXPORT";
 }
 
-export function LogisticsSection({ register, errors }: LogisticsSectionProps) {
+export function LogisticsSection({ register, errors, setValue, typeValue }: LogisticsSectionProps) {
   return (
     <div className="bg-card border border-border rounded-2xl p-6 shadow-xs space-y-4 hover:border-border/80 transition-colors">
-      <div className="flex items-center gap-2 border-b border-border pb-3">
-        <FileText className="w-4 h-4 text-primary" />
-        <h2 className="text-sm font-black text-foreground uppercase tracking-wide">
-          Logistics Reference
-        </h2>
+      <div className="flex items-center justify-between border-b border-border pb-3">
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-primary" />
+          <h2 className="text-sm font-black text-foreground uppercase tracking-wide">
+            Logistics Reference
+          </h2>
+        </div>
+        <div className="w-44">
+          <Select
+            value={typeValue || "IMPORT"}
+            onValueChange={(val) => setValue("type", val as "IMPORT" | "EXPORT", { shouldValidate: true })}
+          >
+            <SelectTrigger className="h-8 text-xs font-bold border-primary text-primary bg-primary/5">
+              <SelectValue placeholder="Shipment Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="IMPORT">IMPORT PIPELINE</SelectItem>
+              <SelectItem value="EXPORT">EXPORT PIPELINE</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
         <div className="space-y-1.5">

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { ShipmentRepository } from "@/repositories/shipment-repository";
 import { ShipmentService } from "@/service/shipment-service";
-import { shipmentSchema } from "@/lib/validator";
+import { shipmentSchema, updateShipmentDatesSchema } from "@/lib/validator";
 import prisma from "@/lib/prisma";
 
 const repo = new ShipmentRepository(prisma);
@@ -18,6 +18,22 @@ export async function createShipmentAction(formData: unknown) {
     return { success: true, data: result };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Failed to create shipment";
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+export async function updateShipmentDatesAction(id: string, formData: unknown) {
+  try {
+    const validated = updateShipmentDatesSchema.parse(formData);
+    await service.updateShipmentDates(id, validated);
+    revalidatePath(`/shipments/${id}`);
+    revalidatePath("/");
+    return { success: true };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to update shipment dates";
     return {
       success: false,
       error: errorMessage,
@@ -76,6 +92,30 @@ export async function toggleReminderAction(
     return { success: true };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Failed to update action step priority";
+    return { success: false, error: errorMessage };
+  }
+}
+
+export async function getShipmentQuickViewAction(id: string) {
+  try {
+    const shipment = await prisma.shipment.findUnique({
+      where: { id },
+      include: {
+        activityLogs: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        todos: {
+          where: { isDone: false },
+          orderBy: { createdAt: "desc" },
+          take: 5, // Show up to 5 pending todos in quick view
+        }
+      }
+    });
+    if (!shipment) return { success: false, error: "Shipment not found" };
+    return { success: true, data: shipment };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch quick view data";
     return { success: false, error: errorMessage };
   }
 }

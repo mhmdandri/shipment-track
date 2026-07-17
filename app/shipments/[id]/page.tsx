@@ -8,6 +8,7 @@ import prisma from "@/lib/prisma";
 import { ShipmentRepository } from "@/repositories/shipment-repository";
 import { WorkflowChecklist } from "@/features/shipments/WorkFlowChecklist";
 import { ActivityLogsCard } from "@/features/shipments/ActivityLogsCard";
+import { TodoListCard } from "@/features/shipments/TodoListCard";
 
 export const revalidate = 0;
 const repo = new ShipmentRepository(prisma);
@@ -50,7 +51,8 @@ export default async function ShipmentDetailPage({ params }: Props) {
         <div className="lg:col-span-2">
           <WorkflowChecklist shipment={shipment} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          <TodoListCard todos={shipment.todos} shipmentId={shipment.id} />
           <ActivityLogsCard logs={shipment.activityLogs} />
         </div>
       </div>

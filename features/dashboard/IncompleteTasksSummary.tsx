@@ -49,7 +49,7 @@ export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProp
             {/* Mobile View (Card List) */}
             <div className="md:hidden divide-y divide-border">
               {activeWithIncomplete.map((shipment) => {
-                const totalTasks = 18;
+                const totalTasks = shipment.type === "EXPORT" ? 8 : 18;
                 const incompleteCount = shipment.tasks.length;
                 const completedCount = totalTasks - incompleteCount;
                 const progressPercentage = Math.round((completedCount / totalTasks) * 100);
@@ -110,7 +110,7 @@ export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProp
               </thead>
               <tbody className="divide-y divide-border text-sm text-foreground font-medium">
                 {activeWithIncomplete.map((shipment) => {
-                  const totalTasks = 18;
+                  const totalTasks = shipment.type === "EXPORT" ? 8 : 18;
                   const incompleteCount = shipment.tasks.length;
                   const completedCount = totalTasks - incompleteCount;
                   const progressPercentage = Math.round((completedCount / totalTasks) * 100);

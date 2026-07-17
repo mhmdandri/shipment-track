@@ -468,3 +468,23 @@ Replaced the traditional HTML form search with a customized client-side **`Shipm
 |------|--------|
 | [`actions/track-action.ts`](file:///d:/Project/Nextjs/shipment-track/actions/track-action.ts) | **[MODIFIED]** Implemented robust unicode and named entity decoding inside the `decodeHtml` helper. |
 
+### v1.8.0 — 2026-07-16: Ad-hoc Todo List Feature
+
+**Feature**: Added a "Todo List" feature on the shipment details page, allowing Customer Service agents to create, check off, and delete custom ad-hoc tasks specific to a shipment.
+
+#### Improvements
+1. **Database Schema**: Added a new `Todo` model mapped one-to-many with the `Shipment` model.
+2. **Server Actions**: Created `actions/todo-action.ts` to handle creating, toggling, and deleting todos with automatic cache revalidation for a seamless user experience.
+3. **UI Integration**: Created `TodoListCard.tsx` and embedded it directly beneath the Activity Logs on the shipment details page. The component utilizes `@bprogress/next` to provide loading feedback when executing server actions.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| [`prisma/schema.prisma`](file:///c:/Project/shipment-track/prisma/schema.prisma) | **[MODIFIED]** Added `Todo` model and established relation to `Shipment`. |
+| [`lib/index.ts`](file:///c:/Project/shipment-track/lib/index.ts) | **[MODIFIED]** Updated `ShipmentWithRelations` to include the `todos` array. |
+| [`repositories/shipment-repository.ts`](file:///c:/Project/shipment-track/repositories/shipment-repository.ts) | **[MODIFIED]** Updated `findById` to fetch `todos`. |
+| [`actions/todo-action.ts`](file:///c:/Project/shipment-track/actions/todo-action.ts) | **[NEW]** Server actions `addTodoAction`, `toggleTodoAction`, and `deleteTodoAction`. |
+| [`features/shipments/TodoListCard.tsx`](file:///c:/Project/shipment-track/features/shipments/TodoListCard.tsx) | **[NEW]** Client component for the ad-hoc todo list. |
+| [`app/shipments/[id]/page.tsx`](file:///c:/Project/shipment-track/app/shipments/[id]/page.tsx) | **[MODIFIED]** Injected `TodoListCard` into the right column layout. |
+
