@@ -3,7 +3,7 @@ name: Production Yard Monitor Cron
 on:
   schedule:
     # Runs every 2 hours
-    - cron: '0 */2 * * *'
+    - cron: "*/30 * * * *"
   workflow_dispatch: # Allows manual trigger from the GitHub Actions UI
 
 jobs:
