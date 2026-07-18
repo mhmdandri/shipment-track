@@ -1,8 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Search, MapPin, Anchor, Map, Info, BellRing, CheckCircle2 } from "lucide-react";
-import { trackTerminalContainer, TerminalTrackingResult } from "@/actions/terminal-track-action";
+import {
+  Search,
+  MapPin,
+  Anchor,
+  Map,
+  Info,
+  BellRing,
+  CheckCircle2,
+} from "lucide-react";
+import {
+  trackTerminalContainer,
+  TerminalTrackingResult,
+} from "@/actions/terminal-track-action";
 import { enableTerminalMonitoring } from "@/actions/monitor-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 const TERMINALS = [
@@ -27,6 +44,7 @@ const TERMINALS = [
 export default function TerminalTrackerPage() {
   const [port, setPort] = useState<string>("jict");
   const [containerNo, setContainerNo] = useState("");
+  const [waNumber, setWaNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [monitorLoading, setMonitorLoading] = useState(false);
   const [monitorMessage, setMonitorMessage] = useState("");
@@ -47,9 +65,20 @@ export default function TerminalTrackerPage() {
 
   const handleMonitor = async () => {
     if (!result || !result.containerNo || !result.status) return;
-    
+
+    // Auto-format WhatsApp number (remove non-digits and replace leading 0 with 62)
+    let formattedWa = waNumber.trim().replace(/\D/g, "");
+    if (formattedWa.startsWith("0")) {
+      formattedWa = "62" + formattedWa.substring(1);
+    }
+
     setMonitorLoading(true);
-    const res = await enableTerminalMonitoring(result.containerNo, result.port, result.status);
+    const res = await enableTerminalMonitoring(
+      result.containerNo,
+      result.port,
+      result.status,
+      formattedWa || undefined,
+    );
     if (res.success) {
       setMonitorMessage(res.message || "Monitoring enabled.");
     } else {
@@ -66,17 +95,23 @@ export default function TerminalTrackerPage() {
           Terminal Container Tracking
         </h1>
         <p className="text-muted-foreground text-sm font-medium">
-          Check yard allocations and location statuses directly from port terminals.
+          Check yard allocations and location statuses directly from port
+          terminals.
         </p>
       </div>
 
       <Card className="border-border shadow-sm">
         <CardHeader className="bg-muted/30 border-b border-border pb-4">
           <CardTitle className="text-lg">Track Location</CardTitle>
-          <CardDescription>Select the terminal and enter your container number to track.</CardDescription>
+          <CardDescription>
+            Select the terminal and enter your container number to track.
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col md:flex-row gap-4 items-start md:items-center"
+          >
             <div className="w-full md:w-1/3">
               <Select value={port} onValueChange={setPort}>
                 <SelectTrigger className="w-full font-semibold">
@@ -91,7 +126,7 @@ export default function TerminalTrackerPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="w-full md:flex-1 relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="w-4 h-4 text-muted-foreground" />
@@ -104,8 +139,12 @@ export default function TerminalTrackerPage() {
                 disabled={loading}
               />
             </div>
-            
-            <Button type="submit" disabled={loading || !containerNo.trim()} className="w-full md:w-auto font-bold px-8">
+
+            <Button
+              type="submit"
+              disabled={loading || !containerNo.trim()}
+              className="w-full md:w-auto font-bold px-8"
+            >
               {loading ? "Searching..." : "Track"}
             </Button>
           </form>
@@ -119,13 +158,15 @@ export default function TerminalTrackerPage() {
             <div className="bg-muted/40 p-4 border-b border-border flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Map className="w-5 h-5 text-muted-foreground" />
-                <h3 className="font-bold tracking-tight text-foreground">Tracking Result</h3>
+                <h3 className="font-bold tracking-tight text-foreground">
+                  Tracking Result
+                </h3>
               </div>
               <Badge variant="outline" className="font-mono bg-background">
                 {result.containerNo}
               </Badge>
             </div>
-            
+
             <div className="p-6">
               {!result.success ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center space-y-3">
@@ -133,8 +174,12 @@ export default function TerminalTrackerPage() {
                     <Info className="w-6 h-6 text-destructive" />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="font-bold text-foreground">Tracking Failed</h4>
-                    <p className="text-sm text-muted-foreground max-w-md">{result.error}</p>
+                    <h4 className="font-bold text-foreground">
+                      Tracking Failed
+                    </h4>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      {result.error}
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -145,24 +190,33 @@ export default function TerminalTrackerPage() {
                       Terminal Allocation
                     </p>
                     <p className="font-black text-lg text-foreground uppercase tracking-tight">
-                      {TERMINALS.find(t => t.id === result.port)?.name || result.port}
+                      {TERMINALS.find((t) => t.id === result.port)?.name ||
+                        result.port}
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center gap-4">
                     <div className="space-y-1 text-right">
-                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Status</p>
-                      <Badge 
-                        variant={result.status === "GNSTK" ? "default" : "secondary"} 
+                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                        Status
+                      </p>
+                      <Badge
+                        variant={
+                          result.status === "GNSTK" ? "default" : "secondary"
+                        }
                         className="font-black tracking-widest text-xs px-3 py-1"
                       >
-                        {result.status === "GNSTK" ? "TERSEDIA (GNSTK)" : `BELUM TERSEDIA (${result.status})`}
+                        {result.status === "GNSTK"
+                          ? "TERSEDIA (GNSTK)"
+                          : `BELUM TERSEDIA (${result.status})`}
                       </Badge>
                     </div>
 
                     {result.status === "GNSTK" && result.time && (
                       <div className="space-y-1 text-right border-l border-border pl-4">
-                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Time</p>
+                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                          Time
+                        </p>
                         <p className="font-mono font-bold text-sm bg-muted px-2 py-0.5 rounded border border-border text-foreground">
                           {result.time}
                         </p>
@@ -181,7 +235,8 @@ export default function TerminalTrackerPage() {
                       Auto-Monitor Container
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      We will check this container every 2 hours and notify you via Telegram when it gets a yard allocation (GNSTK).
+                      We will check this container every 30 minutes and notify
+                      you via Telegram when it gets a yard allocation (GNSTK).
                     </p>
                   </div>
                   <div>
@@ -196,14 +251,23 @@ export default function TerminalTrackerPage() {
                         Already Monitored
                       </div>
                     ) : (
-                      <Button 
-                        onClick={handleMonitor} 
-                        disabled={monitorLoading}
-                        variant="default"
-                        className="w-full sm:w-auto font-bold shadow-sm shadow-primary/20"
-                      >
-                        {monitorLoading ? "Enabling..." : "Enable Monitoring"}
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Input
+                          placeholder="WhatsApp Number (e.g. 62812...)"
+                          value={waNumber}
+                          onChange={(e) => setWaNumber(e.target.value)}
+                          className="w-full sm:w-64 bg-background border-primary/20 focus-visible:ring-primary/30"
+                          disabled={monitorLoading}
+                        />
+                        <Button
+                          onClick={handleMonitor}
+                          disabled={monitorLoading}
+                          variant="default"
+                          className="w-full sm:w-auto font-bold shadow-sm shadow-primary/20"
+                        >
+                          {monitorLoading ? "Enabling..." : "Enable Monitoring"}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>

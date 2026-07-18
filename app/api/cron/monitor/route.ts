@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
 import { sendTelegramMessage } from "@/lib/telegram";
+import { sendWhatsappMessage } from "@/lib/whatsapp";
 
 // This forces Next.js to not cache the response of this route
 export const dynamic = "force-dynamic";
@@ -47,8 +48,14 @@ export async function GET(request: Request) {
         });
 
         // Send Telegram notification
-        const msg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>GNSTK</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
-        await sendTelegramMessage(msg);
+        const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>GNSTK</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
+        await sendTelegramMessage(telegramMsg);
+
+        // Send WhatsApp notification if number is present
+        if (monitor.waNumber) {
+          const waMsg = `🚨 *YARD ALLOCATION UPDATE* 🚨\n\nContainer *${monitor.containerNo}* at *${monitor.port.toUpperCase()}* has received a yard allocation!\nStatus: *GNSTK*\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
+          await sendWhatsappMessage(monitor.waNumber, waMsg);
+        }
 
         processed.push({
           containerNo: monitor.containerNo,

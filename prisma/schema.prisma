@@ -131,6 +131,7 @@ model DailyTodo {
 model TerminalMonitor {
   id          String   @id @default(uuid())
   containerNo String   @unique
+  waNumber    String?
   port        String   @default("jict")
   status      String   @default("ONVSL")
   isActive    Boolean  @default(true)
