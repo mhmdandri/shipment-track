@@ -94,7 +94,81 @@ export async function trackTerminalContainer(
       };
     }
 
-    // Fallback for other ports (NPCT1, KOJA, TMAL, TER3)
+    if (normalizedPort === "tmal") {
+      const params = new URLSearchParams();
+      params.set("search-bar", containerNo);
+      params.set("submit", "");
+
+      const response = await fetch("https://malt300.com/Layanan/statusImpor", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params.toString(),
+      });
+
+      if (!response.ok) {
+        return {
+          success: false,
+          port,
+          containerNo,
+          error: `Error communicating with TMAL (Status ${response.status})`,
+        };
+      }
+
+      const html = await response.text();
+      // Use dynamic import so it doesn't break client components if ever leaked, though this is a server action
+      const cheerio = await import("cheerio");
+      const $ = cheerio.load(html);
+
+      const tableRows = $("table tbody tr");
+      
+      let foundStatus = "";
+      let foundTime = "";
+
+      tableRows.each((i, row) => {
+        const cols = $(row).find("td");
+        if (cols.length >= 6) {
+          const colContainer = $(cols[2]).text().trim();
+          if (colContainer.includes(containerNo)) {
+            // Tanggal Tiba (Arrival)
+            foundTime = $(cols[4]).text().trim();
+            // Tanggal Bongkar (Status)
+            foundStatus = $(cols[5]).text().trim();
+          }
+        }
+      });
+
+      if (!foundStatus) {
+        return {
+          success: false,
+          port,
+          containerNo,
+          error: "Container not found in TMAL system.",
+        };
+      }
+
+      // Normalize TMAL status
+      let finalStatus = foundStatus.toUpperCase() === "ON VESSEL" ? "ONVSL" : foundStatus;
+      
+      // If it's not ONVSL, it's typically a date (Tanggal Bongkar) meaning it's discharged to yard.
+      // We normalize it to GNSTK so our monitoring logic treats it uniformly.
+      if (finalStatus !== "ONVSL") {
+        foundTime = finalStatus; // the date it was discharged
+        finalStatus = "GNSTK";
+      }
+
+      return {
+        success: true,
+        port,
+        containerNo,
+        status: finalStatus,
+        time: foundTime,
+        isMonitored,
+      };
+    }
+
+    // Fallback for other ports (NPCT1, KOJA, TER3)
     return {
       success: false,
       port,
