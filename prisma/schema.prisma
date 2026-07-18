@@ -63,10 +63,10 @@ model Shipment {
 }
 
 model ActivityLog {
-  id          String   @id @default(uuid())
-  shipmentId  String
-  message     String
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  shipmentId String
+  message    String
+  createdAt  DateTime @default(now())
 
   shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 
