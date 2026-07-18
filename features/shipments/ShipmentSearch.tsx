@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "@bprogress/next";
 import { Search, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export function ShipmentSearch({ defaultValue }: { defaultValue: string }) {
   const router = useRouter();
@@ -49,11 +50,11 @@ export function ShipmentSearch({ defaultValue }: { defaultValue: string }) {
       ) : (
         <Search className="w-4 h-4 text-muted-foreground" />
       )}
-      <input
+      <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search by Job Number, BL, Consignee or Shipper..."
-        className="bg-transparent border-none text-sm w-full focus:outline-none text-foreground font-medium placeholder:text-muted-foreground"
+        className="bg-transparent border-none text-sm w-full focus-visible:ring-0 px-0 h-auto font-medium text-foreground placeholder:text-muted-foreground shadow-none"
       />
     </div>
   );

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { LayoutDashboard, Ship, Menu, X, Search, ListTodo, MapPin } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
   const [open, setOpen] = useState(false);
@@ -10,14 +11,16 @@ export function AppSidebar() {
   return (
     <>
       {/* Mobile hamburger button */}
-      <button
+      <Button
         id="sidebar-toggle"
-        className="lg:hidden fixed top-4 left-4 z-60 p-2 rounded-lg bg-sidebar text-sidebar-foreground border border-sidebar-border shadow-md"
+        variant="outline"
+        size="icon"
+        className="lg:hidden fixed top-4 left-4 z-60 bg-sidebar text-sidebar-foreground border-sidebar-border shadow-md"
         onClick={() => setOpen((v) => !v)}
         aria-label="Toggle navigation"
       >
         {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
+      </Button>
 
       {/* Overlay (mobile only) */}
       {open && (

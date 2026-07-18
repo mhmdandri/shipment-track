@@ -16,6 +16,7 @@ import {
   ChevronDown 
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { UnifiedTrackingResult, TrackingEvent } from "@/actions/track-action";
 
 interface MilestoneDef {
@@ -160,13 +161,15 @@ export function ContainerRow({
                 )}
               </div>
             )}
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setExpanded(!expanded)}
-              className="px-4 py-2 border border-border bg-card rounded-xl text-xs font-bold hover:bg-muted transition-colors flex items-center justify-center gap-1.5"
+              className="rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
             >
               <span>{expanded ? "Hide Timeline" : "Show Timeline"}</span>
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

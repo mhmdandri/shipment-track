@@ -143,9 +143,10 @@ function TodoItem({
 }) {
   return (
     <div className="group flex items-center justify-between gap-3 p-3 bg-card border border-border rounded-xl hover:border-primary/50 hover:shadow-sm transition-all">
-      <button
+      <Button
+        variant="ghost"
         onClick={onToggle}
-        className="flex items-center gap-3 flex-1 text-left"
+        className="flex items-center gap-3 flex-1 justify-start h-auto p-2 hover:bg-transparent"
       >
         {todo.isDone ? (
           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
@@ -165,7 +166,7 @@ function TodoItem({
             {format(new Date(todo.createdAt), "dd MMM yyyy, HH:mm")}
           </span>
         </div>
-      </button>
+      </Button>
       <Button
         variant="ghost"
         size="icon"

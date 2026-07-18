@@ -6,7 +6,7 @@ import { sendTelegramMessage } from "@/lib/telegram";
 export async function enableTerminalMonitoring(
   containerNo: string,
   port: string,
-  status: string
+  status: string,
 ) {
   if (!containerNo) {
     return { success: false, error: "Container number is required" };
@@ -18,7 +18,7 @@ export async function enableTerminalMonitoring(
     });
 
     let messageSent = false;
-    
+
     if (existing) {
       if (!existing.isActive) {
         await prisma.terminalMonitor.update({
@@ -27,7 +27,10 @@ export async function enableTerminalMonitoring(
         });
         messageSent = true;
       } else {
-        return { success: true, message: "Container is already being monitored." };
+        return {
+          success: true,
+          message: "Container is already being monitored.",
+        };
       }
     } else {
       await prisma.terminalMonitor.create({
@@ -42,7 +45,7 @@ export async function enableTerminalMonitoring(
     }
 
     if (messageSent) {
-      const msg = `👁 <b>MONITORING STARTED</b> 👁\n\nContainer <code>${containerNo}</code> at <b>${port.toUpperCase()}</b> has been added to the watchlist.\n\nThe system will automatically check the yard allocation status every <b>2 hours</b>. You will be notified as soon as it receives a yard location (GNSTK).`;
+      const msg = `👁 <b>MONITORING STARTED</b> 👁\n\nContainer <code>${containerNo}</code> at <b>${port.toUpperCase()}</b> has been added to the watchlist.\n\nThe system will automatically check the yard allocation status every <b>30 minutes</b>. You will be notified as soon as it receives a yard location (GNSTK).`;
       await sendTelegramMessage(msg);
     }
 

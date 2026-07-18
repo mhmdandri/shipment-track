@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { ShipmentWithRelations } from "@/lib";
@@ -73,8 +75,9 @@ export function WorkflowChecklist({
                   </span>
                 )}
               </div>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   if (editingTaskId === task.id) {
                     setEditingTaskId(null);
@@ -82,28 +85,27 @@ export function WorkflowChecklist({
                     handleStartEdit(task.id, task.notes);
                   }
                 }}
-                className="text-xs text-muted-foreground hover:text-primary font-medium transition-colors shrink-0"
+                className="text-xs text-muted-foreground hover:text-primary font-medium transition-colors shrink-0 h-auto p-1"
               >
                 {editingTaskId === task.id
                   ? "Cancel"
                   : task.notes
                     ? "Edit Note"
                     : "+ Add Note"}
-              </button>
+              </Button>
             </div>
 
             {editingTaskId === task.id ? (
               <div className="mt-1 pl-8 flex gap-2 items-center">
-                <input
-                  type="text"
+                <Input
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
                   placeholder="E.g., booking trucking, waiting SPPB & DO..."
-                  className="flex-1 text-xs px-2.5 py-1.5 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-ring font-medium text-foreground bg-muted"
+                  className="flex-1 text-xs h-7 px-2.5 bg-muted"
                   disabled={isPending}
                 />
-                <button
-                  type="button"
+                <Button
+                  size="sm"
                   onClick={() => {
                     startProgress();
                     startTransition(async () => {
@@ -121,11 +123,11 @@ export function WorkflowChecklist({
                       }
                     });
                   }}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-colors"
+                  className="h-7 text-[10px] px-3 font-semibold"
                   disabled={isPending}
                 >
                   Save
-                </button>
+                </Button>
               </div>
             ) : (
               task.notes && (
