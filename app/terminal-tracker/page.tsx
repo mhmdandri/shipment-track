@@ -1,0 +1,217 @@
+"use client";
+
+import { useState } from "react";
+import { Search, MapPin, Anchor, Map, Info, BellRing, CheckCircle2 } from "lucide-react";
+import { trackTerminalContainer, TerminalTrackingResult } from "@/actions/terminal-track-action";
+import { enableTerminalMonitoring } from "@/actions/monitor-action";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+const TERMINALS = [
+  { id: "jict", name: "JICT (Jakarta International Container Terminal)" },
+  { id: "npct1", name: "NPCT1 (New Priok Container Terminal 1)" },
+  { id: "koja", name: "KOJA (TPK Koja)" },
+  { id: "tmal", name: "TMAL (Terminal Mustika Alam Lestari)" },
+  { id: "ter3", name: "TER3 (Terminal 3)" },
+];
+
+export default function TerminalTrackerPage() {
+  const [port, setPort] = useState<string>("jict");
+  const [containerNo, setContainerNo] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [monitorLoading, setMonitorLoading] = useState(false);
+  const [monitorMessage, setMonitorMessage] = useState("");
+  const [result, setResult] = useState<TerminalTrackingResult | null>(null);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!containerNo.trim()) return;
+
+    setLoading(true);
+    setResult(null);
+    setMonitorMessage("");
+
+    const data = await trackTerminalContainer(port, containerNo.trim());
+    setResult(data);
+    setLoading(false);
+  };
+
+  const handleMonitor = async () => {
+    if (!result || !result.containerNo || !result.status) return;
+    
+    setMonitorLoading(true);
+    const res = await enableTerminalMonitoring(result.containerNo, result.port, result.status);
+    if (res.success) {
+      setMonitorMessage(res.message || "Monitoring enabled.");
+    } else {
+      setMonitorMessage(res.error || "Failed to monitor.");
+    }
+    setMonitorLoading(false);
+  };
+
+  return (
+    <div className="p-4 lg:p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-2">
+          <Anchor className="w-8 h-8 text-primary" />
+          Terminal Container Tracking
+        </h1>
+        <p className="text-muted-foreground text-sm font-medium">
+          Check yard allocations and location statuses directly from port terminals.
+        </p>
+      </div>
+
+      <Card className="border-border shadow-sm">
+        <CardHeader className="bg-muted/30 border-b border-border pb-4">
+          <CardTitle className="text-lg">Track Location</CardTitle>
+          <CardDescription>Select the terminal and enter your container number to track.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+            <div className="w-full md:w-1/3">
+              <Select value={port} onValueChange={setPort}>
+                <SelectTrigger className="w-full font-semibold">
+                  <SelectValue placeholder="Select Terminal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TERMINALS.map((t) => (
+                    <SelectItem key={t.id} value={t.id} className="font-medium">
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="w-full md:flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <Input
+                placeholder="Enter Container Number (e.g. ONEU7648347)"
+                value={containerNo}
+                onChange={(e) => setContainerNo(e.target.value.toUpperCase())}
+                className="pl-9 font-mono uppercase font-bold text-foreground"
+                disabled={loading}
+              />
+            </div>
+            
+            <Button type="submit" disabled={loading || !containerNo.trim()} className="w-full md:w-auto font-bold px-8">
+              {loading ? "Searching..." : "Track"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Results Section */}
+      {result && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <Card className="overflow-hidden border-border shadow-sm">
+            <div className="bg-muted/40 p-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Map className="w-5 h-5 text-muted-foreground" />
+                <h3 className="font-bold tracking-tight text-foreground">Tracking Result</h3>
+              </div>
+              <Badge variant="outline" className="font-mono bg-background">
+                {result.containerNo}
+              </Badge>
+            </div>
+            
+            <div className="p-6">
+              {!result.success ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <Info className="w-6 h-6 text-destructive" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-foreground">Tracking Failed</h4>
+                    <p className="text-sm text-muted-foreground max-w-md">{result.error}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-border rounded-xl bg-card gap-4">
+                  <div className="space-y-1.5">
+                    <p className="text-sm text-muted-foreground font-semibold flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      Terminal Allocation
+                    </p>
+                    <p className="font-black text-lg text-foreground uppercase tracking-tight">
+                      {TERMINALS.find(t => t.id === result.port)?.name || result.port}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="space-y-1 text-right">
+                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Status</p>
+                      <Badge 
+                        variant={result.status === "GNSTK" ? "default" : "secondary"} 
+                        className="font-black tracking-widest text-xs px-3 py-1"
+                      >
+                        {result.status === "GNSTK" ? "TERSEDIA (GNSTK)" : `BELUM TERSEDIA (${result.status})`}
+                      </Badge>
+                    </div>
+
+                    {result.status === "GNSTK" && result.time && (
+                      <div className="space-y-1 text-right border-l border-border pl-4">
+                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Time</p>
+                        <p className="font-mono font-bold text-sm bg-muted px-2 py-0.5 rounded border border-border text-foreground">
+                          {result.time}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Monitoring Box */}
+              {result && result.success && result.status !== "GNSTK" && (
+                <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-primary flex items-center gap-2">
+                      <BellRing className="w-4 h-4" />
+                      Auto-Monitor Container
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      We will check this container every 2 hours and notify you via Telegram when it gets a yard allocation (GNSTK).
+                    </p>
+                  </div>
+                  <div>
+                    {monitorMessage ? (
+                      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
+                        <CheckCircle2 className="w-4 h-4" />
+                        {monitorMessage}
+                      </div>
+                    ) : result.isMonitored ? (
+                      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Already Monitored
+                      </div>
+                    ) : (
+                      <Button 
+                        onClick={handleMonitor} 
+                        disabled={monitorLoading}
+                        variant="default"
+                        className="w-full sm:w-auto font-bold shadow-sm shadow-primary/20"
+                      >
+                        {monitorLoading ? "Enabling..." : "Enable Monitoring"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}

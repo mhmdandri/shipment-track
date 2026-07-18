@@ -7,7 +7,8 @@
     "build": "prisma generate && prisma migrate deploy && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "monitor": "tsx scripts/monitor-terminals.ts"
   },
   "dependencies": {
     "@bprogress/next": "^3.2.12",
@@ -21,6 +22,7 @@
     "dotenv": "^17.4.2",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
+    "node-cron": "^4.6.0",
     "pg": "^8.22.0",
     "radix-ui": "^1.6.0",
     "react": "19.2.4",
@@ -34,6 +36,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
