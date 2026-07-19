@@ -10,8 +10,11 @@ export async function sendWhatsappMessage(phone: string, text: string) {
     return false;
   }
 
-  // Ensure phone number has @c.us suffix
-  const chatId = phone.includes("@c.us") ? phone : `${phone}@c.us`;
+  // Ensure phone number has a valid WhatsApp suffix (@c.us or @s.whatsapp.net for groups/individuals)
+  let chatId = phone;
+  if (!chatId.includes("@")) {
+    chatId = `${phone}@c.us`;
+  }
 
   try {
     const headers: Record<string, string> = {
