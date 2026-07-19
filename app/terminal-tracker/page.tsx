@@ -44,6 +44,8 @@ const TERMINALS = [
 export default function TerminalTrackerPage() {
   const [port, setPort] = useState<string>("jict");
   const [containerNo, setContainerNo] = useState("");
+  const [vesselName, setVesselName] = useState("");
+  const [voyageNo, setVoyageNo] = useState("");
   const [waNumber, setWaNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [monitorLoading, setMonitorLoading] = useState(false);
@@ -58,7 +60,25 @@ export default function TerminalTrackerPage() {
     setResult(null);
     setMonitorMessage("");
 
-    const data = await trackTerminalContainer(port, containerNo.trim());
+    if (port === "npct1") {
+      if (!vesselName.trim() || !voyageNo.trim()) {
+        setResult({
+          success: false,
+          port,
+          containerNo: containerNo.trim(),
+          error: "Vessel Code and Voyage No are required for NPCT1.",
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
+    const data = await trackTerminalContainer(
+      port, 
+      containerNo.trim(),
+      vesselName.trim() || undefined,
+      voyageNo.trim() || undefined
+    );
     setResult(data);
     setLoading(false);
   };
@@ -78,6 +98,8 @@ export default function TerminalTrackerPage() {
       result.port,
       result.status,
       formattedWa || undefined,
+      vesselName.trim() || undefined,
+      voyageNo.trim() || undefined
     );
     if (res.success) {
       setMonitorMessage(res.message || "Monitoring enabled.");
@@ -110,43 +132,70 @@ export default function TerminalTrackerPage() {
         <CardContent className="pt-6">
           <form
             onSubmit={handleSearch}
-            className="flex flex-col md:flex-row gap-4 items-start md:items-center"
+            className="flex flex-col gap-4"
           >
-            <div className="w-full md:w-1/3">
-              <Select value={port} onValueChange={setPort}>
-                <SelectTrigger className="w-full font-semibold">
-                  <SelectValue placeholder="Select Terminal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TERMINALS.map((t) => (
-                    <SelectItem key={t.id} value={t.id} className="font-medium">
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="w-full md:flex-1 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="w-4 h-4 text-muted-foreground" />
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+              <div className="w-full md:w-1/3">
+                <Select value={port} onValueChange={setPort}>
+                  <SelectTrigger className="w-full font-semibold">
+                    <SelectValue placeholder="Select Terminal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TERMINALS.map((t) => (
+                      <SelectItem key={t.id} value={t.id} className="font-medium">
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Input
-                placeholder="Enter Container Number (e.g. ONEU7648347)"
-                value={containerNo}
-                onChange={(e) => setContainerNo(e.target.value.toUpperCase())}
-                className="pl-9 font-mono uppercase font-bold text-foreground"
-                disabled={loading}
-              />
+
+              <div className="w-full md:flex-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <Input
+                  placeholder="Enter Container Number (e.g. ONEU7648347)"
+                  value={containerNo}
+                  onChange={(e) => setContainerNo(e.target.value.toUpperCase())}
+                  className="pl-9 font-mono uppercase font-bold text-foreground"
+                  disabled={loading}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading || !containerNo.trim()}
+                className="w-full md:w-auto font-bold px-8"
+              >
+                {loading ? "Searching..." : "Track"}
+              </Button>
             </div>
 
-            <Button
-              type="submit"
-              disabled={loading || !containerNo.trim()}
-              className="w-full md:w-auto font-bold px-8"
-            >
-              {loading ? "Searching..." : "Track"}
-            </Button>
+            {port === "npct1" && (
+              <div className="flex flex-col md:flex-row gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="w-full md:w-1/2">
+                  <Input 
+                    placeholder="Vessel Code (e.g. EVBIT)"
+                    value={vesselName}
+                    onChange={(e) => setVesselName(e.target.value.toUpperCase())}
+                    className="font-mono uppercase bg-primary/5 border-primary/20"
+                    disabled={loading}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1 ml-1 font-medium uppercase tracking-wider">NPCT1 Requires Vessel Code</p>
+                </div>
+                <div className="w-full md:w-1/2">
+                  <Input 
+                    placeholder="Voyage No (e.g. 080B)"
+                    value={voyageNo}
+                    onChange={(e) => setVoyageNo(e.target.value.toUpperCase())}
+                    className="font-mono uppercase bg-primary/5 border-primary/20"
+                    disabled={loading}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1 ml-1 font-medium uppercase tracking-wider">NPCT1 Requires Voyage Number</p>
+                </div>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>

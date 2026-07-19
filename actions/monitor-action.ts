@@ -8,7 +8,9 @@ export async function enableTerminalMonitoring(
   containerNo: string,
   port: string,
   status: string,
-  waNumber?: string
+  waNumber?: string,
+  vesselName?: string,
+  voyageNo?: string
 ) {
   if (!containerNo) {
     return { success: false, error: "Container number is required" };
@@ -29,18 +31,22 @@ export async function enableTerminalMonitoring(
             isActive: true, 
             status, 
             port,
-            ...(waNumber ? { waNumber } : {})
+            ...(waNumber ? { waNumber } : {}),
+            ...(vesselName ? { vesselName } : {}),
+            ...(voyageNo ? { voyageNo } : {})
           },
         });
         messageSent = true;
       } else {
-        // If it's already active, we can optionally update the waNumber if provided
-        if (waNumber && existing.waNumber !== waNumber) {
-          await prisma.terminalMonitor.update({
-            where: { containerNo },
-            data: { waNumber }
-          });
-        }
+        // If it's already active, optionally update the extra parameters if provided
+        await prisma.terminalMonitor.update({
+          where: { containerNo },
+          data: { 
+            ...(waNumber && existing.waNumber !== waNumber ? { waNumber } : {}),
+            ...(vesselName && existing.vesselName !== vesselName ? { vesselName } : {}),
+            ...(voyageNo && existing.voyageNo !== voyageNo ? { voyageNo } : {})
+          }
+        });
         return {
           success: true,
           message: "Container is already being monitored.",
@@ -53,6 +59,8 @@ export async function enableTerminalMonitoring(
           port,
           status,
           waNumber,
+          vesselName,
+          voyageNo,
           isActive: true,
         },
       });

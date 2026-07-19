@@ -38,6 +38,8 @@ export async function GET(request: Request) {
       const result = await trackTerminalContainer(
         monitor.port,
         monitor.containerNo,
+        monitor.vesselName || undefined,
+        monitor.voyageNo || undefined
       );
 
       if (result.success && result.status === "GNSTK") {

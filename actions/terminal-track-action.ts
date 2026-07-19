@@ -15,7 +15,9 @@ export interface TerminalTrackingResult {
 
 export async function trackTerminalContainer(
   port: string,
-  containerNo: string
+  containerNo: string,
+  vesselName?: string,
+  voyageNo?: string
 ): Promise<TerminalTrackingResult> {
   if (!containerNo || containerNo.trim() === "") {
     return {
@@ -168,7 +170,191 @@ export async function trackTerminalContainer(
       };
     }
 
-    // Fallback for other ports (NPCT1, KOJA, TER3)
+    if (normalizedPort === "koja") {
+      const params = new URLSearchParams();
+      params.set("CNTR_ID", containerNo);
+      params.set("submit", "Show Detail");
+
+      const response = await fetch("https://www.tpkkoja.co.id/online-consignee-container-tracking/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params.toString(),
+      });
+
+      if (!response.ok) {
+        return {
+          success: false,
+          port,
+          containerNo,
+          error: `Error communicating with KOJA (Status ${response.status})`,
+        };
+      }
+
+      const html = await response.text();
+      const cheerio = await import("cheerio");
+      const $ = cheerio.load(html);
+
+      const table = $("table#datatables");
+      if (table.length === 0) {
+        return {
+          success: false,
+          port,
+          containerNo,
+          error: "Container not found in KOJA system.",
+        };
+      }
+
+      let foundStatus = "";
+      let foundTime = "";
+
+      table.find("tr").each((_, row) => {
+        $(row).find("td").each((i, td) => {
+          const text = $(td).text().trim();
+          if (text === "Location") {
+            foundStatus = $(td).next("td").text().trim();
+          }
+          if (text === "In Time / Stack CY") {
+            foundTime = $(td).next("td").text().trim();
+          }
+        });
+      });
+
+      if (!foundStatus) {
+        return {
+          success: false,
+          port,
+          containerNo,
+          error: "Failed to parse Location from KOJA response.",
+        };
+      }
+
+      // "Log & Observe" Strategy:
+      // We return the raw string exactly as KOJA provided it. 
+      // Once you know what string represents GNSTK, we can map it here.
+      return {
+        success: true,
+        port,
+        containerNo,
+        status: foundStatus, // e.g. "OUTGT" or whatever is in "Location"
+        time: foundTime,     // Stack CY time
+        isMonitored,
+      };
+    }
+
+    if (normalizedPort === "npct1") {
+      if (!vesselName || !voyageNo) {
+        return {
+          success: false,
+          port,
+          containerNo,
+          error: "NPCT1 requires Vessel Code (e.g. EVBIT) and Voyage No.",
+        };
+      }
+
+      const params = new URLSearchParams();
+      params.set("vesselTracking", vesselName);
+      params.set("vesselVoyage", voyageNo);
+      params.set("vesselDirection", "OUT");
+      params.set("vesselContainer", containerNo);
+
+      // 1. Get Session Cookie and CSRF Token
+      const initRes = await fetch("https://www.npct1.co.id/");
+      
+      const setCookies = initRes.headers.getSetCookie ? initRes.headers.getSetCookie() : [];
+      const cookieStr = setCookies.map(c => c.split(';')[0]).join('; ');
+      
+      const initHtml = await initRes.text();
+      const tokenMatch = initHtml.match(/name="csrf-token"\s+content="([^"]+)"/);
+      const csrfToken = tokenMatch ? tokenMatch[1] : '';
+
+      params.set("_token", csrfToken);
+
+      // 2. POST to /req/container
+      const postRes = await fetch("https://www.npct1.co.id/req/container", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Cookie": cookieStr,
+          "X-CSRF-TOKEN": csrfToken,
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: params.toString(),
+      });
+
+      if (!postRes.ok) {
+        return {
+          success: false,
+          port,
+          containerNo,
+          error: `Error communicating with NPCT1 POST (Status ${postRes.status})`,
+        };
+      }
+
+      const postJson = await postRes.json();
+      if (!postJson.redirect || !postJson.redirect.url) {
+         return {
+          success: false,
+          port,
+          containerNo,
+          error: "Container not found or invalid Vessel/Voyage in NPCT1.",
+        };
+      }
+
+      // 3. GET the redirected URL to obtain HTML
+      const getHtmlRes = await fetch(postJson.redirect.url, {
+         method: "GET",
+         headers: {
+           "Cookie": cookieStr
+         }
+      });
+
+      if (!getHtmlRes.ok) {
+        return {
+          success: false,
+          port,
+          containerNo,
+          error: `Error communicating with NPCT1 GET (Status ${getHtmlRes.status})`,
+        };
+      }
+
+      const html = await getHtmlRes.text();
+      const cheerio = await import("cheerio");
+      const $ = cheerio.load(html);
+
+      // Parse status from: <span class="status-desc">...<span class="semi-bold">GATEOUT TERMINAL</span></span>
+      const foundStatus = $(".status-desc .semi-bold").text().trim();
+      
+      if (!foundStatus) {
+        return {
+          success: false,
+          port,
+          containerNo,
+          error: "Container not found or invalid Vessel/Voyage in NPCT1.",
+        };
+      }
+
+      // Parse Container In time
+      let foundTime = "";
+      $("p.hint-text").each((_, el) => {
+        if ($(el).text().trim() === "Container In") {
+          foundTime = $(el).next("h5").text().trim();
+        }
+      });
+
+      // "Log & Observe" Strategy: return the raw NPCT1 status
+      return {
+        success: true,
+        port,
+        containerNo,
+        status: foundStatus,
+        time: foundTime,
+        isMonitored,
+      };
+    }
+
+    // Fallback for other ports (TER3)
     return {
       success: false,
       port,
