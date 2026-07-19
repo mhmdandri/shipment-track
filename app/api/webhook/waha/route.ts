@@ -37,11 +37,14 @@ export async function POST(request: Request) {
     // 3. Command format: track <ContainerNo> <Port> [VesselCode] [VoyageNo]
     const args = text.trim().split(/\s+/);
     if (args[0].toLowerCase() !== "track") {
-      // Not a track command, just ignore
+      console.log("-> Ignored: First word is not 'track'. It is:", args[0]);
       return NextResponse.json({ success: true, message: "Not a track command" });
     }
 
+    console.log("-> Command recognized:", args);
+
     if (args.length < 3) {
+      console.log("-> Error: Invalid format (less than 3 args)");
       await sendWhatsappMessage(
         sender,
         "❌ *Format Salah*\n\nGunakan format:\n`track <NoContainer> <Port>`\n\nContoh: `track EMCU6137410 JICT`\n\nUntuk NPCT1:\n`track <NoContainer> NPCT1 <VesselCode> <VoyageNo>`"
@@ -56,6 +59,7 @@ export async function POST(request: Request) {
 
     // 4. Check NPCT1 requirements
     if (port === "npct1" && (!vesselName || !voyageNo)) {
+      console.log("-> Error: NPCT1 missing vessel/voyage");
       await sendWhatsappMessage(
         sender,
         "❌ *NPCT1 Butuh Data Kapal*\n\nUntuk port NPCT1, mohon sertakan Vessel Code dan Voyage No.\n\nContoh:\n`track EMCU6137410 NPCT1 EVBIT 080B`"
@@ -64,12 +68,17 @@ export async function POST(request: Request) {
     }
 
     // Inform user that tracking has started processing
-    await sendWhatsappMessage(sender, `🔍 Sedang memeriksa status kontainer *${containerNo}* di *${port.toUpperCase()}*...`);
+    console.log("-> Sending initial 'Sedang memeriksa' message...");
+    const sentInitial = await sendWhatsappMessage(sender, `🔍 Sedang memeriksa status kontainer *${containerNo}* di *${port.toUpperCase()}*...`);
+    console.log("-> Initial message sent result:", sentInitial);
 
     // 5. Call the tracking function
+    console.log("-> Calling trackTerminalContainer...");
     const result = await trackTerminalContainer(port, containerNo, vesselName, voyageNo);
+    console.log("-> trackTerminalContainer result:", result);
 
     if (!result.success || !result.status) {
+      console.log("-> Error: Tracking failed or status empty");
       await sendWhatsappMessage(
         sender,
         `❌ *Gagal Melacak*\n\nKontainer *${containerNo}* tidak ditemukan atau terjadi kesalahan.\nError: ${result.error || "Unknown"}`
@@ -79,6 +88,7 @@ export async function POST(request: Request) {
 
     // Check if it's already GNSTK
     if (result.status === "GNSTK") {
+      console.log("-> Status is already GNSTK. Replying and skipping monitor...");
       await sendWhatsappMessage(
         sender,
         `✅ *Kontainer Sudah Tersedia (GNSTK)*\n\nKontainer *${result.containerNo}* di *${result.port.toUpperCase()}* sudah mendapatkan lokasi yard.\nWaktu: ${result.time || "-"}\n\nTidak perlu dimasukkan ke auto-monitor.`
@@ -93,6 +103,7 @@ export async function POST(request: Request) {
     }
 
     // 6. Enable Monitoring
+    console.log("-> Enabling monitor for", waNumber);
     const monitorRes = await enableTerminalMonitoring(
       result.containerNo,
       result.port,
@@ -101,6 +112,7 @@ export async function POST(request: Request) {
       vesselName,
       voyageNo
     );
+    console.log("-> enableTerminalMonitoring result:", monitorRes);
 
     if (monitorRes.success) {
       if (monitorRes.message === "Container is already being monitored.") {
@@ -123,6 +135,7 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log("==== WAHA WEBHOOK FINISHED ====");
     return NextResponse.json({ success: true, message: "Command processed successfully" });
   } catch (error) {
     console.error("WAHA Webhook Error:", error);
