@@ -6,11 +6,16 @@ import { sendWhatsappMessage } from "@/lib/whatsapp";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    
+    // DEBUG LOG: Print incoming webhook payload to Vercel logs
+    console.log("==== INCOMING WAHA WEBHOOK ====");
+    console.log(JSON.stringify(body, null, 2));
 
     // 1. Ensure the event is a message event
     // WAHA uses event names like "message", "message.any"
     const isMessageEvent = body?.event && String(body.event).startsWith("message");
     if (!isMessageEvent || !body?.payload) {
+      console.log("-> Ignored: Not a message event");
       return NextResponse.json({ success: true, message: "Ignored non-message event" });
     }
 
@@ -18,6 +23,7 @@ export async function POST(request: Request) {
 
     // 2. Ignore messages sent by the bot itself to prevent infinite loops
     if (payload.fromMe === true) {
+      console.log("-> Ignored: fromMe is true (self message)");
       return NextResponse.json({ success: true, message: "Ignored self message" });
     }
 
