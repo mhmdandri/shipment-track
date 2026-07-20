@@ -42,26 +42,36 @@ export async function GET(request: Request) {
         monitor.voyageNo || undefined
       );
 
-      if (result.success && result.status === "GNSTK") {
+      // Check if it reached the final yard allocation (GNSTK)
+      // Note: For KOJA and NPCT1, we don't know their exact 'GNSTK' string yet.
+      // So if their status changes from ONVSL to something else, we treat it as a yard allocation to notify the user.
+      const isGnstkExact = result.status === "GNSTK";
+      const isUnknownPortChange = 
+        (monitor.port === "koja" || monitor.port === "npct1") && 
+        result.status && result.status !== "ONVSL" && result.status !== monitor.status;
+
+      if (result.success && (isGnstkExact || isUnknownPortChange)) {
+        const finalStatus = isGnstkExact ? "GNSTK" : result.status!;
+        
         // Update database
         await prisma.terminalMonitor.update({
           where: { id: monitor.id },
-          data: { isActive: false, status: "GNSTK", updatedAt: new Date() },
+          data: { isActive: false, status: finalStatus, updatedAt: new Date() },
         });
 
         // Send Telegram notification
-        const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>GNSTK</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
+        const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${finalStatus}</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
         await sendTelegramMessage(telegramMsg);
 
         // Send WhatsApp notification if number is present
         if (monitor.waNumber) {
-          const waMsg = `🚨 *YARD ALLOCATION UPDATE* 🚨\n\nContainer *${monitor.containerNo}* at *${monitor.port.toUpperCase()}* has received a yard allocation!\nStatus: *GNSTK*\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
+          const waMsg = `🚨 *YARD ALLOCATION UPDATE* 🚨\n\nContainer *${monitor.containerNo}* di *${monitor.port.toUpperCase()}* sepertinya sudah turun ke yard!\nStatus Baru: *${finalStatus}*\nWaktu: ${result.time || "-"}\n\nSilakan periksa langkah operasional selanjutnya.`;
           await sendWhatsappMessage(monitor.waNumber, waMsg);
         }
 
         processed.push({
           containerNo: monitor.containerNo,
-          status: "Updated to GNSTK",
+          status: `Updated to ${finalStatus}`,
         });
       } else {
         processed.push({
