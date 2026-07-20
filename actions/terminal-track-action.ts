@@ -430,6 +430,7 @@ export async function trackTerminalContainer(
 
         const trackRes = await fetch(trackUrl, {
           method: "POST",
+          cache: "no-store",
           headers: {
             "Content-Type": "application/json",
             Cookie: session.cookieStr,
@@ -462,6 +463,7 @@ export async function trackTerminalContainer(
         const loginRes = await fetch(loginUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          cache: "no-store",
           body: JSON.stringify({
             username: process.env.PARAMA_USERNAME || "Solichin80",
             password: process.env.PARAMA_PASSWORD || "Arnesya@27",
