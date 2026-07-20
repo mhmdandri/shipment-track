@@ -43,11 +43,11 @@ export async function GET(request: Request) {
       );
 
       // Check if it reached the final yard allocation (GNSTK)
-      // Note: For KOJA and NPCT1, we don't know their exact 'GNSTK' string yet.
-      // So if their status changes from ONVSL to something else, we treat it as a yard allocation to notify the user.
+      // Note: For KOJA, we don't know their exact 'GNSTK' string yet.
+      // So if KOJA's status changes from ONVSL to something else, we treat it as a yard allocation to notify the user.
       const isGnstkExact = result.status === "GNSTK";
       const isUnknownPortChange = 
-        (monitor.port === "koja" || monitor.port === "npct1") && 
+        monitor.port === "koja" && 
         result.status && result.status !== "ONVSL" && result.status !== monitor.status;
 
       if (result.success && (isGnstkExact || isUnknownPortChange)) {
