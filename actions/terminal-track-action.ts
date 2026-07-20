@@ -253,9 +253,12 @@ export async function trackTerminalContainer(
         };
       }
 
+      // NPCT1 requires exactly the last 4 characters of the voyage
+      const finalVoyage = voyageNo.length > 4 ? voyageNo.slice(-4) : voyageNo;
+
       const params = new URLSearchParams();
       params.set("vesselTracking", vesselName);
-      params.set("vesselVoyage", voyageNo);
+      params.set("vesselVoyage", finalVoyage);
       params.set("vesselDirection", "OUT");
       params.set("vesselContainer", containerNo);
 
