@@ -240,14 +240,19 @@ export async function trackTerminalContainer(
         };
       }
 
-      // "Log & Observe" Strategy:
-      // We return the raw string exactly as KOJA provided it. 
-      // Once you know what string represents GNSTK, we can map it here.
+      let finalStatus = foundStatus;
+      
+      // If "In Time / Stack CY" is filled (meaning it has a valid timestamp),
+      // it means the container has secured a yard location, so we map to GNSTK.
+      if (foundTime && foundTime.trim() !== "" && foundTime.trim() !== "-") {
+        finalStatus = "GNSTK";
+      }
+
       return {
         success: true,
         port,
         containerNo,
-        status: foundStatus, // e.g. "OUTGT" or whatever is in "Location"
+        status: finalStatus,
         time: foundTime,     // Stack CY time
         isMonitored,
       };

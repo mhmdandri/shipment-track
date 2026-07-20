@@ -37,7 +37,7 @@ export function TodoList({ initialTodos }: { initialTodos: DailyTodo[] }) {
   const handleToggle = async (id: string, currentStatus: boolean) => {
     // Optimistic update
     setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isDone: !currentStatus } : t))
+      prev.map((t) => (t.id === id ? { ...t, isDone: !currentStatus } : t)),
     );
 
     startTransition(async () => {
@@ -58,10 +58,13 @@ export function TodoList({ initialTodos }: { initialTodos: DailyTodo[] }) {
   const completedTodos = todos.filter((t) => t.isDone);
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-8">
+    <div className="w-full mx-auto space-y-8">
       {/* Input Section */}
       <div className="bg-card border border-border p-4 rounded-2xl shadow-sm flex items-center gap-3">
-        <form onSubmit={handleAdd} className="flex-1 flex items-center gap-3 w-full">
+        <form
+          onSubmit={handleAdd}
+          className="flex-1 flex items-center gap-3 w-full"
+        >
           <Input
             value={newTodo}
             onChange={(e) => setNewTodo(e.target.value)}
@@ -89,7 +92,10 @@ export function TodoList({ initialTodos }: { initialTodos: DailyTodo[] }) {
         {/* Pending */}
         <div>
           <h2 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 px-2 flex items-center gap-2">
-            Pending <span className="bg-muted px-2 py-0.5 rounded-full">{pendingTodos.length}</span>
+            Pending{" "}
+            <span className="bg-muted px-2 py-0.5 rounded-full">
+              {pendingTodos.length}
+            </span>
           </h2>
           {pendingTodos.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground bg-muted/20 border border-dashed border-border rounded-2xl">
@@ -113,7 +119,10 @@ export function TodoList({ initialTodos }: { initialTodos: DailyTodo[] }) {
         {completedTodos.length > 0 && (
           <div>
             <h2 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 px-2 flex items-center gap-2">
-              Completed <span className="bg-muted px-2 py-0.5 rounded-full">{completedTodos.length}</span>
+              Completed{" "}
+              <span className="bg-muted px-2 py-0.5 rounded-full">
+                {completedTodos.length}
+              </span>
             </h2>
             <div className="space-y-2 opacity-60">
               {completedTodos.map((todo) => (
@@ -157,7 +166,7 @@ function TodoItem({
           <span
             className={cn(
               "text-sm font-medium transition-colors",
-              todo.isDone && "line-through text-muted-foreground"
+              todo.isDone && "line-through text-muted-foreground",
             )}
           >
             {todo.text}
