@@ -29,11 +29,11 @@ export const shipmentSchema = z
 export type ShipmentFormValues = z.infer<typeof shipmentSchema>;
 
 export const updateShipmentDatesSchema = z.object({
-  eta: z.union([z.date(), z.string()]).optional().nullable(),
-  etd: z.union([z.date(), z.string()]).optional().nullable(),
-  openCy: z.union([z.date(), z.string()]).optional().nullable(),
-  closeSi: z.union([z.date(), z.string()]).optional().nullable(),
-  closeCy: z.union([z.date(), z.string()]).optional().nullable(),
+  eta: z.union([z.coerce.date(), z.string()]).optional().nullable(),
+  etd: z.union([z.coerce.date(), z.string()]).optional().nullable(),
+  openCy: z.union([z.coerce.date(), z.string()]).optional().nullable(),
+  closeSi: z.union([z.coerce.date(), z.string()]).optional().nullable(),
+  closeCy: z.union([z.coerce.date(), z.string()]).optional().nullable(),
 });
 
 export type UpdateShipmentDatesValues = z.infer<typeof updateShipmentDatesSchema>;

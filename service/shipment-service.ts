@@ -47,8 +47,11 @@ export class ShipmentService {
     if (values.closeSi !== undefined) data.closeSi = values.closeSi ? new Date(values.closeSi) : null;
     if (values.closeCy !== undefined) data.closeCy = values.closeCy ? new Date(values.closeCy) : null;
 
+    data.activityLogs = {
+      create: { message: "Shipment schedules have been manually updated." }
+    };
+
     const shipment = await this.repo.updateShipment(id, data);
-    await this.repo.createActivityLog(id, "Shipment schedules have been manually updated.");
     return shipment;
   }
 
@@ -92,9 +95,11 @@ export class ShipmentService {
       status: ShipmentStatus.ACTIVE,
       tasks: { create: tasks },
       reminders: { create: reminders },
+      activityLogs: {
+        create: { message: "Pipeline initialized for job file." }
+      }
     });
 
-    await this.repo.createActivityLog(shipment.id, "Pipeline initialized for job file.");
     return shipment;
   }
 
