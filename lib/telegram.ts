@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import { fetchWithRetry } from "./fetch-with-retry";
+
 export async function sendTelegramMessage(text: string) {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -11,7 +13,7 @@ export async function sendTelegramMessage(text: string) {
   }
 
   try {
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await fetchWithRetry(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -21,6 +23,8 @@ export async function sendTelegramMessage(text: string) {
         text,
         parse_mode: "HTML",
       }),
+      retries: 2,
+      timeoutMs: 10000,
     });
 
     if (!response.ok) {

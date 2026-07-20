@@ -5,58 +5,13 @@ dotenv.config();
 import { PrismaClient } from "../app/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { trackTerminalContainer } from "../actions/terminal-track-action";
+import { sendTelegramMessage } from "../lib/telegram";
+import { sendWhatsappMessage } from "../lib/whatsapp";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
-async function sendTelegramMessage(text: string) {
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return false;
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text,
-        parse_mode: "HTML",
-      }),
-    });
-    return true;
-  } catch (e) {
-    console.error("Telegram error:", e);
-    return false;
-  }
-}
-
-async function checkJictContainer(containerNo: string) {
-  try {
-    const params = new URLSearchParams();
-    params.set("container", containerNo);
-    params.set("type", "I");
-
-    const response = await fetch("https://www.jict.co.id/container-tracking-search", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
-    });
-
-    if (!response.ok) return null;
-    const data = await response.json();
-    
-    if (Array.isArray(data) && data[0] === "00") {
-      return {
-        status: data[20],
-        time: data[32],
-      };
-    }
-    return null;
-  } catch (err) {
-    console.error(`Error checking JICT for ${containerNo}:`, err);
-    return null;
-  }
-}
 
 async function runMonitor() {
   console.log(`[${new Date().toISOString()}] Running terminal monitor check...`);
@@ -65,22 +20,43 @@ async function runMonitor() {
       where: { isActive: true },
     });
 
-    for (const monitor of activeMonitors) {
-      if (monitor.port.toLowerCase() === "jict") {
-        const result = await checkJictContainer(monitor.containerNo);
-        if (result && result.status === "GNSTK") {
-          console.log(`Container ${monitor.containerNo} is now GNSTK!`);
-          
-          // Update database
-          await prisma.terminalMonitor.update({
-            where: { id: monitor.id },
-            data: { isActive: false, status: "GNSTK", updatedAt: new Date() },
-          });
+    if (activeMonitors.length === 0) {
+      console.log("No active monitors.");
+      return;
+    }
 
-          // Send Telegram notification
-          const msg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>JICT</b> has received a yard allocation!\nStatus: <b>GNSTK</b>\nTime: ${result.time}\n\nPlease proceed with the next operational steps.`;
-          await sendTelegramMessage(msg);
+    for (const monitor of activeMonitors) {
+      const result = await trackTerminalContainer(
+        monitor.port,
+        monitor.containerNo,
+        monitor.vesselName || undefined,
+        monitor.voyageNo || undefined
+      );
+
+      const isGnstkExact = result.status === "GNSTK";
+      const isUnknownPortChange = 
+        monitor.port === "koja" && 
+        result.status && result.status !== "ONVSL" && result.status !== monitor.status;
+
+      if (result.success && (isGnstkExact || isUnknownPortChange)) {
+        const finalStatus = isGnstkExact ? "GNSTK" : result.status!;
+        
+        await prisma.terminalMonitor.update({
+          where: { id: monitor.id },
+          data: { isActive: false, status: finalStatus, updatedAt: new Date() },
+        });
+
+        const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${finalStatus}</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
+        await sendTelegramMessage(telegramMsg);
+
+        if (monitor.waNumber) {
+          const waMsg = `🚨 *YARD ALLOCATION UPDATE* 🚨\n\nContainer *${monitor.containerNo}* di *${monitor.port.toUpperCase()}* sepertinya sudah turun ke yard!\nStatus Baru: *${finalStatus}*\nWaktu: ${result.time || "-"}\n\nSilakan periksa langkah operasional selanjutnya.`;
+          await sendWhatsappMessage(monitor.waNumber, waMsg);
         }
+
+        console.log(`Container ${monitor.containerNo} updated to ${finalStatus}`);
+      } else {
+        console.log(`Container ${monitor.containerNo} status: ${result.status || "Unchanged"}`);
       }
     }
   } catch (error) {
@@ -88,10 +64,7 @@ async function runMonitor() {
   }
 }
 
-// Run every 2 hours
-// "0 */2 * * *" means every 2 hours at minute 0
-console.log("Starting Container Monitor Cron Job (runs every 2 hours)...");
-cron.schedule("0 */2 * * *", runMonitor);
+console.log("Starting Container Monitor Cron Job (runs every 30 minutes)...");
+cron.schedule("*/30 * * * *", runMonitor);
 
-// For testing purposes, we also run it immediately on startup
 runMonitor();

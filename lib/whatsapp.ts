@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import { fetchWithRetry } from "./fetch-with-retry";
 export async function sendWhatsappMessage(phone: string, text: string) {
   const WAHA_URL = process.env.WAHA_URL;
   const WAHA_API_KEY = process.env.WAHA_API_KEY;
@@ -26,7 +27,7 @@ export async function sendWhatsappMessage(phone: string, text: string) {
       headers["X-Api-Key"] = WAHA_API_KEY;
     }
 
-    const response = await fetch(`${WAHA_URL}/api/sendText`, {
+    const response = await fetchWithRetry(`${WAHA_URL}/api/sendText`, {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -34,6 +35,8 @@ export async function sendWhatsappMessage(phone: string, text: string) {
         text,
         session: "default",
       }),
+      retries: 2,
+      timeoutMs: 10000,
     });
 
     if (!response.ok) {
