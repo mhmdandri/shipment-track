@@ -17,7 +17,9 @@ import { z } from "zod";
 
 const trackInputSchema = z.object({
   port: z.string().min(2),
-  containerNo: z.string().min(5, "Container number must be at least 5 characters"),
+  containerNo: z
+    .string()
+    .min(5, "Container number must be at least 5 characters"),
   vesselName: z.string().optional(),
   voyageNo: z.string().optional(),
 });
@@ -26,15 +28,20 @@ export async function trackTerminalContainer(
   port: string,
   containerNo: string,
   vesselName?: string,
-  voyageNo?: string
+  voyageNo?: string,
 ): Promise<TerminalTrackingResult> {
-  const parsed = trackInputSchema.safeParse({ port, containerNo, vesselName, voyageNo });
+  const parsed = trackInputSchema.safeParse({
+    port,
+    containerNo,
+    vesselName,
+    voyageNo,
+  });
   if (!parsed.success) {
     return {
       success: false,
       port,
       containerNo,
-      error: parsed.error.errors.map(e => e.message).join(", "),
+      error: parsed.error.errors.map((e) => e.message).join(", "),
     };
   }
 
@@ -58,13 +65,16 @@ export async function trackTerminalContainer(
       params.set("container", containerNo);
       params.set("type", "I");
 
-      const response = await fetch("https://www.jict.co.id/container-tracking-search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+      const response = await fetch(
+        "https://www.jict.co.id/container-tracking-search",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: params.toString(),
         },
-        body: params.toString(),
-      });
+      );
 
       if (!response.ok) {
         return {
@@ -76,7 +86,7 @@ export async function trackTerminalContainer(
       }
 
       const data = await response.json();
-      
+
       // JICT returns ["00", ...] on success
       if (Array.isArray(data) && data[0] === "00") {
         const status = data[20]; // e.g. "GNSTK"
@@ -134,7 +144,7 @@ export async function trackTerminalContainer(
       const $ = cheerio.load(html);
 
       const tableRows = $("table tbody tr");
-      
+
       let foundStatus = "";
       let foundTime = "";
 
@@ -161,8 +171,9 @@ export async function trackTerminalContainer(
       }
 
       // Normalize TMAL status
-      let finalStatus = foundStatus.toUpperCase() === "ON VESSEL" ? "ONVSL" : foundStatus;
-      
+      let finalStatus =
+        foundStatus.toUpperCase() === "ON VESSEL" ? "ONVSL" : foundStatus;
+
       // If it's not ONVSL, it's typically a date (Tanggal Bongkar) meaning it's discharged to yard.
       // We normalize it to GNSTK so our monitoring logic treats it uniformly.
       if (finalStatus !== "ONVSL") {
@@ -185,13 +196,16 @@ export async function trackTerminalContainer(
       params.set("CNTR_ID", containerNo);
       params.set("submit", "Show Detail");
 
-      const response = await fetch("https://www.tpkkoja.co.id/online-consignee-container-tracking/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+      const response = await fetch(
+        "https://www.tpkkoja.co.id/online-consignee-container-tracking/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: params.toString(),
         },
-        body: params.toString(),
-      });
+      );
 
       if (!response.ok) {
         return {
@@ -220,15 +234,17 @@ export async function trackTerminalContainer(
       let foundTime = "";
 
       table.find("tr").each((_, row) => {
-        $(row).find("td").each((i, td) => {
-          const text = $(td).text().trim();
-          if (text === "Location") {
-            foundStatus = $(td).next("td").text().trim();
-          }
-          if (text === "In Time / Stack CY") {
-            foundTime = $(td).next("td").text().trim();
-          }
-        });
+        $(row)
+          .find("td")
+          .each((i, td) => {
+            const text = $(td).text().trim();
+            if (text === "Location") {
+              foundStatus = $(td).next("td").text().trim();
+            }
+            if (text === "In Time / Stack CY") {
+              foundTime = $(td).next("td").text().trim();
+            }
+          });
       });
 
       if (!foundStatus) {
@@ -241,11 +257,13 @@ export async function trackTerminalContainer(
       }
 
       let finalStatus = foundStatus;
-      
+
       // If "In Time / Stack CY" is filled (meaning it has a valid timestamp),
       // it means the container has secured a yard location, so we map to GNSTK.
-      if (foundTime && foundTime.trim() !== "" && foundTime.trim() !== "-") {
-        finalStatus = "GNSTK";
+      if (finalStatus !== "GNSTK") {
+        if (foundTime && foundTime.trim() !== "" && foundTime.trim() !== "-") {
+          finalStatus = "GNSTK";
+        }
       }
 
       return {
@@ -253,7 +271,7 @@ export async function trackTerminalContainer(
         port,
         containerNo,
         status: finalStatus,
-        time: foundTime,     // Stack CY time
+        time: foundTime, // Stack CY time
         isMonitored,
       };
     }
@@ -279,13 +297,17 @@ export async function trackTerminalContainer(
 
       // 1. Get Session Cookie and CSRF Token
       const initRes = await fetch("https://www.npct1.co.id/");
-      
-      const setCookies = initRes.headers.getSetCookie ? initRes.headers.getSetCookie() : [];
-      const cookieStr = setCookies.map(c => c.split(';')[0]).join('; ');
-      
+
+      const setCookies = initRes.headers.getSetCookie
+        ? initRes.headers.getSetCookie()
+        : [];
+      const cookieStr = setCookies.map((c) => c.split(";")[0]).join("; ");
+
       const initHtml = await initRes.text();
-      const tokenMatch = initHtml.match(/name="csrf-token"\s+content="([^"]+)"/);
-      const csrfToken = tokenMatch ? tokenMatch[1] : '';
+      const tokenMatch = initHtml.match(
+        /name="csrf-token"\s+content="([^"]+)"/,
+      );
+      const csrfToken = tokenMatch ? tokenMatch[1] : "";
 
       params.set("_token", csrfToken);
 
@@ -294,7 +316,7 @@ export async function trackTerminalContainer(
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          "Cookie": cookieStr,
+          Cookie: cookieStr,
           "X-CSRF-TOKEN": csrfToken,
           "X-Requested-With": "XMLHttpRequest",
         },
@@ -312,7 +334,7 @@ export async function trackTerminalContainer(
 
       const postJson = await postRes.json();
       if (!postJson.redirect || !postJson.redirect.url) {
-         return {
+        return {
           success: false,
           port,
           containerNo,
@@ -322,10 +344,10 @@ export async function trackTerminalContainer(
 
       // 3. GET the redirected URL to obtain HTML
       const getHtmlRes = await fetch(postJson.redirect.url, {
-         method: "GET",
-         headers: {
-           "Cookie": cookieStr
-         }
+        method: "GET",
+        headers: {
+          Cookie: cookieStr,
+        },
       });
 
       if (!getHtmlRes.ok) {
@@ -343,7 +365,7 @@ export async function trackTerminalContainer(
 
       // Parse status from: <span class="status-desc">...<span class="semi-bold">GATEOUT TERMINAL</span></span>
       const foundStatus = $(".status-desc .semi-bold").text().trim();
-      
+
       if (!foundStatus) {
         return {
           success: false,
@@ -392,7 +414,10 @@ export async function trackTerminalContainer(
       success: false,
       port,
       containerNo,
-      error: error instanceof Error ? error.message : "An unexpected error occurred.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred.",
     };
   }
 }
