@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Todo } from "@/app/generated/prisma/client";
@@ -9,7 +9,7 @@ import {
   toggleTodoAction,
   deleteTodoAction,
 } from "@/actions/todo-action";
-import { useProgress } from "@bprogress/next";
+import { useAppTransition } from "@/hooks/use-app-transition";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,21 +31,15 @@ export function TodoListCard({
   todos: Todo[];
   shipmentId: string;
 }) {
-  const [isPending, startTransition] = useTransition();
-  const { start: startProgress, stop: stopProgress } = useProgress();
+  const { isPending, execute } = useAppTransition();
   const [newTodoText, setNewTodoText] = useState("");
 
   const handleAddTodo = () => {
     if (!newTodoText.trim()) return;
-    startProgress();
-    startTransition(async () => {
-      try {
-        const res = await addTodoAction(shipmentId, newTodoText);
-        if (res.success) {
-          setNewTodoText("");
-        }
-      } finally {
-        stopProgress();
+    execute(async () => {
+      const res = await addTodoAction(shipmentId, newTodoText);
+      if (res.success) {
+        setNewTodoText("");
       }
     });
   };
@@ -65,7 +59,7 @@ export function TodoListCard({
         </h3>
         {isPending && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
       </div>
-      
+
       <div className="flex items-center gap-2 mb-4">
         <Input
           value={newTodoText}
@@ -84,9 +78,11 @@ export function TodoListCard({
         </Button>
       </div>
 
-      <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-2">
+      <div className="space-y-2.5 max-h-75 overflow-y-auto pr-2">
         {todos.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic text-center py-4">No ad-hoc tasks yet.</p>
+          <p className="text-sm text-muted-foreground italic text-center py-4">
+            No ad-hoc tasks yet.
+          </p>
         ) : (
           todos.map((todo) => (
             <div
@@ -102,20 +98,17 @@ export function TodoListCard({
                   checked={todo.isDone}
                   disabled={isPending}
                   onCheckedChange={(checked) => {
-                    startProgress();
-                    startTransition(async () => {
-                      try {
-                        await toggleTodoAction(todo.id, !!checked, shipmentId);
-                      } finally {
-                        stopProgress();
-                      }
+                    execute(async () => {
+                      await toggleTodoAction(todo.id, !!checked, shipmentId);
                     });
                   }}
                   className="h-4.5 w-4.5 rounded border-border mt-0.5"
                 />
                 <span
                   className={`text-sm font-semibold block break-all ${
-                    todo.isDone ? "text-muted-foreground line-through" : "text-foreground"
+                    todo.isDone
+                      ? "text-muted-foreground line-through"
+                      : "text-foreground"
                   }`}
                 >
                   {todo.text}
@@ -136,20 +129,16 @@ export function TodoListCard({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently delete this task. This action cannot be undone.
+                      This will permanently delete this task. This action cannot
+                      be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => {
-                        startProgress();
-                        startTransition(async () => {
-                          try {
-                            await deleteTodoAction(todo.id, shipmentId);
-                          } finally {
-                            stopProgress();
-                          }
+                        execute(async () => {
+                          await deleteTodoAction(todo.id, shipmentId);
                         });
                       }}
                     >

@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useProgress } from "@bprogress/next";
+import { useAppTransition } from "@/hooks/use-app-transition";
 import {
   Select,
   SelectContent,
@@ -18,8 +18,7 @@ import {
 export function TrackerForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const progress = useProgress();
-  const [isPending, startTransition] = useTransition();
+  const { isPending, execute } = useAppTransition();
 
   // Get initial values from URL
   const initialCarrier = searchParams.get("carrier") || "ONE";
@@ -34,8 +33,7 @@ export function TrackerForm() {
     e.preventDefault();
     if (!searchText.trim()) return;
 
-    progress.start();
-    startTransition(() => {
+    execute(async () => {
       const params = new URLSearchParams();
       params.set("carrier", carrier);
       params.set("search_type", searchType);

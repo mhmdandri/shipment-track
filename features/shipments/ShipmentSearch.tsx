@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useRouter } from "@bprogress/next";
+import { useEffect, useState } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useAppTransition } from "@/hooks/use-app-transition";
 
 export function ShipmentSearch({ defaultValue }: { defaultValue: string }) {
   const router = useRouter();
@@ -12,7 +12,7 @@ export function ShipmentSearch({ defaultValue }: { defaultValue: string }) {
   const searchParams = useSearchParams();
   const [value, setValue] = useState(defaultValue);
   const [prevDefaultValue, setPrevDefaultValue] = useState(defaultValue);
-  const [isPending, startTransition] = useTransition();
+  const { isPending, execute } = useAppTransition();
 
   if (defaultValue !== prevDefaultValue) {
     setValue(defaultValue);
@@ -33,7 +33,7 @@ export function ShipmentSearch({ defaultValue }: { defaultValue: string }) {
       // Reset back to page 1 on new search
       params.delete("page");
 
-      startTransition(() => {
+      execute(async () => {
         router.replace(`${pathname}?${params.toString()}`);
       });
     }, 400); // 400ms debounce
@@ -41,7 +41,7 @@ export function ShipmentSearch({ defaultValue }: { defaultValue: string }) {
     return () => {
       clearTimeout(handler);
     };
-  }, [value, defaultValue, pathname, searchParams, router]);
+  }, [value, defaultValue, pathname, searchParams, router, execute]);
 
   return (
     <div className="w-full flex-1 flex items-center gap-3 bg-muted px-3 py-1.5 rounded-xl border border-border">

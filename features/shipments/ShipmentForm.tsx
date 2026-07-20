@@ -2,14 +2,13 @@
 
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { ShipmentFormValues, shipmentSchema } from "@/lib/validator";
 import { createShipmentAction } from "@/actions/shipment-action";
 import { Button } from "@/components/ui/button";
-import { useProgress } from "@bprogress/next";
+import { useAppTransition } from "@/hooks/use-app-transition";
 
 // Import subcomponents
 import { LogisticsSection } from "./components/LogisticsSection";
@@ -20,9 +19,7 @@ import { LivePreviewCard } from "./components/LivePreviewCard";
 
 export function ShipmentForm() {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const { start: startProgress, stop: stopProgress } = useProgress();
-  const [errMessage, setErrMessage] = useState<string | null>(null);
+  const { isPending, error: errMessage, setError: setErrMessage, execute } = useAppTransition();
 
   const {
     register,
@@ -47,18 +44,12 @@ export function ShipmentForm() {
   const watchedValues = useWatch({ control });
 
   const onSubmit = (values: ShipmentFormValues) => {
-    setErrMessage(null);
-    startProgress();
-    startTransition(async () => {
-      try {
-        const res = await createShipmentAction(values);
-        if (res.success) {
-          router.push("/shipments");
-        } else {
-          setErrMessage(res.error || "An operations ingestion error occurred.");
-        }
-      } finally {
-        stopProgress();
+    execute(async () => {
+      const res = await createShipmentAction(values);
+      if (res.success) {
+        router.push("/shipments");
+      } else {
+        setErrMessage(res.error || "An operations ingestion error occurred.");
       }
     });
   };
