@@ -31,4 +31,4 @@ The following rules MUST be strictly followed by any AI agent working on this co
 - **When Adding Features**: If adding a new terminal to track, inspect if it returns JSON or HTML. Use \cheerio\ for HTML parsing inside \ ctions/terminal-track-action.ts\ and map the yard allocation status to \GNSTK\ for consistency in the cron system.
 - **Status Mapping Note (KOJA & NPCT1)**: 
   - **KOJA**: We now have confirmed that for containers still on the vessel, KOJA outputs `ONVSL` in the "Location" field. It has been tested and matches our expected `ONVSL` state. We still need real data samples to confirm the exact string representation for a newly stacked container (`GNSTK`) in KOJA.
-  - **NPCT1**: Currently outputs raw status strings. We still need data samples to know their representation for ONVESSEL and GNSTK.
+  - **NPCT1**: We have confirmed that a newly stacked container is represented by the string `STACKING YARD`. The parser now safely maps `STACKING YARD` to `GNSTK`. We still need data samples to know their representation for ONVESSEL.

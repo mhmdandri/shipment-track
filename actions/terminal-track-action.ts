@@ -343,12 +343,19 @@ export async function trackTerminalContainer(
         }
       });
 
-      // "Log & Observe" Strategy: return the raw NPCT1 status
+      // Normalize NPCT1 Status
+      // NPCT1 returns "STACKING YARD" when it has reached the yard
+      let finalStatus = foundStatus.toUpperCase();
+      if (finalStatus === "STACKING YARD") {
+        finalStatus = "GNSTK";
+      }
+
+      // "Log & Observe" Strategy: return the mapped or raw NPCT1 status
       return {
         success: true,
         port,
         containerNo,
-        status: foundStatus,
+        status: finalStatus,
         time: foundTime,
         isMonitored,
       };

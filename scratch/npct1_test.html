@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang=""en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="https://www.npct1.co.id/images/32.ico" />
+    <title>NPCT1 - Container Tracking</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <meta name="csrf-token" content="AxweBJUZHrruNk44IHntlBme9Jn9BTPlIuocVtH2">
+    <meta name="call-my-name" content="https://www.npct1.co.id">
+    <link rel="stylesheet" href="https://www.npct1.co.id/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="https://www.npct1.co.id/css/custom.min.css" type="text/css">
+    <link rel="stylesheet" href="https://www.npct1.co.id/css/bootstrap-material-datetimepicker.css" type="text/css">
+    <link rel="stylesheet" href="https://www.npct1.co.id/css/select2.min.css" type="text/css">
+    <link rel="stylesheet" href="https://www.npct1.co.id/css/animate.min.css" type="text/css">
+    <link rel="stylesheet" href="https://www.npct1.co.id/css/font.css" type="text/css">
+    <link rel="stylesheet" href="https://www.npct1.co.id/css/kalibaru.min.css" type="text/css">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Work+Sans:300,400,500,600,700" rel="stylesheet"> !-->
+	<link rel="stylesheet" href="https://www.npct1.co.id/css/DateTimePicker.css" type="text/css">
+    <script src="https://www.npct1.co.id/js/jquery.min.js"></script>
+    <script src="https://www.npct1.co.id/js/bootstrap.min.js"></script>
+    <script src="https://www.npct1.co.id/js/moment.min.js"></script>
+    <script src="https://www.npct1.co.id/js/kalibaru.min.js"></script>
+	
+
+
+</head>
+<body>
+    <div class="home-search">
+        <div id="myOverlay" class="overlay">
+            <span class="closebtn" onclick="closeSearch()" title="Close Overlay">×</span>
+            <div class="overlay-content">
+                <form action="/action_page.php">
+                    <input type="text" placeholder="Search.." name="search">
+                    <button type="submit"><i class="fa fa-search"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <section class="header-bottom" id="navbar">
+        <h3 class="d-none">navbar</h3>
+        <div class="container kalibaru-nav">
+            <div class="row">
+                <div class="col-md-2 col-sm-3 col-4">
+                    <a href="https://www.npct1.co.id"><img src="https://www.npct1.co.id/images/logo.png" class="img-fluid" alt="Image"></a>
+                </div>
+                <div class="col-md-10 col-sm-9 col-8">
+                    <nav class="navbar navbar-expand-lg navbar-light bg-light home-02">
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                            <ul class="navbar-nav ml-auto">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="https://www.npct1.co.id">
+                                        Beranda
+                                    </a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Tentang Kami</a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/introduction">
+                                        Profil Kami
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/board-of-directors">
+                                        Dewan Direksi</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/whistleblowing">
+                                        Whistleblowing</a>
+                                        </a>
+                                    </div>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Fasilitas Terminal</a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/terminal-information">
+                                        Informasi Terminal  </a>
+                                    </div>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown4" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Pelayanan Kami</a>
+                                    <div class="dropdown-menu dropdown-submenu" aria-labelledby="navbarDropdown4">
+                                        <a class="dropdown-item" href="#" id="navbarDropdown41" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        Keuangan <i class="fa fa-caret-right float-end"></i></a>
+                                        <div class="dropdown-menu" aria-labelledby="navbarDropdown41">
+                                            <a class="dropdown-item" href="https://www.npct1.co.id/npct1-billing-procedure">
+                                            Prosedur Billing NPCT1</a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item" href="https://www.npct1.co.id/withholding-tax-refund">
+                                            Pengembalian PPH</a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item" href="https://www.npct1.co.id/npct1-mandiri-edc-payment">
+                                            EDC Mandiri NPCT1</a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item long-text" href="https://www.npct1.co.id/circular-letter-notification-letter-of-the-restitution-procedures">
+                                            Surat Edaran: Surat Pemberitahuan Restitusi</a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item long-text" href="https://www.npct1.co.id/circular-letter-notification-letter-of-the-restitution-procedures-for-article-23-income-tax-deduction-for-port-services">
+                                            Surat Edaran: Surat Pemberitahuan Prosedur Pengembalian Dana atas Pemotongan PPH Pasal 23 untuk Jasa Kepelabuhanan</a>
+                                        </div>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/container-handling">
+                                            Penanganan Petikemas </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/reefer-handling">
+                                        Penanganan Petikemas Reefer</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/dangerous-goods-dg-handling">
+                                        Penanganan Barang Berbahaya</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/out-of-gauge-oogun-containerized-cargo-uc-cargo-handling">
+                                        Penanganan OOG (Out Of Gauge) dan Barang Uncontainerized</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/verified-gross-mass-vgm-handling">
+                                        Jembatan Timbang untuk Berat Kotor Terverifikasi (VGM)</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/integrated-facilities-for-custom-quarantine">
+                                        Area Common Gate</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/NPCT1-General-Conditions-for-Services-and-Facilities">
+                                            Ketentuan Umum Untuk Layanan dan Fasilitas di NPCT1</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/anti-bribery-policy">
+                                            Kebijakan Anti Penyuapan</a>
+                                    </div>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown6" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Berita</a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown6">
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/npct1-news">
+                                        NPCT1</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/npct1-tender">
+                                        Tender</a>
+                                    </div>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown7" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Pelayanan Online</a>
+                                    <div class="dropdown-menu dropdown-submenu" aria-labelledby="navbarDropdown7">
+                                        <a class="dropdown-item" href="#" id="navbarDropdown71" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        VGM <i class="fa fa-caret-right float-end"></i></a>
+                                        <div class="dropdown-menu" aria-labelledby="navbarDropdown71">
+                                            <a class="dropdown-item" href="https://vgm.bki.co.id/vgm-certificate/lookup" target="_blank">Sertifikat</a>
+                                            <a class="dropdown-item" href="https://www.npct1.co.id/dow">Deklarasi Berat Barang</a>
+                                        </div>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/tariff-simulation">
+                                        Simulasi Tarif</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://eportal.npct1.co.id/NPCTP/" target="_blank">
+                                        EPORTAL</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://econ.npct1.co.id" target="_blank">
+                                        ECON</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/tracking">
+                                        Pelacakan Petikemas</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/vessel-schedule">
+                                        Jadwal Kapal</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/eir">
+                                        EIR</a>
+										<div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/appointment">
+                                        Janji Temu Rapat</a>
+
+                                    </div>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown7" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Karir</a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown7">
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/philosophy">
+                                        Filosofi</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="https://www.npct1.co.id/npct1-career">
+                                        Lowongan Pekerjaan</a>
+                                    </div>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="https://www.npct1.co.id/econ-testimonial">
+                                        Testimonial
+                                    </a>
+                                </li>
+								<li class="nav-item">
+                                    <div class="select_wrap">
+                                        <ul class="default_option">
+                                                                                        <li id="idn-selected">
+                                                <div class="option idn">
+                                                    <div class="icon"><img src="https://www.npct1.co.id/images/v4-id-lang.png"></div>
+                                                    <p class="p-lang">ID</p>
+                                                </div>
+                                            </li>
+                                                                                    </ul>
+                                        <ul class="select_ul">
+                                            <li id="english" data-uri="https://www.npct1.co.id">
+                                                <div class="option eng">
+                                                    <div class="icon"><img src="https://www.npct1.co.id/images/v4-eng-lang.png"></div>
+                                                    <p class="p-lang">ENG</p>
+                                                </div>
+                                            </li>
+                                            <li id="indonesia" data-uri="https://www.npct1.co.id">
+                                                <div class="option idn">
+                                                    <div class="icon"><img src="https://www.npct1.co.id/images/v4-id-lang.png"></div>
+                                                    <p class="p-lang">ID</p>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section class="page-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h1>Container Tracking</h1>
+                <h6><a href="https://www.npct1.co.id">Home</a>  <i class="fas fa-angle-right"></i> Online Service</h6>
+            </div>
+        </div>
+    </div>
+</section>
+<div class="clearfix">&nbsp;</div>
+<section>
+    <div style="width: 75%; margin:0px auto; z-index: 999; position: relative;">
+        <form action="https://www.npct1.co.id/req/container" name="fChangeSearchContainer" id="fChangeSearchContainer" method="post" autocomplete="off">
+            <div class="row" style="margin-right: 0px !important;">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Vessel</label>
+                        <select id="vesselTrakcing" class="form-control input-lg myselect" name="vesselTracking" data-placeholder="Select Vessel" wajib="true"><option value=""></option><option value="AXPER">ACX PEARL( AXPER)</option><option value="ADAMS">ADAMS( ADAMS)</option><option value="ADVAN">ADVANCE( ADVAN)</option><option value="AKBRI">AKINADA BRIDGE( AKBRI)</option><option value="ALHIL">AL HILAL( ALHIL)</option><option value="ALGOR">ALLEGORIA( ALGOR)</option><option value="CERES">ALS CERES( CERES)</option><option value="ALVIA">ALS CLIVIA( ALVIA)</option><option value="CLIVI">ALS CLIVIA( CLIVI)</option><option value="ALHER">ALS HERCULES( ALHER)</option><option value="ALJUP">ALS JUPITER( ALJUP)</option><option value="KRONO">ALS KRONOS( KRONO)</option><option value="AMTEA">AMALTHEA( AMTEA)</option><option value="YHYP">ANDA( YHYP)</option><option value="ANDRA">ANDERSON DRAGON( ANDRA)</option><option value="ANDRO">ANDROUSA( ANDRO)</option><option value="APHOL">APL HOLLAND( APHOL)</option><option value="ARGON">APL OREGON( ARGON)</option><option value="ARICA">ARICA BRIDGE( ARICA)</option><option value="ARTOT">ARTOTINA( ARTOT)</option><option value="ASCAL">AS CALIFORNIA( ASCAL)</option><option value="CASPRI">AS CASPRIA( CASPRI)</option><option value="ASLUM">AS COLUMBIA( ASLUM)</option><option value="ASNA">AS NADIA( ASNA)</option><option value="ASNAR">AS NARA( ASNAR)</option><option value="ASLOP">AS PENELOPE( ASLOP)</option><option value="ASPIA">AS PIA( ASPIA)</option><option value="ASSER">AS SERENA( ASSER)</option><option value="SIMONE">AS SIMONE( SIMONE)</option><option value="SOPIA">AS SOPHIA( SOPIA)</option><option value="ASICE">ASIAN ACE( ASICE)</option><option value="ASTUN">ASIATIC SUN( ASTUN)</option><option value="ATHENA">ATHENA( ATHENA)</option><option value="ATHEN">ATHENS GLORY( ATHEN)</option><option value="BAIGE">BAI CHAY BRIDGE( BAIGE)</option><option value="BAYAR">BALI GIANYAR( BAYAR)</option><option value="BANUR">BALI SANUR( BANUR)</option><option value="V7BC2">BALLENITA( V7BC2)</option><option value="BALSU">BALTHASAR SCHULTE( BALSU)</option><option value="BALTI">BALTIMORE BRIDGE( BALTI)</option><option value="BANKO">BANGKOK BRIDGE( BANKO)</option><option value="BAKOK">BANGKOK( BAKOK)</option><option value="BARAS">BARITO MAS( BARAS)</option><option value="BAYGE">BAY BRIDGE( BAYGE)</option><option value="BERMO">BEAR MOUNTAIN BRIDGE( BERMO)</option><option value="BELLA">BELLATRIX I( BELLA)</option><option value="BEMAS">BENGAWAN MAS( BEMAS)</option><option value="BRLINA">BEROLINA C( BRLINA)</option><option value="BGIR06">BG LL 2506 - TB LL IRAWAN( BGIR06)</option><option value="BGCAL">BG LL 2507 - TB CALVIN LEE( BGCAL)</option><option value="BGHEL">BG LL 2509 - TB LL HELFRIT( BGHEL)</option><option value="LLDJU">BG LL 2515 - TB DJU MING( LLDJU)</option><option value="BGDJU">BG LL 2515 - TB LL DJU MING( BGDJU)</option><option value="BGODI">BG LL 2523 - TB LL DODI( BGODI)</option><option value="BLDOD">BG LL 2523 - TB LL DODI( BLDOD)</option><option value="BGIRA">BG LL 2523 - TB LL IRAWAN( BGIRA)</option><option value="BGSYUK">BG LL MASIE - TB LL SYUKUR( BGSYUK)</option><option value="BGSICA">BG LL MASSIE / TB LL JESSICA( BGSICA)</option><option value="BGSEH">BG SEJAHTERA( BGSEH)</option><option value="BGSIN">BG SINDO GARUDA KENCANA - TB BUANA 1302( BGSIN)</option><option value="SINDO">BG SINDO GARUDA KENCANA( SINDO)</option><option value="LLCAL">BG. LL 2507 - TB. LL CALVIN LEE( LLCAL)</option><option value="BGDOD">BG. LL 2523 - TB. LL DODI( BGDOD)</option><option value="BGBRA">BG. LL 2523 / TB. LL COBRA 02( BGBRA)</option><option value="LLDOD">BG. LL 2528  - TB.LL DODI( LLDOD)</option><option value="BGMAS">BG. LL MASSIE - TB. LL MASERATII( BGMAS)</option><option value="BGNUS">BG. NUSANTARA 2501( BGNUS)</option><option value="SEAGE">BG. SEA GATE 2705( SEAGE)</option><option value="BGGAR">BG. SINDO GARUDA KENCANA  -  TB. SD DIAMOND( BGGAR)</option><option value="LLDON">BG.LL 2507-TB.LL DONNY( LLDON)</option><option value="BGCLAR">BG.LL 2507/TB.LL CLARA( BGCLAR)</option><option value="BGRIC">BG.LL 2517 JN/TB. LL RICHIE( BGRIC)</option><option value="BGLIL">BG.LL2507 / TB. LL LILY( BGLIL)</option><option value="PASU3">BG.PACIFIC SUN 3 - TB ENDEAVOR 3( PASU3)</option><option value="BREEZY">BIG BREEZY( BREEZY)</option><option value="BOMIL">BOMAR MILIONE( BOMIL)</option><option value="ROSSI">BOMAR ROSSI( ROSSI)</option><option value="BOMAR">BOMAR SPRING( BOMAR)</option><option value="BOXER">BOX ENDEAVOUR( BOXER)</option><option value="BRELE">BREMEN BELLE( BRELE)</option><option value="BKELL">BRICKELL( BKELL)</option><option value="BRICO">BRIGHT COSMOS( BRICO)</option><option value="BROGE">BROOKLYN BRIDGE( BROGE)</option><option value="GMINI">BSG BIMINI( GMINI)</option><option value="BUDGE">BUDAPEST BRIDGE( BUDGE)</option><option value="BUXFA">BUXFAVOURITE( BUXFA)</option><option value="CKOBE">CA KOBE( CKOBE)</option><option value="CAMAN">CA MANILA( CAMAN)</option><option value="CSAKA">CA OSAKA( CSAKA)</option><option value="CTOKY">CA TOKYO( CTOKY)</option><option value="CAPAG">CALA PAGURO( CAPAG)</option><option value="CALI">CALI( CALI)</option><option value="CATRA">CALIFORNIA TRADER( CATRA)</option><option value="MAHON">CAPE MAHON( MAHON)</option><option value="CAMOS">CAPE MOSS( CAMOS)</option><option value="CARAT">CAPE SERRAT( CARAT)</option><option value="CARET">CAPITAINE BARET( CARET)</option><option value="THANA">CAPTAIN THANASIS I( THANA)</option><option value="CHICA">CHICAGO( CHICA)</option><option value="CHILA">CHILOE ISLAND( CHILA)</option><option value="CELTE">CLEMENS SCHULTE( CELTE)</option><option value="CCBEL">CMA CGM BELLINI( CCBEL)</option><option value="CCHKG">CMA CGM HONGKONG( CCHKG)</option><option value="CCPUC">CMA CGM PUCCINI( CCPUC)</option><option value="CCROS">CMA CGM ROSSINI( CCROS)</option><option value="2CYR9">CMA CGM TITUS( 2CYR9)</option><option value="COCAN">CONTI CANBERRA( COCAN)</option><option value="CODAR">CONTI DARWIN( CODAR)</option><option value="COSTO">CONTI STOCKHOLM( COSTO)</option><option value="COWAY">CONTSHIP WAY( COWAY)</option><option value="COWIN">CONTSHIP WIN( COWIN)</option><option value="CORBY">CORONADO BAY( CORBY)</option><option value="DELTA">CTP DELTA( DELTA)</option><option value="PMLL">CTP DELTA( PMLL)</option><option value="CGOLD">CTP GOLDEN( CGOLD)</option><option value="PNLU">CTP GOLDEN( PNLU)</option><option value="HONOR">CTP HONOUR( HONOR)</option><option value="INNOV">CTP INNOVATION( INNOV)</option><option value="POEM">CTP INNOVATION( POEM)</option><option value="DABAY">DACHAN BAY EXPRESS( DABAY)</option><option value="PMDE">DERAJAT( PMDE)</option><option value="DOVOY">DONGJIN VOYAGER( DOVOY)</option><option value="VSADI">DUMMY VS FOR TS CONTAINER( VSADI)</option><option value="DENMA">E.R DENMARK( DENMA)</option><option value="MONTP">E.R MONTPELLIER( MONTP)</option><option value="ERCHI">ERASMUS CHIEF( ERCHI)</option><option value="ERLEO">ERASMUS LEO( ERLEO)</option><option value="ESPAS">ERASMUS PASSION( ESPAS)</option><option value="KABIR">ESL KABIR( KABIR)</option><option value="SHEVA">ESL NHAVA SHEVA( SHEVA)</option><option value="EUPRA">EUPHRATES( EUPRA)</option><option value="EVBAL">EVER BALMY( EVBAL)</option><option value="EVBAS">EVER BASIS( EVBAS)</option><option value="EVBED">EVER BEADY( EVBED)</option><option value="EVBEM">EVER BEAMY( EVBEM)</option><option value="EVBIT">EVER BEFIT( EVBIT)</option><option value="EBENG">EVER BEING( EBENG)</option><option value="EVBIR">EVER BIRTH( EVBIR)</option><option value="EVBLE">EVER BLESS( EVBLE)</option><option value="BLINK">EVER BLINK( BLINK)</option><option value="H9PP">EVER BLISS( H9PP)</option><option value="EVBLO">EVER BLOOM( EVBLO)</option><option value="EVBOA">EVER BOARD( EVBOA)</option><option value="EVBON">EVER BONUS( EVBON)</option><option value="EVBOM">EVER BOOMY( EVBOM)</option><option value="EBRAC">EVER BRACE( EBRAC)</option><option value="EVBRA">EVER BRAVE( EVBRA)</option><option value="BREED">EVER BREED( BREED)</option><option value="EVBUL">EVER BUILD( EVBUL)</option><option value="EVBUR">EVER BURLY( EVBUR)</option><option value="EVCEN">EVER CENTER( EVCEN)</option><option value="CHAMP">EVER CHAMP( CHAMP)</option><option value="EVCHA">EVER CHANT( EVCHA)</option><option value="ECARM">EVER CHARM( ECARM)</option><option value="ECHAT">EVER CHART( ECHAT)</option><option value="EVCLE">EVER CLEVER( EVCLE)</option><option value="EVCOM">EVER COMPOSE( EVCOM)</option><option value="ECONI">EVER CONCISE( ECONI)</option><option value="EVORM">EVER CONFORM( EVORM)</option><option value="EVSIS">EVER CONSIST( EVSIS)</option><option value="EVCON">EVER CONVEY( EVCON)</option><option value="EVCOP">EVER COPE( EVCOP)</option><option value="EVCRO">EVER CROWN( EVCRO)</option><option value="EVOAS">EVER OASIS( EVOAS)</option><option value="OATH">EVER OATH( OATH)</option><option value="EVBEY">EVER OBEY( EVBEY)</option><option value="EVOCE">EVER OCEAN( EVOCE)</option><option value="EVONI">EVER OMNI( EVONI)</option><option value="EVARD">EVER ONWARD( EVARD)</option><option value="EVTIM">EVER OPTIMA( EVTIM)</option><option value="EVPUS">EVER OPUS( EVPUS)</option><option value="OPUS">EVER OPUS( OPUS)</option><option value="EVORD">EVER ORDER( EVORD)</option><option value="EVORI">EVER ORIENT( EVORI)</option><option value="EVODO">EVER OUTDO( EVODO)</option><option value="ERWIT">EVER OUTWIT( ERWIT)</option><option value="RAWON">EVER OWN( RAWON)</option><option value="EVWEB">EVER WEB( EVWEB)</option><option value="ERWIN">EVER WIN( ERWIN)</option><option value="ERWIZ">EVER WIZ( ERWIZ)</option><option value="EVRIK">EVRIDIKI G( EVRIK)</option><option value="EXPAR">EXPRESS ARGENTINA( EXPAR)</option><option value="FOMO">FILOTIMO( FOMO)</option><option value="FOLEG">FOLEGANDROS( FOLEG)</option><option value="FRAMAS">FRASER MAS( FRAMAS)</option><option value="FUTRE">FUTURE( FUTRE)</option><option value="GENOV">GENOVA( GENOV)</option><option value="PEARL">GFS PEARL( PEARL)</option><option value="PRIDE">GFS PRIDE( PRIDE)</option><option value="ZONDA">GH ZONDA( ZONDA)</option><option value="GITSUP">GITSUP TEST DATA( GITSUP)</option><option value="GOLTE">GOTTFRIED SCHULTE( GOLTE)</option><option value="GRACE">GREEN ACE( GRACE)</option><option value="GRETY">GREEN CLARITY( GRETY)</option><option value="GRONY">GREEN HARMONY( GRONY)</option><option value="GRAFIC">GREEN PACIFIC( GRAFIC)</option><option value="ARCAD">GSL ARCADIA( ARCAD)</option><option value="ELISA">GSL CHRISTEL ELISABETH( ELISA)</option><option value="DORHE">GSL DOROTHEA( DORHE)</option><option value="GSLELE">GSL ELEFTHERIA( GSLELE)</option><option value="GELIS">GSL ELIZABETH( GELIS)</option><option value="GSKIT">GSL KITHIRA( GSKIT)</option><option value="GLMAM">GSL MAMITSA( GLMAM)</option><option value="MELIT">GSL MELITA( MELIT)</option><option value="GSLMYN">GSL MYNY( GSLMYN)</option><option value="GNITA">GSL NICOLETTA( GNITA)</option><option value="GSPOL">GSL TRIPOLI( GSPOL)</option><option value="VINIA">GSL VINIA( VINIA)</option><option value="GTOSS">GTOS GLORY( GTOSS)</option><option value="GUNTE">GUENTHER SCHULTE( GUNTE)</option><option value="HAIPUS">HAIAN OPUS( HAIPUS)</option><option value="HALLEY">HALLEY( HALLEY)</option><option value="D5GT6">HAMMONIA SAPPHIRE( D5GT6)</option><option value="HALIA">HANSA AUSTRALIA( HALIA)</option><option value="HABIT">HANSA BITBURG( HABIT)</option><option value="HABRE">HANSA BREITENBURG( HABRE)</option><option value="HARBU">HANSA HARBURG( HARBU)</option><option value="HOMBU">HANSA HOMBURG( HOMBU)</option><option value="HAMAG">HANSA MAGDEBURG( HAMAG)</option><option value="HERTA">HERTA( HERTA)</option><option value="HFFOR">HF FORTUNE( HFFOR)</option><option value="HFLUK">HF LUCKY( HFLUK)</option><option value="HISAM">HIJAU SAMUDRA( HISAM)</option><option value="HIMAS">HILIR MAS( HIMAS)</option><option value="HMCEB">HMM CEBU( HMCEB)</option><option value="DAVAO">HMM DAVAO( DAVAO)</option><option value="HMHAR">HMM HARMONY( HMHAR)</option><option value="HMVEST">HMM HARVEST( HMVEST)</option><option value="HMHERI">HMM HERITAGE( HMHERI)</option><option value="HMMAN">HMM MANILA( HMMAN)</option><option value="HMMAS">HMM MASTER( HMMAS)</option><option value="HMMIR">HMM MIRACLE( HMMIR)</option><option value="HMBASA">HMM MOMBASA( HMBASA)</option><option value="HOLTI">HOLSATIA( HOLTI)</option><option value="HOTIA">HOLSATIA( HOTIA)</option><option value="HOPEC">HOPE C( HOPEC)</option><option value="HOPIS">HOPE ISLAND( HOPIS)</option><option value="HYACE">HYUNDAI GRACE( HYACE)</option><option value="HYUTA">HYUNDAI JAKARTA( HYUTA)</option><option value="HYPRE">HYUNDAI PREMIUM( HYPRE)</option><option value="HYSHA">HYUNDAI SHANGHAI( HYSHA)</option><option value="ICBRA">ICON  BRAVO( ICBRA)</option><option value="DANIEL">ICON DANIEL( DANIEL)</option><option value="IBRAI">ICON IBRANI XI( IBRAI)</option><option value="JAMES">ICON JAMES II 13( JAMES)</option><option value="ICEDA">INCEDA( ICEDA)</option><option value="INFER">INFERRO( INFER)</option><option value="IND10">INTAN DAYA 10( IND10)</option><option value="IDA12">INTAN DAYA 12( IDA12)</option><option value="INDA2">INTAN DAYA 2( INDA2)</option><option value="ID298">INTAN DAYA 298( ID298)</option><option value="INDA3">INTAN DAYA 3( INDA3)</option><option value="INDA9">INTAN DAYA 9( INDA9)</option><option value="TERANG">INTERASIA ENGAGE( TERANG)</option><option value="IRRAY">IRENES RAY( IRRAY)</option><option value="IRREW">IRENES REWARD( IRREW)</option><option value="IRWAR">IRENES WARWICK( IRWAR)</option><option value="IRWAV">IRENES WAVE( IRWAV)</option><option value="TALBON">ITAL BONNY( TALBON)</option><option value="TALBOS">ITAL BONUS( TALBOS)</option><option value="ALWIT">ITAL WIT( ALWIT)</option><option value="JABAY">JACKSON BAY( JABAY)</option><option value="JADRA">JADRANA( JADRA)</option><option value="JATEX">JAKARTA EXPRESS( JATEX)</option><option value="JAZAN">JAZAN( JAZAN)</option><option value="YFYC">JML ABADI( YFYC)</option><option value="JOTUN">JML FORTUNE( JOTUN)</option><option value="JOFUN">JOHAN FORTUNE( JOFUN)</option><option value="JZVB">JOHAN FORTUNE( JZVB)</option><option value="JOMAR">JOHANNES MAERSK( JOMAR)</option><option value="JOSEP">JOSEPHINE MAERSK( JOSEP)</option><option value="JPLIB">JPO LIBRA( JPLIB)</option><option value="JPOPI">JPO PISCES( JPOPI)</option><option value="JULIUS">JULIUS-S( JULIUS)</option><option value="PAHAL">KM PAHALA( PAHAL)</option><option value="PKRX">KM. BALI SANUR( PKRX)</option><option value="PMMB">KM. PHOENIX( PMMB)</option><option value="KOLAG">KOTA LAGU( KOLAG)</option><option value="KOZAR">KOTA NAZAR( KOZAR)</option><option value="LADY">LADY OF LUCK( LADY)</option><option value="LANA">LANA( LANA)</option><option value="LIMAS">LIMA SENTOSA 3002( LIMAS)</option><option value="LIN18">LINTAS 18( LIN18)</option><option value="LIBRA">LINTAS BRANTAS( LIBRA)</option><option value="LIKAM">LINTAS MAHAKAM( LIKAM)</option><option value="LISA">LISA( LISA)</option><option value="LISBO">LISBON( LISBO)</option><option value="BGANA">LL 2502 - TB ANACONDA( BGANA)</option><option value="BGDON">LL 2502 - TB LL DONNY( BGDON)</option><option value="MASCON">LL MASSIE - TB.LL ANACONDA( MASCON)</option><option value="LORI">LORI( LORI)</option><option value="LUSTE">LUDWIG SCHULTE( LUSTE)</option><option value="MADER">MADRID TRADER( MADER)</option><option value="MARAS">MAERSK ARAS( MARAS)</option><option value="MABIN">MAERSK BINTULU( MABIN)</option><option value="MADIF">MAERSK CARDIFF( MADIF)</option><option value="MARSHA">MAERSK CHATTOGRAM( MARSHA)</option><option value="MACOP">MAERSK COPENHAGEN( MACOP)</option><option value="MADAV">MAERSK DAVAO( MADAV)</option><option value="MAFRE">MAERSK FREEPORT( MAFRE)</option><option value="MARON">MAERSK GARONNE( MARON)</option><option value="HAIPO">MAERSK HAI PHONG( HAIPO)</option><option value="JABAL">MAERSK JABAL( JABAL)</option><option value="MASJAK">MAERSK JAKARTA( MASJAK)</option><option value="MAYIN">MAERSK JIANGYIN( MAYIN)</option><option value="MALUNG">MAERSK KEELUNG( MALUNG)</option><option value="MANTU">MAERSK KENTUCKY( MANTU)</option><option value="MAYANG">MAERSK KWANGYANG( MAYANG)</option><option value="MALMA">MAERSK LIMA( MALMA)</option><option value="MARDI">MAERSK NADI( MARDI)</option><option value="MAVIK">MAERSK NARVIK( MAVIK)</option><option value="MASJO">MAERSK NASSJO( MASJO)</option><option value="NESNA">MAERSK NESNA( NESNA)</option><option value="MANBO">MAERSK NINGBO( MANBO)</option><option value="MANOR">MAERSK NORBERG( MANOR)</option><option value="MODAL">MAERSK NORDDAL( MODAL)</option><option value="MANUS">MAERSK NUSANTARA( MANUS)</option><option value="MAPOR">MAERSK PORT KLANG( MAPOR)</option><option value="MAROK">MAERSK SEBAROK( MAROK)</option><option value="MASHE">MAERSK SHEKOU( MASHE)</option><option value="MASIH">MAERSK SIHANOUKVILLE( MASIH)</option><option value="MASOF">MAERSK SOFIA( MASOF)</option><option value="MASON">MAERSK SONGKHLA( MASON)</option><option value="VALEN">MAERSK VALENCIA( VALEN)</option><option value="MAVAR">MAERSK VARNA( MAVAR)</option><option value="MAVER">MAERSK VERACRUZ( MAVER)</option><option value="MAVIC">MAERSK VICTORIA( MAVIC)</option><option value="ERIGO">MAERSK VIGO( ERIGO)</option><option value="MAVIR">MAERSK VIRGINIA( MAVIR)</option><option value="MAVLA">MAERSK VLADIVOSTOK( MAVLA)</option><option value="MAWAL">MAERSK WALLIS( MAWAL)</option><option value="MAWIL">MAERSK WILLEMSTADT( MAWIL)</option><option value="MAYAM">MAERSK YAMUNA( MAYAM)</option><option value="MAYAN">MAERSK YANGTZE( MAYAN)</option><option value="MAYOK">MAERSK YOKOHAMA( MAYOK)</option><option value="MAJD">MAJD( MAJD)</option><option value="MRIAH">MARIA H( MRIAH)</option><option value="MATTA">MARIANETTA( MATTA)</option><option value="MARIN">MARINA ONE( MARIN)</option><option value="MASAP">MARINA SAPPHIRE( MASAP)</option><option value="MASPRI">MARSA PRIDE( MASPRI)</option><option value="MARSU">MARTIN SCHULTE( MARSU)</option><option value="MATIN">MATTINA( MATIN)</option><option value="MALAS">MCC ANDALAS( MALAS)</option><option value="MCEBU">MCC CEBU( MCEBU)</option><option value="CHITA">MCC CHITTAGONG( CHITA)</option><option value="MCDAN">MCC DANANG( MCDAN)</option><option value="MEDAN">MCC MEDAN( MEDAN)</option><option value="MNJIN">MCC NANJING( MNJIN)</option><option value="NINBO">MCC NINGBO( NINBO)</option><option value="QINDA">MCC QINGDAO( QINDA)</option><option value="TAIPE">MCC TAIPEI( TAIPE)</option><option value="TOKYO">MCC TOKYO( TOKYO)</option><option value="MAYON">MCC YANGON( MAYON)</option><option value="MEDQO">MEDKON QUO( MEDQO)</option><option value="MEPIS">MEMPHIS( MEPIS)</option><option value="MERAM">MERATUS AMPANA( MERAM)</option><option value="MERGO">MERATUS GORONTALO( MERGO)</option><option value="MEGIR">MERATUS JAYAGIRI( MEGIR)</option><option value="WIJAY">MERATUS JAYAWIJAYA( WIJAY)</option><option value="MERAN">MERATUS JIMBARAN( MERAN)</option><option value="MERKA">MERATUS KAHAYAN( MERKA)</option><option value="PLMT">MERATUS KAHAYAN( PLMT)</option><option value="MKATI">MERATUS KATINGAN( MKATI)</option><option value="MEBAR">MERATUS LEMBAR( MEBAR)</option><option value="MERTA">MERATUS LEMBATA( MERTA)</option><option value="MELIN">MERATUS MALINO( MELIN)</option><option value="MRMED">MERATUS MEDAN 2( MRMED)</option><option value="MEPAR">MERATUS PARIAMAN( MEPAR)</option><option value="MERPA">MERATUS PEMATANGSIANTAR( MERPA)</option><option value="TOMIN">MERATUS TOMINI( TOMIN)</option><option value="MERAC">MERKUR ARCHIPELAGO( MERAC)</option><option value="MERHO">MERKUR HORIZON( MERHO)</option><option value="MEXCO">MEXICO( MEXCO)</option><option value="MHPEG">MH PEGASUS( MHPEG)</option><option value="MINAS">MINAS BARU( MINAS)</option><option value="MIREX">MIRADOR EXPRESS( MIREX)</option><option value="MM250">MMSS 2501( MM250)</option><option value="MM502">MMSS 2502( MM502)</option><option value="MM03">MMSS 2503( MM03)</option><option value="MMSS5">MMSS 2505( MMSS5)</option><option value="MMSS">MMSS 2506( MMSS)</option><option value="MOLEX">MOL EXPLORER( MOLEX)</option><option value="MONCY">MOL PROFICIENCY( MONCY)</option><option value="MTBLI">MP THE BELICHICK( MTBLI)</option><option value="MTBRO">MP THE BROWN( MTBRO)</option><option value="MTGRO">MP THE GRONK( MTGRO)</option><option value="MTLAW">MP THE LAW( MTLAW)</option><option value="MHAWK">MS HAWK( MHAWK)</option><option value="ADITI">MSC ADITI( ADITI)</option><option value="MADU">MSC ADU V( MADU)</option><option value="ALABA">MSC ALABAMA III( ALABA)</option><option value="MALDI">MSC ALDI III( MALDI)</option><option value="ALYSSA">MSC ALYSSA( ALYSSA)</option><option value="AMERA">MSC AMEERA III( AMERA)</option><option value="MALLO">MSC ANIELLO( MALLO)</option><option value="ANUSA">MSC ANUSHA III( ANUSA)</option><option value="MSARI">MSC ARIA III( MSARI)</option><option value="MTRID">MSC ASTRID( MTRID)</option><option value="BANJUL">MSC BANJUL IV( BANJUL)</option><option value="MBANU">MSC BANU III( MBANU)</option><option value="MSBER">MSC BERN V( MSBER)</option><option value="BREME">MSC BREMERHAVEN V( BREME)</option><option value="IDRIS">MSC CALIDRIS III( IDRIS)</option><option value="CANCUN">MSC CANCUN IV( CANCUN)</option><option value="CARLA">MSC CARLA 3( CARLA)</option><option value="CAROL">MSC CAROLINA( CAROL)</option><option value="MSCEL">MSC CELINE( MSCEL)</option><option value="CERYL">MSC CHERYL 3( CERYL)</option><option value="MULAI">MSC CHULAI III( MULAI)</option><option value="CORDE">MSC CORDELIA III( CORDE)</option><option value="CORIN">MSC CORINNA( CORIN)</option><option value="DAMLA">MSC DAMLA( DAMLA)</option><option value="DONAT">MSC DONATA( DONAT)</option><option value="MSDUR">MSC DURBAN IV( MSDUR)</option><option value="EXPRE">MSC EXPRESS III( EXPRE)</option><option value="FLORE">MSC FLORENTINA( FLORE)</option><option value="MSGEN">MSC GENERAL IV( MSGEN)</option><option value="MGINA">MSC GINA( MGINA)</option><option value="MSGLO">MSC GLORY R( MSGLO)</option><option value="JAPAN">MSC JAPAN III( JAPAN)</option><option value="MSJER">MSC JERSEY( MSJER)</option><option value="KOREA">MSC KOREA III( KOREA)</option><option value="LASAR">MSC LANGSAR( LASAR)</option><option value="LIDIA">MSC LIDIA( LIDIA)</option><option value="LILOU">MSC LILOU III( LILOU)</option><option value="MLISA">MSC LISA( MLISA)</option><option value="MLYSE">MSC LYSE V( MLYSE)</option><option value="MAGNI">MSC MAGNITUDE VII( MAGNI)</option><option value="MAGNU">MSC MAGNUM VII( MAGNU)</option><option value="MSMAN">MSC MANU IV( MSMAN)</option><option value="MARTA">MSC MARGARITA( MARTA)</option><option value="MARIA">MSC MARIA PIA( MARIA)</option><option value="MNAGO">MSC NAGOYA( MNAGO)</option><option value="NEWJE">MSC NEW JERSEY III( NEWJE)</option><option value="MISHA">MSC NIMISHA III( MISHA)</option><option value="MODES">MSC ODESSA V( MODES)</option><option value="OLIA">MSC OLIA( OLIA)</option><option value="ORIAN">MSC ORIANE( ORIAN)</option><option value="MSPAO">MSC PAOLA( MSPAO)</option><option value="MSPRE">MSC PRECISION V( MSPRE)</option><option value="MSREB">MSC REBECCA III( MSREB)</option><option value="MSREG">MSC REGINA( MSREG)</option><option value="MSREN">MSC REN V( MSREN)</option><option value="MSRES">MSC RESILIENT III( MSRES)</option><option value="RINI3">MSC RINI III( RINI3)</option><option value="MSAT3">MSC SAGITTA III( MSAT3)</option><option value="SHAHA">MSC SHAHAR( SHAHA)</option><option value="SHAVI">MSC SHANVI III( SHAVI)</option><option value="MAULA">MSC SHAULA( MAULA)</option><option value="SHIVA">MSC SHIVALIKA III( SHIVA)</option><option value="CRISTI">MSC SHRISTI( CRISTI)</option><option value="SINGA">MSC SINGAPORE IV( SINGA)</option><option value="SOPHI">MSC SOPHIE( SOPHI)</option><option value="MSTAR">MSC STAR R( MSTAR)</option><option value="TAMPI">MSC TAMPICO V( TAMPI)</option><option value="TANIA">MSC TANIA( TANIA)</option><option value="MUSAN">MSC ULSAN III( MUSAN)</option><option value="VAIGA">MSC VAIGA III( VAIGA)</option><option value="MSWES">MSC WEST V( MSWES)</option><option value="MKLANG">MTT PORT KELANG( MKLANG)</option><option value="9VFC2">MV NYK DANIELLA( 9VFC2)</option><option value="A8QD6">MV. APOLLON D( A8QD6)</option><option value="CHESA">MV. CHESAPEAKE BAY( CHESA)</option><option value="VRHB2">MV. SEASPAN FRASER( VRHB2)</option><option value="SPANE">MV. SPHENE( SPANE)</option><option value="VOLAN">MV.VOLANS( VOLAN)</option><option value="NAGTO">NAGOYA TOWER( NAGTO)</option><option value="KOMAR">NAKSKOV MAERSK( KOMAR)</option><option value="NAVDO">NAVIOS DOMINO( NAVDO)</option><option value="NALAP">NAVIOS LAPIS( NALAP)</option><option value="NAMPO">NAVIOS TEMPO( NAMPO)</option><option value="NICOL">NICOLINE MAERSK( NICOL)</option><option value="NIMAS">NIMTOFTE MAERSK( NIMAS)</option><option value="NORBO">NORDBORG MAERSK( NORBO)</option><option value="NEPAR">NORDLEOPARD( NEPAR)</option><option value="NODLI">NORDLION( NODLI)</option><option value="NORMA">NORDMARSH( NORMA)</option><option value="C4FF2">NORDWOGE( C4FF2)</option><option value="NORFO">NORFOLK( NORFO)</option><option value="NODEF">NORTHERN DEFENDER( NODEF)</option><option value="NODEX">NORTHERN DEXTERITY( NODEX)</option><option value="NORDM">NORTHERN DIAMOND( NORDM)</option><option value="NOPRE">NORTHERN PRECISION( NOPRE)</option><option value="NOPRI">NORTHERN PRIORITY( NOPRI)</option><option value="PROMO">NORTHERN PROMOTION( PROMO)</option><option value="NORVI">NORTHERN VIVACITY( NORVI)</option><option value="NFUJI">NYK FUJI( NFUJI)</option><option value="9V874">NYK FUSHIMI( 9V874)</option><option value="NFUSH">NYK FUSHIMI( NFUSH)</option><option value="VARUN">OEL VARUN( VARUN)</option><option value="OKEE">OKEE CORNELIA( OKEE)</option><option value="LIVIA">OLIVIA( LIVIA)</option><option value="ORARI">ORIENTAL BRIGHT( ORARI)</option><option value="ORGAL">ORIENTAL GALAXY( ORGAL)</option><option value="ORGOL">ORIENTAL GOLD( ORGOL)</option><option value="ORIBY">ORIENTAL RUBY( ORIBY)</option><option value="ORNEL">ORNELLA( ORNEL)</option><option value="OSTOW">OSAKA TOWER( OSTOW)</option><option value="OSLO">OSLO TRADER( OSLO)</option><option value="PASU1">PACIFIC SUN 1( PASU1)</option><option value="PADI2">PADIAN 2( PADI2)</option><option value="PANCA">PANCON CHAMPION( PANCA)</option><option value="PENIX">PHOENIX D( PENIX)</option><option value="PLGER">PL GERMANY( PLGER)</option><option value="POHOR">POHORJE( POHOR)</option><option value="PONA">PONA( PONA)</option><option value="PORGE">PORTO GERMENO( PORGE)</option><option value="PORKA">PORTO KAGIO( PORKA)</option><option value="POSHO">POS HOCHIMINH( POSHO)</option><option value="PRATU">PRATIWI SATU( PRATU)</option><option value="PHOKI">PULAU HOKI( PHOKI)</option><option value="QCDUM">QC DUMMY( QCDUM)</option><option value="QITAR">QINGDAO STAR( QITAR)</option><option value="QUZON">QUEZON BRIDGE( QUZON)</option><option value="RDOFA">RDO FAVOUR( RDOFA)</option><option value="REJ10">REN JIAN 10( REJ10)</option><option value="REJ15">REN JIAN 15( REJ15)</option><option value="REJ26">REN JIAN 26( REJ26)</option><option value="REJI9">REN JIAN 9( REJI9)</option><option value="RHONE">RHONE MAERSK( RHONE)</option><option value="RIOCA">RIO CADIZ( RIOCA)</option><option value="RICHA">RIO CHARLESTON( RICHA)</option><option value="RIOKO">RIO KOBE( RIOKO)</option><option value="ROSA">ROSA( ROSA)</option><option value="SAPRO">SAFEEN PROSPER( SAPRO)</option><option value="SAFASH">SAFESEA YASH( SAFASH)</option><option value="SAGTA">SAGITTA( SAGTA)</option><option value="SAFUN">SALLY FORTUNE( SAFUN)</option><option value="PEDRO">SAN PEDRO( PEDRO)</option><option value="5BPA3">SARAH SCHULTE( 5BPA3)</option><option value="SAXON">SAXONIA( SAXON)</option><option value="SEBRE">SEABREEZE( SEBRE)</option><option value="SACATO">SEASPAN CALICANTO( SACATO)</option><option value="SEAEM">SEASPAN EMINENCE( SEAEM)</option><option value="SEFRA">SEASPAN FRASER( SEFRA)</option><option value="SEGUA">SEASPAN GUAYAQUIL( SEGUA)</option><option value="SELIN">SEASPAN LINGUE( SELIN)</option><option value="SEALU">SEASPAN LUMACO( SEALU)</option><option value="SENEW">SEASPAN NEW YORK( SENEW)</option><option value="SELIL">SELILI BARU( SELIL)</option><option value="SEGLO">SEOUL GLOW( SEGLO)</option><option value="HAWAI">SFL HAWAII( HAWAI)</option><option value="SINKA">SINAR BANGKA( SINKA)</option><option value="SIRAN">SINAR PANGANDARAN( SIRAN)</option><option value="SIPOM">SINAR POMALAA( SIPOM)</option><option value="SSUM">SINAR SUMBA( SSUM)</option><option value="SIBATA">SITC BATANGAS( SIBATA)</option><option value="SIDEC">SITC DECHENG( SIDEC)</option><option value="SIGUA">SITC GUANGXI( SIGUA)</option><option value="SIHATA">SITC HAKATA( SIHATA)</option><option value="SINDE">SITC HENGDE( SINDE)</option><option value="SIHOC">SITC HOCHIMINH( SIHOC)</option><option value="SINCHO">SITC INCHON( SINCHO)</option><option value="SILIAN">SITC LIANYUNGANG( SILIAN)</option><option value="SITAR">SITC MAKASSAR( SITAR)</option><option value="SINAN">SITC NANSHA( SINAN)</option><option value="SILANG">SITC PORTKLANG( SILANG)</option><option value="SIQIM">SITC QIMING( SIQIM)</option><option value="SITEKO">SITC SHEKOU( SITEKO)</option><option value="SISHE">SITC SHENGMING( SISHE)</option><option value="SIDAO">SITC SHIDAO( SIDAO)</option><option value="SIJIN">SITC TIANJIN( SIJIN)</option><option value="SITONG">SITC TONGHE( SITONG)</option><option value="SIXIN">SITC XINCHENG( SIXIN)</option><option value="SIYUHE" selected="selected">SITC YUHE( SIYUHE)</option><option value="SKYPE">SKY PEACE( SKYPE)</option><option value="SOHAY">SONGA HAYDN( SOHAY)</option><option value="MM503">SPGM 03 -  MMSS 2503( MM503)</option><option value="PILCA">SPIL CAYA( PILCA)</option><option value="CITRA">SPIL CITRA( CITRA)</option><option value="SIKEN">SPIL NIKEN( SIKEN)</option><option value="SPING">SPIL NINGSIH( SPING)</option><option value="SINIS">SPIL NISAKA( SINIS)</option><option value="SINITA">SPIL NITA( SINITA)</option><option value="SRAYU">SPIL RAHAYU( SRAYU)</option><option value="SRENA">SPIL RENATA( SRENA)</option><option value="RETNO">SPIL RETNO( RETNO)</option><option value="SRUM">SPIL RUMI( SRUM)</option><option value="SPION">SPIRIT OF LISBON( SPION)</option><option value="SPINT">SPRINTER( SPINT)</option><option value="STVER">ST EVER( STVER)</option><option value="STAVE">STARSHIP VENUS( STAVE)</option><option value="SUGON">SUNRISE DRAGON( SUGON)</option><option value="SUSAN">SYNERGY BUSAN( SUSAN)</option><option value="TAMIN">TAMINA( TAMIN)</option><option value="TAMAN">TASMAN( TAMAN)</option><option value="BGPSB">TB AQUARIUS - BG PSB 2510( BGPSB)</option><option value="BGCLA">TB LL CLARA - BG LL 2528( BGCLA)</option><option value="M2506">TB. SPGM 1306 - BG. MMSS 2506( M2506)</option><option value="BGM07">TB.SPGM1307 - BG. MMSS2507( BGM07)</option><option value="TEJAS">TEJAS( TEJAS)</option><option value="BERAU">TELUK BERAU( BERAU)</option><option value="TESOL">TENDER SOUL( TESOL)</option><option value="TESSA">TESSA( TESSA)</option><option value="TES">TESTING( TES)</option><option value="THORS">THORSKY( THORS)</option><option value="TINAI">TINA I( TINAI)</option><option value="BGJES">TK LL 2509 / TB LL JESSICA( BGJES)</option><option value="TMGLO">TMS GLORY( TMGLO)</option><option value="YAQING">TONG JIU JIN HAI YANG( YAQING)</option><option value="TBERG">TONSBERG( TBERG)</option><option value="TINGBO">TS NINGBO( TINGBO)</option><option value="THEKOU">TS SHEKOU( THEKOU)</option><option value="VANCO">TS VANCOUVER( VANCO)</option><option value="ULSAN">ULSAN( ULSAN)</option><option value="UNIPA">UNI PACIFIC( UNIPA)</option><option value="UNPRE">UNI PREMIER( UNPRE)</option><option value="VELA">VELA( VELA)</option><option value="VERDI">VERDI( VERDI)</option><option value="VERTI">VERTIKAL( VERTI)</option><option value="VBHUM">VIRA BHUM( VBHUM)</option><option value="VIRGO">VIRGO( VIRGO)</option><option value="VIVAL">VIVALDI( VIVAL)</option><option value="WAN316">WAN HAI 316( WAN316)</option><option value="HAI332">WAN HAI 332( HAI332)</option><option value="WAN361">WAN HAI 361( WAN361)</option><option value="HAI373">WAN HAI 373( HAI373)</option><option value="WGM">WGM 256 T( WGM)</option><option value="WIGON">WHITE DRAGON( WIGON)</option><option value="WITEL">WIDE HOTEL( WITEL)</option><option value="WIJUL">WIDE JULIET( WIJUL)</option><option value="WILET">WIDE JULIET( WILET)</option><option value="PREAN">X-PRESS ANTARES( PREAN)</option><option value="AQUA">X-PRESS AQUARIUS( AQUA)</option><option value="YMCEN">YM CENTENNIAL( YMCEN)</option><option value="YMCON">YM CONTINUITY( YMCON)</option><option value="YORK">YORK( YORK)</option><option value="ZEBRA">ZEBRA( ZEBRA)</option><option value="ZHONG">ZHONG AN XIN HUA YUAN( ZHONG)</option><option value="ZHOGU">ZHONG GU CHANG SHA( ZHOGU)</option><option value="ZHOFU">ZHONG GU FU ZHOU( ZHOFU)</option><option value="ZOYANG">ZHONG GU GUI YANG( ZOYANG)</option><option value="ZHOMI">ZHONG GU KUN MING( ZHOMI)</option><option value="GUPEG">ZHONG GU PENG LAI( GUPEG)</option><option value="ZHOYA">ZHONG GU SHEN YANG( ZHOYA)</option><option value="ZHOXIA">ZHONG GU XIA MEN( ZHOXIA)</option></select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>Voyage **</label>
+                        <input type="text" name="vesselVoyage" class="form-control form-control-wide text-uppercase" maxlength="4" value="2618">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Direction</label>
+                        <select id="vesselDirection" class="form-control input-lg myselect" name="vesselDirection" data-placeholder="Select Direction" wajib="true"><option value="IN">Export</option><option value="OUT" selected="selected">Import</option></select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>Container Number</label>
+                        <input type="text" name="vesselContainer" class="form-control form-control-wide cont-split text-uppercase" maxlength="13" value="SITU2647138">
+                    </div>
+                </div>
+            </div>
+            <div class="row" style="border-bottom: 1px solid #dee2e6; padding-bottom: 20px;">
+                <div class="col-md-12">
+                    <span class="hintvoyage small">** Input 4 (four) last characters of voyage</span>
+                    <button class="btn btn-wide-right" onclick="onlineSearch($('#fChangeSearchContainer')); return false">Tracking Container</button>
+                </div>
+            </div>
+        </form>
+                <div class="row">
+            <div class="col-sm-12 col-md-12 col-lg-12">
+                <h1 class="header-w-underscore-left">Container Detail</h1>
+            </div>
+        </div>
+        <div class="row ptsc-5 pb-10">
+            <div class="col-sm-12 col-md-12 col-lg-12">
+                <div class="form-group">
+                    <p class="hint-text all-caps font-montserrat no-margin overflow-ellipsis semi-bold fetch-row text-center"> Records not found</p>
+                </div>
+            </div>
+        </div>
+            </div>
+</section>
+    <section class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3 col-sm-6 col-xm-12">
+                    <h4>NPCT1</h4>
+                    <ul style="padding-left: 0px !important;">
+                        <li><a href="#">Jl. Terminal Kalibaru Raya Kav.B No.1, Cilincing Jakarta Utara, <br>Daerah Khusus Ibukota Jakarta 14110, Indonesia</a></li>
+                        <li><a href="#">Phone +62 21 29144888</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 col-sm-6 col-xm-12">
+                    <h4>
+                    VGM</h4>
+                    <ul style="padding-left: 0px !important;">
+                        <li><a href="https://www.npct1.co.id/npct1-billing-procedure">
+                        Prosedur Billing NPCT1</a></li>
+                        <li><a href="https://www.npct1.co.id/withholding-tax-refund">
+                        Pengembalian PPH</a></li>
+                        <li><a href="https://www.npct1.co.id/npct1-mandiri-edc-payment">
+                        EDC Mandiri NPCT1</a></li>
+                        <li><a href="https://www.npct1.co.id/circular-letter-notification-letter-of-the-restitution-procedures">
+                        Surat Edaran: Surat Pemberitahuan Restitusi</a></li>
+                        <li><a href="https://www.npct1.co.id/circular-letter-notification-letter-of-the-restitution-procedures-for-article-23-income-tax-deduction-for-port-services">
+                        Surat Edaran: Surat Pemberitahuan Prosedur Pengembalian Dana atas Pemotongan PPH Pasal  23 untuk Jasa Kepelabuhanan</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 col-sm-6 col-xm-12">
+                    <h4>
+                    Pelayanan Kami</h4>
+                    <ul style="padding-left: 0px !important;">
+                        <li><a href="https://www.npct1.co.id/container-handling">
+                        Penanganan Petikemas</a></li>
+                        <li><a href="https://www.npct1.co.id/reefer-handling">
+                        Penanganan Petikemas Reefer</a></li>
+                        <li><a href="https://www.npct1.co.id/dangerous-goods-dg-handling">
+                        Penanganan Barang Berbahaya</a></li>
+                        <li><a href="https://www.npct1.co.id/out-of-gauge-oogun-containerized-cargo-uc-cargo-handling">
+                        Penanganan OOG (Out Of Gauge) dan Barang Uncontainerized</a></li>
+                        <li><a href="https://www.npct1.co.id/verified-gross-mass-vgm-handling">
+                        Jembatan Timbang untuk Berat Kotor Terverifikasi (VGM)</a></li>
+                        <li><a href="https://www.npct1.co.id/integrated-facilities-for-custom-quarantine">
+                        Area Common Gate</a></li>
+                        <li><a href="https://www.npct1.co.id/NPCT1-General-Conditions-for-Services-and-Facilities">
+                            Ketentuan Umum Untuk Layanan dan Fasilitas di NPCT1</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 col-sm-6 col-xm-12">
+                    <h4>
+                    Link</h4>
+                    <ul style="padding-left: 0px !important;">
+                        <li><a href="https://eportal.npct1.co.id/NPCTP/" target="_blank">EPORTAL</a></li>
+                        <li><a href="https://econ.npct1.co.id" target="_blank">ECON</a></li>
+                        <li><a href="https://www.npct1.co.id/tariff-simulation">
+                        Simulasi Tarif</a></li>
+                        <li><a href="https://www.npct1.co.id/tracking">
+                        Pelacakan Petikemas</a></li>
+                        <li><a href="https://www.npct1.co.id/vessel-schedule">
+                        Jadwal Kapal</a></li>
+                        <li><a href="https://www.npct1.co.id/dow" >Deklarasi Berat Barang</a></li>
+                        <li><a href="https://vgm.bki.co.id/vgm-certificate/lookup" target="_blank">Sertifikat VGM</a></li>
+                        <li><a href="https://www.npct1.co.id/eir">EIR</a></li>
+                        <li><a href="https://www.npct1.co.id/npct1-career">
+                        Lowongan Pekerjaan</a></li>
+                        <li><a href="https://www.npct1.co.id/general-procurement-processes">
+                        Proses Pengadaan Umum</a></li>
+                        
+                    </ul>
+                </div>
+            </div>
+        </div>
+		
+    </section>
+
+    <button onclick="topFunction()" id="myBtn" class="btn" title="Go to top"><i class="fas fa-angle-up fa-2x"></i></button>
+    <a href="https://www.npct1.co.id/contact-us" id="myContact" class="btn" title="Contact Us"><i class="fas fa-envelope"></i></a>
+    <div class="loading-custom">
+        <div class="loading-custom-content"></div>
+    </div>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/select2@4.0.12/dist/js/select2.min.js"></script> !-->
+    <script src="https://www.npct1.co.id/js/select2.min.js"></script>
+    <script src="https://www.npct1.co.id/js/theme/bootbox.all.min.js"></script>
+    <script src="https://www.npct1.co.id/js/bootstrap-material-datetimepicker.js"></script>
+	<script src="https://www.npct1.co.id/js/DateTimePicker.js "></script>
+    <script src="https://www.npct1.co.id/js/custom.min.js "></script>
+</body>
+
+</html>
