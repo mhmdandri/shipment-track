@@ -433,6 +433,7 @@ export async function trackTerminalContainer(
           cache: "no-store",
           headers: {
             "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             Cookie: session.cookieStr,
             Authorization: session.sessionId,
             token: session.sessionId,
@@ -462,7 +463,10 @@ export async function trackTerminalContainer(
         const loginUrl = "https://parama.pelindo.co.id:8031/api/login";
         const loginRes = await fetch(loginUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
           cache: "no-store",
           body: JSON.stringify({
             username: process.env.PARAMA_USERNAME || "Solichin80",
