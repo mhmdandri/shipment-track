@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     console.log("-> enableTerminalMonitoring result:", monitorRes);
 
     if (monitorRes.success) {
-      if (monitorRes.message === "Container is already being monitored.") {
+      if (monitorRes.data?.message === "Container is already being monitored.") {
         await sendWhatsappMessage(
           sender,
           `✅ Kontainer *${result.containerNo}* sudah dalam daftar pantauan aktif. Anda akan dikabari saat status berubah menjadi GNSTK!`

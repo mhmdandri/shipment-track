@@ -13,18 +13,28 @@ export interface TerminalTrackingResult {
   isMonitored?: boolean;
 }
 
+import { z } from "zod";
+
+const trackInputSchema = z.object({
+  port: z.string().min(2),
+  containerNo: z.string().min(5, "Container number must be at least 5 characters"),
+  vesselName: z.string().optional(),
+  voyageNo: z.string().optional(),
+});
+
 export async function trackTerminalContainer(
   port: string,
   containerNo: string,
   vesselName?: string,
   voyageNo?: string
 ): Promise<TerminalTrackingResult> {
-  if (!containerNo || containerNo.trim() === "") {
+  const parsed = trackInputSchema.safeParse({ port, containerNo, vesselName, voyageNo });
+  if (!parsed.success) {
     return {
       success: false,
       port,
       containerNo,
-      error: "Container number cannot be empty.",
+      error: parsed.error.errors.map(e => e.message).join(", "),
     };
   }
 
