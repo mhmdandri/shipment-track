@@ -5,6 +5,7 @@ import { fetchWithRetry } from "./fetch-with-retry";
 export async function sendWhatsappMessage(phone: string, text: string) {
   const WAHA_URL = process.env.WAHA_URL;
   const WAHA_API_KEY = process.env.WAHA_API_KEY;
+  const WAHA_SESSION = process.env.WAHA_SESSION || "default";
 
   if (!WAHA_URL) {
     console.error("Missing WAHA_URL configuration in .env");
@@ -20,7 +21,7 @@ export async function sendWhatsappMessage(phone: string, text: string) {
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "Accept": "application/json",
+      Accept: "application/json",
     };
 
     if (WAHA_API_KEY) {
@@ -33,14 +34,16 @@ export async function sendWhatsappMessage(phone: string, text: string) {
       body: JSON.stringify({
         chatId: chatId,
         text,
-        session: "default",
+        session: WAHA_SESSION,
       }),
       retries: 2,
       timeoutMs: 10000,
     });
 
     if (!response.ok) {
-      console.error(`WhatsApp API error: ${response.status} - ${await response.text()}`);
+      console.error(
+        `WhatsApp API error: ${response.status} - ${await response.text()}`,
+      );
       return false;
     }
 
