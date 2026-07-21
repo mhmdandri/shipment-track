@@ -9,11 +9,19 @@ ARG NODE_VERSION=24.13.0-slim
 
 FROM node:${NODE_VERSION} AS dependencies
 
+# Install OpenSSL required by Prisma (Debian slim uses apt-get)
+RUN apt-get update -y && apt-get install -y openssl
+
 # Set working directory
 WORKDIR /app
 
 # Copy package-related files first to leverage Docker's caching mechanism
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
+# MUST COPY PRISMA SCHEMA BEFORE INSTALL (because postinstall runs prisma generate)
+COPY prisma ./prisma
+
+# Force pnpm v9 to avoid strict approve-builds policy of v10/v11
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 # Install project dependencies with frozen lockfile for reproducible builds
 RUN --mount=type=cache,target=/root/.npm \
@@ -22,9 +30,9 @@ RUN --mount=type=cache,target=/root/.npm \
   if [ -f package-lock.json ]; then \
     npm ci --no-audit --no-fund; \
   elif [ -f yarn.lock ]; then \
-    corepack enable yarn && yarn install --frozen-lockfile --production=false; \
+    yarn install --frozen-lockfile --production=false; \
   elif [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm install --frozen-lockfile; \
+    pnpm install --frozen-lockfile; \
   else \
     echo "No lockfile found." && exit 1; \
   fi
@@ -62,7 +70,8 @@ RUN if [ -f package-lock.json ]; then \
   elif [ -f yarn.lock ]; then \
     corepack enable yarn && yarn build; \
   elif [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm build; \
+    # Jalankan next build secara langsung untuk melompati skrip 'migrate' di package.json
+    ./node_modules/.bin/next build; \
   else \
     echo "No lockfile found." && exit 1; \
   fi
@@ -73,6 +82,9 @@ RUN if [ -f package-lock.json ]; then \
 
 FROM node:${NODE_VERSION} AS runner
 
+# Install OpenSSL required by Prisma runtime
+RUN apt-get update -y && apt-get install -y openssl
+
 # Set working directory
 WORKDIR /app
 
@@ -80,11 +92,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the run time.
-# ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy production assets
 COPY --from=builder --chown=node:node /app/public ./public
@@ -94,13 +101,11 @@ RUN mkdir .next
 RUN chown node:node .next
 
 # Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
-# If you want to persist the fetch cache generated during the build so that
-# cached responses are available immediately on startup, uncomment this line:
-# COPY --from=builder --chown=node:node /app/.next/cache ./.next/cache
+# KUNCI UNTUK PRISMA: Copy folder prisma agar migrate deploy bisa dijalankan di server
+COPY --from=builder --chown=node:node /app/prisma ./prisma
 
 # Switch to non-root user for security best practices
 USER node
@@ -108,5 +113,5 @@ USER node
 # Expose port 3000 to allow HTTP traffic
 EXPOSE 3000
 
-# Start Next.js standalone server
-CMD ["node", "server.js"]
+# Start Next.js standalone server and run migrations first
+CMD npx prisma migrate deploy && node server.js
