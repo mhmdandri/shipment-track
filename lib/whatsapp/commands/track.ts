@@ -44,12 +44,13 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
     return;
   }
 
-  // Check if it's already GNSTK
-  if (result.status === "GNSTK") {
-    console.log("-> Status is already GNSTK. Replying and skipping monitor...");
+  // Check if it's already outgate
+  const isOutgate = ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some(s => result.status?.toUpperCase().includes(s));
+  if (isOutgate) {
+    console.log("-> Status is already OUTGATE. Replying and skipping monitor...");
     await sendWhatsappMessage(
       sender,
-      whatsappMessage.alreadyGNSTK(result.containerNo, result.port, result.time || "-")
+      whatsappMessage.outgate(result.containerNo, result.port, result.time || "-")
     );
     return;
   }

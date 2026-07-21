@@ -212,77 +212,86 @@ export default function TerminalTrackerPage() {
             </div>
 
             <div className="p-6">
-              {!result.success ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <Info className="w-6 h-6 text-destructive" />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-foreground">
-                      Tracking Failed
-                    </h4>
-                    <p className="text-sm text-muted-foreground max-w-md">
-                      {result.error}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-border rounded-xl bg-card gap-4">
-                  <div className="space-y-1.5">
-                    <p className="text-sm text-muted-foreground font-semibold flex items-center gap-1.5">
-                      <MapPin className="w-4 h-4 text-primary" />
-                      Terminal Allocation
-                    </p>
-                    <p className="font-black text-lg text-foreground uppercase tracking-tight">
-                      {TERMINALS.find((t) => t.id === result.port)?.name ||
-                        result.port}
-                    </p>
-                  </div>
+              {(() => {
+                const isOutgate = ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some(s => result.status?.toUpperCase().includes(s));
 
-                  <div className="flex items-center gap-4">
-                    <div className="space-y-1 text-right">
-                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                        Status
-                      </p>
-                      <Badge
-                        variant={
-                          result.status === "GNSTK" ? "default" : "secondary"
-                        }
-                        className="font-black tracking-widest text-xs px-3 py-1"
-                      >
-                        {result.status === "GNSTK"
-                          ? "TERSEDIA (GNSTK)"
-                          : `BELUM TERSEDIA (${result.status})`}
-                      </Badge>
-                    </div>
-
-                    {result.status === "GNSTK" && result.time && (
-                      <div className="space-y-1 text-right border-l border-border pl-4">
-                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                          Time
-                        </p>
-                        <p className="font-mono font-bold text-sm bg-muted px-2 py-0.5 rounded border border-border text-foreground">
-                          {result.time}
+                if (!result.success) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-8 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                        <Info className="w-6 h-6 text-destructive" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-foreground">
+                          Tracking Failed
+                        </h4>
+                        <p className="text-sm text-muted-foreground max-w-md">
+                          {result.error}
                         </p>
                       </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                    </div>
+                  );
+                }
 
-              {/* Monitoring Box */}
-              {result && result.success && result.status !== "GNSTK" && (
-                <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-primary flex items-center gap-2">
-                      <BellRing className="w-4 h-4" />
-                      Auto-Monitor Container
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      We will check this container every 30 minutes and notify
-                      you via Telegram when it gets a yard allocation (GNSTK).
-                    </p>
+                return (
+                  <>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-border rounded-xl bg-card gap-4">
+                      <div className="space-y-1.5">
+                        <p className="text-sm text-muted-foreground font-semibold flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4 text-primary" />
+                          Terminal Allocation
+                        </p>
+                        <p className="font-black text-lg text-foreground uppercase tracking-tight">
+                          {TERMINALS.find((t) => t.id === result.port)?.name ||
+                            result.port}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="space-y-1 text-right">
+                          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                            Status
+                          </p>
+                          <Badge
+                            variant={
+                              isOutgate ? "destructive" : result.status === "GNSTK" ? "default" : "secondary"
+                            }
+                            className="font-black tracking-widest text-xs px-3 py-1"
+                          >
+                            {isOutgate
+                              ? `SUDAH KELUAR (${result.status})`
+                              : result.status === "GNSTK"
+                              ? "TERSEDIA (GNSTK)"
+                              : `BELUM TERSEDIA (${result.status})`}
+                          </Badge>
+                        </div>
+
+                      {result.time && (
+                        <div className="space-y-1 text-right border-l border-border pl-4">
+                          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                            Time
+                          </p>
+                          <p className="font-mono font-bold text-sm bg-muted px-2 py-0.5 rounded border border-border text-foreground">
+                            {result.time}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Monitoring Box */}
+                  {!isOutgate && (
+                    <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-primary flex items-center gap-2">
+                          <BellRing className="w-4 h-4" />
+                          Auto-Monitor Container
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          We will check this container every 30 minutes and notify
+                          you via WhatsApp on every status change until it leaves the port (OUTGATE).
+                        </p>
+                      </div>
                   <div>
                     {monitorMessage ? (
                       <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
@@ -316,10 +325,13 @@ export default function TerminalTrackerPage() {
                   </div>
                 </div>
               )}
-            </div>
-          </Card>
-        </div>
-      )}
+            </>
+          );
+        })()}
+      </div>
+    </Card>
+  </div>
+)}
     </div>
   );
 }

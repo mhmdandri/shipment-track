@@ -1,6 +1,6 @@
 export interface WhatsappCommandContext {
   sender: string;
-  payload: any;
+  payload: unknown;
   text: string;
   args: string[];
 }

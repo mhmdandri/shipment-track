@@ -43,36 +43,47 @@ export async function GET(request: Request) {
         monitor.voyageNo || undefined
       );
 
-      // Check if it reached the final yard allocation (GNSTK)
-      // Note: For KOJA, we don't know their exact 'GNSTK' string yet.
-      // So if KOJA's status changes from ONVSL to something else, we treat it as a yard allocation to notify the user.
-      const isGnstkExact = result.status === "GNSTK";
-      const isUnknownPortChange = 
-        monitor.port === "koja" && 
-        result.status && result.status !== "ONVSL" && result.status !== monitor.status;
+      const newStatus = result.status || "UNKNOWN";
 
-      if (result.success && (isGnstkExact || isUnknownPortChange)) {
-        const finalStatus = isGnstkExact ? "GNSTK" : result.status!;
+      if (result.success && newStatus !== monitor.status && newStatus !== "UNKNOWN") {
+        // Status has changed!
+
+        // Determine if it's Outgate
+        const isOutgate = ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some(s => newStatus.toUpperCase().includes(s));
         
         // Update database
         await prisma.terminalMonitor.update({
           where: { id: monitor.id },
-          data: { isActive: false, status: finalStatus, updatedAt: new Date() },
+          data: { 
+            status: newStatus, 
+            isActive: !isOutgate, 
+            updatedAt: new Date() 
+          },
         });
 
-        // Send Telegram notification
-        const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${finalStatus}</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
-        await sendTelegramMessage(telegramMsg);
+        // Telegram Logic: Only send when it hits GNSTK for the first time
+        if (newStatus === "GNSTK" && monitor.status !== "GNSTK") {
+          const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${newStatus}</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
+          await sendTelegramMessage(telegramMsg);
+        }
 
-        // Send WhatsApp notification if number is present
+        // WhatsApp Logic: Every change
         if (monitor.waNumber) {
-          const waMsg = whatsappMessage.statusChangedToGNSTK(monitor.containerNo, monitor.port, result.time || "-");
-          await sendWhatsappMessage(monitor.waNumber, waMsg);
+          if (isOutgate) {
+            const waMsg = whatsappMessage.outgate(monitor.containerNo, monitor.port, result.time || "-");
+            await sendWhatsappMessage(monitor.waNumber, waMsg);
+          } else if (newStatus === "GNSTK") {
+            const waMsg = whatsappMessage.statusChangedToGNSTK(monitor.containerNo, monitor.port, result.time || "-");
+            await sendWhatsappMessage(monitor.waNumber, waMsg);
+          } else {
+            const waMsg = whatsappMessage.statusChanged(monitor.containerNo, monitor.port, monitor.status, newStatus, result.time || "-");
+            await sendWhatsappMessage(monitor.waNumber, waMsg);
+          }
         }
 
         processed.push({
           containerNo: monitor.containerNo,
-          status: `Updated to ${finalStatus}`,
+          status: `Updated to ${newStatus} (isActive: ${!isOutgate})`,
         });
       } else {
         processed.push({

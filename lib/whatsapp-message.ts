@@ -76,7 +76,7 @@ Status saat ini
 
 Sistem akan melakukan pengecekan otomatis secara berkala.
 
-Anda akan menerima notifikasi ketika status berubah menjadi *GNSTK*.`,
+Anda akan menerima notifikasi setiap ada perubahan status hingga kontainer *OUTGATE*.`,
 
   alreadyMonitoring: (container: string, port: string) => `ℹ️ *Monitoring Sudah Aktif*
 
@@ -85,7 +85,7 @@ Anda akan menerima notifikasi ketika status berubah menjadi *GNSTK*.`,
 
 Kontainer sudah berada dalam daftar pemantauan.
 
-Anda akan menerima notifikasi ketika status berubah menjadi *GNSTK*.`,
+Anda akan menerima notifikasi setiap ada perubahan status hingga kontainer *OUTGATE*.`,
 
   monitoringFailed: (container: string, port: string, status: string, error: string) => `⚠️ *Monitoring Gagal Diaktifkan*
 
@@ -113,7 +113,7 @@ Status
 
 Monitoring sudah aktif.
 
-Anda akan menerima notifikasi ketika status berubah menjadi *GNSTK*.`,
+Anda akan menerima notifikasi setiap ada perubahan status hingga kontainer *OUTGATE*.`,
 
   statusChangedToGNSTK: (container: string, port: string, time: string) => `🎉 *Update Status Kontainer*
 
@@ -128,9 +128,31 @@ Waktu
 
 🕒 ${time}
 
-Kontainer telah memperoleh lokasi yard.
+Kontainer telah memperoleh lokasi yard.`,
 
-Auto monitoring telah dihentikan.`,
+  statusChanged: (container: string, port: string, oldStatus: string, newStatus: string, time: string) => `🔄 *Update Status Kontainer*
+
+📦 Container : *${container}*
+🏢 Terminal  : *${port.toUpperCase()}*
+
+Status berubah dari *${oldStatus}* menjadi:
+🟡 *${newStatus}*
+
+Waktu
+🕒 ${time}`,
+
+  outgate: (container: string, port: string, time: string) => `🚚 *Kontainer OUTGATE*
+
+📦 Container : *${container}*
+🏢 Terminal  : *${port.toUpperCase()}*
+
+Status terbaru
+🏁 *OUTGATE*
+
+Waktu Keluar
+🕒 ${time}
+
+Auto monitoring telah dihentikan otomatis.`,
 
   unknownCommand: () => `❌ *Unknown Command*
 
