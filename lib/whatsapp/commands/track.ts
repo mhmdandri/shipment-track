@@ -77,13 +77,6 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
         sender,
         whatsappMessage.alreadyMonitoring(result.containerNo, result.port)
       );
-    } else {
-      // If it's a new monitor, enableTerminalMonitoring will automatically send a confirmation message.
-      // We only append the current status here.
-      await sendWhatsappMessage(
-        sender,
-        whatsappMessage.currentStatus(result.containerNo, result.port, result.status)
-      );
     }
   } else {
     await sendWhatsappMessage(
