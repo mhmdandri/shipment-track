@@ -148,10 +148,6 @@ to see available commands.`,
 
 /list
 
-/status <container>
-
-/stop <container>
-
 /help`,
 
   listTrack: (total: number, items: { containerNo: string, port: string, status: string }[]) => {

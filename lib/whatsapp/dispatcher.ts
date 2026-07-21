@@ -2,9 +2,7 @@ import { WhatsappCommandContext } from "./types";
 import {
   handleTrackCommand,
   handleListCommand,
-  handleStopCommand,
   handleHelpCommand,
-  handleStatusCommand,
 } from "@/lib/whatsapp/commands";
 import { sendWhatsappMessage } from "../whatsapp";
 import { whatsappMessage } from "../whatsapp-message";
@@ -27,14 +25,8 @@ export async function dispatchWhatsappCommand(context: WhatsappCommandContext) {
     case "list":
       await handleListCommand(context);
       break;
-    case "stop":
-      await handleStopCommand(context);
-      break;
     case "help":
       await handleHelpCommand(context);
-      break;
-    case "status":
-      await handleStatusCommand(context);
       break;
     default:
       console.log(`-> Unknown Command: ${commandWord}`);
