@@ -130,5 +130,50 @@ Waktu
 
 Kontainer telah memperoleh lokasi yard.
 
-Auto monitoring telah dihentikan.`
+Auto monitoring telah dihentikan.`,
+
+  unknownCommand: () => `❌ *Unknown Command*
+
+Type
+
+/help
+
+to see available commands.`,
+
+  help: () => `*Available Commands*
+
+/track <container> <terminal>
+
+/track <container> NPCT1 <Vessel> <Voyage>
+
+/list
+
+/status <container>
+
+/stop <container>
+
+/help`,
+
+  listTrack: (total: number, items: { containerNo: string, port: string, status: string }[]) => {
+    if (total === 0) return `ℹ️ Anda belum memantau kontainer apapun.`;
+    
+    let listStr = `📋 *Active Monitoring*\n\n`;
+    items.forEach((item, index) => {
+      listStr += `${index + 1}.\n\n📦 ${item.containerNo}\n🏢 ${item.port.toUpperCase()}\nStatus : ${item.status}\n\n`;
+    });
+    listStr += `Total :\n${total} Container(s)`;
+    return listStr;
+  },
+
+  stopSuccess: () => `✅ Monitoring stopped`,
+
+  stopFailed: () => `Container is not currently monitored.`,
+
+  statusResult: (container: string, port: string, status: string, time: string) => `📋 *Status Saat Ini*
+
+📦 Container : *${container}*
+🏢 Terminal  : *${port.toUpperCase()}*
+
+Status : ${status}
+Waktu  : ${time}`
 };
