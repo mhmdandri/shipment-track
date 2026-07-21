@@ -14,6 +14,9 @@ export async function dispatchWhatsappCommand(context: WhatsappCommandContext) {
   const rawArgs = text.trim().split(/\s+/);
   if (rawArgs.length === 0 || !rawArgs[0]) return;
 
+  // Require commands to start with "/"
+  if (!rawArgs[0].startsWith("/")) return;
+
   // Normalize command: remove leading '/', lowercase it
   const commandWord = rawArgs[0].replace(/^\//, "").toLowerCase();
 
