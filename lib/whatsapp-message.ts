@@ -4,7 +4,7 @@ export const whatsappMessage = {
 Sedang memeriksa status kontainer.
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Mohon tunggu beberapa saat...`,
 
@@ -33,10 +33,14 @@ Contoh:
 
 track EMCU6137410 NPCT1 EVBIT 080B`,
 
-  trackingFailed: (container: string, port: string, error: string) => `❌ *Kontainer Tidak Ditemukan*
+  trackingFailed: (
+    container: string,
+    port: string,
+    error: string,
+  ) => `❌ *Kontainer Tidak Ditemukan*
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Silakan pastikan:
 
@@ -48,10 +52,14 @@ Detail:
 
 ${error}`,
 
-  alreadyGNSTK: (container: string, port: string, time: string) => `✅ *Kontainer Sudah GNSTK*
+  alreadyGNSTK: (
+    container: string,
+    port: string,
+    time: string,
+  ) => `✅ *Kontainer Sudah GNSTK*
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Status
 
@@ -65,32 +73,40 @@ Kontainer sudah berada di yard.
 
 Tidak perlu dimonitor lagi.`,
 
-  monitoringEnabled: (container: string, port: string, status: string) => `✅ *Auto Monitoring Aktif*
+  monitoringEnabled: (
+    container: string,
+    port: string,
+    status: string,
+  ) => `✅ *Auto Monitoring Aktif*
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Status saat ini
 
 🟡 *${status}*
 
-Sistem akan melakukan pengecekan otomatis secara berkala.
+Sistem akan melakukan pengecekan otomatis secara berkala.`,
 
-Anda akan menerima notifikasi setiap ada perubahan status hingga kontainer *OUTGATE*.`,
-
-  alreadyMonitoring: (container: string, port: string) => `ℹ️ *Monitoring Sudah Aktif*
-
-📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
-
-Kontainer sudah berada dalam daftar pemantauan.
-
-Anda akan menerima notifikasi setiap ada perubahan status hingga kontainer *OUTGATE*.`,
-
-  monitoringFailed: (container: string, port: string, status: string, error: string) => `⚠️ *Monitoring Gagal Diaktifkan*
+  alreadyMonitoring: (
+    container: string,
+    port: string,
+  ) => `ℹ️ *Monitoring Sudah Aktif*
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
+
+Kontainer sudah berada dalam daftar pemantauan.`,
+
+  monitoringFailed: (
+    container: string,
+    port: string,
+    status: string,
+    error: string,
+  ) => `⚠️ *Monitoring Gagal Diaktifkan*
+
+📦 Container : *${container}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Status saat ini
 
@@ -102,23 +118,29 @@ Detail
 
 ${error}`,
 
-  currentStatus: (container: string, port: string, status: string) => `📋 *Status Saat Ini*
+  currentStatus: (
+    container: string,
+    port: string,
+    status: string,
+  ) => `📋 *Status Saat Ini*
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Status
 
 🟡 *${status}*
 
-Monitoring sudah aktif.
+Monitoring sudah aktif.`,
 
-Anda akan menerima notifikasi setiap ada perubahan status hingga kontainer *OUTGATE*.`,
-
-  statusChangedToGNSTK: (container: string, port: string, time: string) => `🎉 *Update Status Kontainer*
+  statusChangedToGNSTK: (
+    container: string,
+    port: string,
+    time: string,
+  ) => `🎉 *Update Status Kontainer*
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Status terbaru
 
@@ -130,10 +152,16 @@ Waktu
 
 Kontainer telah memperoleh lokasi yard.`,
 
-  statusChanged: (container: string, port: string, oldStatus: string, newStatus: string, time: string) => `🔄 *Update Status Kontainer*
+  statusChanged: (
+    container: string,
+    port: string,
+    oldStatus: string,
+    newStatus: string,
+    time: string,
+  ) => `🔄 *Update Status Kontainer*
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Status berubah dari *${oldStatus}* menjadi:
 🟡 *${newStatus}*
@@ -141,10 +169,14 @@ Status berubah dari *${oldStatus}* menjadi:
 Waktu
 🕒 ${time}`,
 
-  outgate: (container: string, port: string, time: string) => `🚚 *Kontainer OUTGATE*
+  outgate: (
+    container: string,
+    port: string,
+    time: string,
+  ) => `🚚 *Kontainer OUTGATE*
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Status terbaru
 🏁 *OUTGATE*
@@ -152,7 +184,7 @@ Status terbaru
 Waktu Keluar
 🕒 ${time}
 
-Auto monitoring telah dihentikan otomatis.`,
+Monitoring selesai`,
 
   unknownCommand: () => `❌ *Unknown Command*
 
@@ -172,9 +204,12 @@ to see available commands.`,
 
 /help`,
 
-  listTrack: (total: number, items: { containerNo: string, port: string, status: string }[]) => {
+  listTrack: (
+    total: number,
+    items: { containerNo: string; port: string; status: string }[],
+  ) => {
     if (total === 0) return `ℹ️ Anda belum memantau kontainer apapun.`;
-    
+
     let listStr = `📋 *Active Monitoring*\n\n`;
     items.forEach((item, index) => {
       listStr += `${index + 1}.\n\n📦 ${item.containerNo}\n🏢 ${item.port.toUpperCase()}\nStatus : ${item.status}\n\n`;
@@ -187,11 +222,16 @@ to see available commands.`,
 
   stopFailed: () => `Container is not currently monitored.`,
 
-  statusResult: (container: string, port: string, status: string, time: string) => `📋 *Status Saat Ini*
+  statusResult: (
+    container: string,
+    port: string,
+    status: string,
+    time: string,
+  ) => `📋 *Status Saat Ini*
 
 📦 Container : *${container}*
-🏢 Terminal  : *${port.toUpperCase()}*
+🏢 Terminal   : *${port.toUpperCase()}*
 
 Status : ${status}
-Waktu  : ${time}`
+Waktu  : ${time}`,
 };
