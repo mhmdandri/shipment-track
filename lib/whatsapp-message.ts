@@ -6,7 +6,15 @@ Sedang memeriksa status kontainer.
 📦 Container : *${container}*
 🏢 Terminal   : *${port.toUpperCase()}*
 
-Mohon tunggu beberapa saat...`,
+Automonitoring aktif. Mohon tunggu jika ada update...`,
+
+  trackingMultiStarted: (count: number, port: string) => `🔍 *Pengecekan Dimulai*
+
+Sedang memeriksa status *${count} kontainer* sekaligus.
+
+🏢 Terminal   : *${port.toUpperCase()}*
+
+Automonitoring aktif. Mohon tunggu jika ada update...`,
 
   invalidCommand: () => `❌ *Format Perintah Salah*
 
