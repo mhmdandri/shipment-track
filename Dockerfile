@@ -43,6 +43,9 @@ RUN --mount=type=cache,target=/root/.npm \
 
 FROM node:${NODE_VERSION} AS builder
 
+# Install OpenSSL required by Prisma generate
+RUN apt-get update -y && apt-get install -y openssl
+
 # Set working directory
 WORKDIR /app
 
@@ -70,6 +73,8 @@ RUN if [ -f package-lock.json ]; then \
   elif [ -f yarn.lock ]; then \
     corepack enable yarn && yarn build; \
   elif [ -f pnpm-lock.yaml ]; then \
+    # Generate Prisma Client (Karena output-nya ada di /app/generated/prisma)
+    npx prisma generate; \
     # Jalankan next build secara langsung untuk melompati skrip 'migrate' di package.json
     ./node_modules/.bin/next build; \
   else \
