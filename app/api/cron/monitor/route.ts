@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
+import { whatsappMessage } from "@/lib/whatsapp-message";
 
 // This forces Next.js to not cache the response of this route
 export const dynamic = "force-dynamic";
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
 
         // Send WhatsApp notification if number is present
         if (monitor.waNumber) {
-          const waMsg = `🚨 *YARD ALLOCATION UPDATE* 🚨\n\nContainer *${monitor.containerNo}* di *${monitor.port.toUpperCase()}* sepertinya sudah turun ke yard!\nStatus Baru: *${finalStatus}*\nWaktu: ${result.time || "-"}\n\nSilakan periksa langkah operasional selanjutnya.`;
+          const waMsg = whatsappMessage.statusChangedToGNSTK(monitor.containerNo, monitor.port, result.time || "-");
           await sendWhatsappMessage(monitor.waNumber, waMsg);
         }
 

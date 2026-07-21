@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
 import { enableTerminalMonitoring } from "@/actions/monitor-action";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
+import { whatsappMessage } from "@/lib/whatsapp-message";
 
 export async function POST(request: Request) {
   try {
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
       console.log("-> Error: Invalid format (less than 3 args)");
       await sendWhatsappMessage(
         sender,
-        "❌ *Format Salah*\n\nGunakan format:\n`track <NoContainer> <Port>`\n\nContoh: `track EMCU6137410 JICT`\n\nUntuk NPCT1:\n`track <NoContainer> NPCT1 <VesselCode> <VoyageNo>`"
+        whatsappMessage.invalidCommand()
       );
       return NextResponse.json({ success: true, message: "Invalid format" });
     }
@@ -62,14 +63,14 @@ export async function POST(request: Request) {
       console.log("-> Error: NPCT1 missing vessel/voyage");
       await sendWhatsappMessage(
         sender,
-        "❌ *NPCT1 Butuh Data Kapal*\n\nUntuk port NPCT1, mohon sertakan Vessel Code dan Voyage No.\n\nContoh:\n`track EMCU6137410 NPCT1 EVBIT 080B`"
+        whatsappMessage.npctMissingData()
       );
       return NextResponse.json({ success: true, message: "NPCT1 missing args" });
     }
 
     // Inform user that tracking has started processing
     console.log("-> Sending initial 'Sedang memeriksa' message...");
-    const sentInitial = await sendWhatsappMessage(sender, `🔍 Sedang memeriksa status kontainer *${containerNo}* di *${port.toUpperCase()}*...`);
+    const sentInitial = await sendWhatsappMessage(sender, whatsappMessage.trackingStarted(containerNo, port));
     console.log("-> Initial message sent result:", sentInitial);
 
     // 5. Call the tracking function
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
       console.log("-> Error: Tracking failed or status empty");
       await sendWhatsappMessage(
         sender,
-        `❌ *Gagal Melacak*\n\nKontainer *${containerNo}* tidak ditemukan atau terjadi kesalahan.\nError: ${result.error || "Unknown"}`
+        whatsappMessage.trackingFailed(containerNo, port, result.error || "Unknown")
       );
       return NextResponse.json({ success: true, message: "Tracking failed" });
     }
@@ -91,16 +92,14 @@ export async function POST(request: Request) {
       console.log("-> Status is already GNSTK. Replying and skipping monitor...");
       await sendWhatsappMessage(
         sender,
-        `✅ *Kontainer Sudah Tersedia (GNSTK)*\n\nKontainer *${result.containerNo}* di *${result.port.toUpperCase()}* sudah mendapatkan lokasi yard.\nWaktu: ${result.time || "-"}\n\nTidak perlu dimasukkan ke auto-monitor.`
+        whatsappMessage.alreadyGNSTK(result.containerNo, result.port, result.time || "-")
       );
       return NextResponse.json({ success: true, message: "Already GNSTK" });
     }
 
-    // Extract raw phone number from sender (e.g., "62812...@c.us" -> "62812...")
-    let waNumber = sender.replace(/\D/g, "");
-    if (waNumber.startsWith("0")) {
-      waNumber = "62" + waNumber.substring(1);
-    }
+    // Keep the exact sender ID (which includes @c.us or @g.us)
+    // so it can reply to groups or individuals properly.
+    const waNumber = sender;
 
     // 6. Enable Monitoring
     console.log("-> Enabling monitor for", waNumber);
@@ -118,20 +117,20 @@ export async function POST(request: Request) {
       if (monitorRes.data?.message === "Container is already being monitored.") {
         await sendWhatsappMessage(
           sender,
-          `✅ Kontainer *${result.containerNo}* sudah dalam daftar pantauan aktif. Anda akan dikabari saat status berubah menjadi GNSTK!`
+          whatsappMessage.alreadyMonitoring(result.containerNo, result.port)
         );
       } else {
         // If it's a new monitor, enableTerminalMonitoring will automatically send a confirmation message.
         // We only append the current status here.
         await sendWhatsappMessage(
           sender,
-          `ℹ️ Status awal saat ini: *${result.status}*`
+          whatsappMessage.currentStatus(result.containerNo, result.port, result.status)
         );
       }
     } else {
       await sendWhatsappMessage(
         sender,
-        `⚠️ *Peringatan*\n\nStatus saat ini: *${result.status}*, tapi gagal menambahkan ke sistem auto-monitor.\nError: ${monitorRes.error}`
+        whatsappMessage.monitoringFailed(result.containerNo, result.port, result.status, monitorRes.error || "Unknown error")
       );
     }
 

@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
+import { whatsappMessage } from "@/lib/whatsapp-message";
 
 import { z } from "zod";
 import { ActionResponse } from "@/lib";
@@ -68,7 +69,7 @@ export async function enableTerminalMonitoring(
     }
 
     if (messageSent) {
-      const msg = `👁 *MONITORING STARTED* 👁\n\nContainer *${containerNo}* at *${port.toUpperCase()}* has been added to the watchlist.\n\nThe system will automatically check the yard allocation status every *30 minutes*. You will be notified as soon as it receives a yard location (GNSTK).`;
+      const msg = whatsappMessage.monitoringEnabled(containerNo, port.toUpperCase(), status || "-");
       const telegramMsg = `👁 <b>MONITORING STARTED</b> 👁\n\nContainer <code>${containerNo}</code> at <b>${port.toUpperCase()}</b> has been added to the watchlist.\n\nThe system will automatically check the yard allocation status every <b>30 minutes</b>. You will be notified as soon as it receives a yard location (GNSTK).`;
       
       // Execute notifications concurrently

@@ -8,6 +8,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { trackTerminalContainer } from "../actions/terminal-track-action";
 import { sendTelegramMessage } from "../lib/telegram";
 import { sendWhatsappMessage } from "../lib/whatsapp";
+import { whatsappMessage } from "../lib/whatsapp-message";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -50,7 +51,7 @@ async function runMonitor() {
         await sendTelegramMessage(telegramMsg);
 
         if (monitor.waNumber) {
-          const waMsg = `🚨 *YARD ALLOCATION UPDATE* 🚨\n\nContainer *${monitor.containerNo}* di *${monitor.port.toUpperCase()}* sepertinya sudah turun ke yard!\nStatus Baru: *${finalStatus}*\nWaktu: ${result.time || "-"}\n\nSilakan periksa langkah operasional selanjutnya.`;
+          const waMsg = whatsappMessage.statusChangedToGNSTK(monitor.containerNo, monitor.port, result.time || "-");
           await sendWhatsappMessage(monitor.waNumber, waMsg);
         }
 
