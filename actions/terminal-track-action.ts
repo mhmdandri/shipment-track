@@ -239,6 +239,7 @@ export async function trackTerminalContainer(
 
       let foundStatus = "";
       let foundTime = "";
+      let foundOutTime = "";
 
       table.find("tr").each((_, row) => {
         $(row)
@@ -250,6 +251,9 @@ export async function trackTerminalContainer(
             }
             if (text === "In Time / Stack CY") {
               foundTime = $(td).next("td").text().trim();
+            }
+            if (text === "Out Time / Gate Out" || text.includes("Out Time") || text.includes("Gate Out")) {
+              foundOutTime = $(td).next("td").text().trim();
             }
           });
       });
@@ -263,7 +267,8 @@ export async function trackTerminalContainer(
         };
       }
 
-      let finalStatus = foundStatus;
+      let finalStatus = foundStatus.toUpperCase();
+      let finalTime = foundTime;
 
       // If "In Time / Stack CY" is filled (meaning it has a valid timestamp),
       // it means the container has secured a yard location, so we map to GNSTK.
@@ -273,12 +278,19 @@ export async function trackTerminalContainer(
         }
       }
 
+      if (finalStatus.includes("GATE OUT") || finalStatus.includes("GATEOUT") || finalStatus.includes("DELIVERED") || finalStatus.includes("OUTGT")) {
+        finalStatus = "OUTGT";
+        if (foundOutTime && foundOutTime.trim() !== "" && foundOutTime.trim() !== "-") {
+          finalTime = foundOutTime;
+        }
+      }
+
       return {
         success: true,
         port,
         containerNo,
         status: finalStatus,
-        time: foundTime, // Stack CY time
+        time: finalTime, // Stack CY time or Out time
         isMonitored,
       };
     }
@@ -382,19 +394,30 @@ export async function trackTerminalContainer(
         };
       }
 
-      // Parse Container In time
+      // Parse Container In and Out times
       let foundTime = "";
+      let foundOutTime = "";
       $("p.hint-text").each((_, el) => {
-        if ($(el).text().trim() === "Container In") {
+        const text = $(el).text().trim().toUpperCase();
+        if (text === "CONTAINER IN" || text.includes("STACK")) {
           foundTime = $(el).next("h5").text().trim();
+        } else if (text === "CONTAINER OUT" || text.includes("GATE OUT")) {
+          foundOutTime = $(el).next("h5").text().trim();
         }
       });
 
       // Normalize NPCT1 Status
       // NPCT1 returns "STACKING YARD" when it has reached the yard
       let finalStatus = foundStatus.toUpperCase();
+      let finalTime = foundTime;
+
       if (finalStatus === "STACKING YARD") {
         finalStatus = "GNSTK";
+      } else if (finalStatus.includes("GATEOUT") || finalStatus.includes("GATE OUT") || finalStatus.includes("DELIVERED")) {
+        finalStatus = "OUTGT";
+        if (foundOutTime) {
+          finalTime = foundOutTime;
+        }
       }
 
       // "Log & Observe" Strategy: return the mapped or raw NPCT1 status
@@ -403,7 +426,7 @@ export async function trackTerminalContainer(
         port,
         containerNo,
         status: finalStatus,
-        time: foundTime,
+        time: finalTime,
         isMonitored,
       };
     }

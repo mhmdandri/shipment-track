@@ -13,8 +13,8 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
     return;
   }
 
-  // Find the port index (jict, npct1, koja, tmal)
-  const knownPorts = ["jict", "npct1", "koja", "tmal"];
+  // Find the port index (jict, npct1, koja, tmal, ter3, parama)
+  const knownPorts = ["jict", "npct1", "koja", "tmal", "ter3", "parama"];
   let portIndex = -1;
   for (let i = 1; i < args.length; i++) {
     if (knownPorts.includes(args[i].toLowerCase().replace(/,/g, ""))) {
