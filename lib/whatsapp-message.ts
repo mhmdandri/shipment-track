@@ -8,7 +8,10 @@ Sedang memeriksa status kontainer.
 
 Automonitoring aktif. Mohon tunggu jika ada update...`,
 
-  trackingMultiStarted: (count: number, port: string) => `🔍 *Pengecekan Dimulai*
+  trackingMultiStarted: (
+    count: number,
+    port: string,
+  ) => `🔍 *Pengecekan Dimulai*
 
 Sedang memeriksa status *${count} kontainer* sekaligus.
 
@@ -60,27 +63,6 @@ Detail:
 
 ${error}`,
 
-  alreadyGNSTK: (
-    container: string,
-    port: string,
-    time: string,
-  ) => `✅ *Kontainer Sudah GNSTK*
-
-📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
-
-Status
-
-🟢 *GNSTK*
-
-Waktu
-
-🕒 ${time}
-
-Kontainer sudah berada di yard.
-
-Tidak perlu dimonitor lagi.`,
-
   monitoringEnabled: (
     container: string,
     port: string,
@@ -95,16 +77,6 @@ Status saat ini
 🟡 *${status}*
 
 Sistem akan melakukan pengecekan otomatis secara berkala.`,
-
-  alreadyMonitoring: (
-    container: string,
-    port: string,
-  ) => `ℹ️ *Monitoring Sudah Aktif*
-
-📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
-
-Kontainer sudah berada dalam daftar pemantauan.`,
 
   monitoringFailed: (
     container: string,
@@ -125,21 +97,6 @@ Namun terjadi kesalahan saat mengaktifkan auto monitoring.
 Detail
 
 ${error}`,
-
-  currentStatus: (
-    container: string,
-    port: string,
-    status: string,
-  ) => `📋 *Status Saat Ini*
-
-📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
-
-Status
-
-🟡 *${status}*
-
-Monitoring sudah aktif.`,
 
   statusChangedToGNSTK: (
     container: string,
@@ -211,6 +168,23 @@ to see available commands.`,
 /list
 
 /help`,
+  changedToOb: (
+    container: string,
+    port: string,
+    status: string,
+    ob?: string,
+    obName?: string,
+  ) => `🚨 *CONTAINER OB* 🚨
+
+📦 Container : *${container}*
+🏢 Terminal   : *${port.toUpperCase()}*
+🏗️ Gudang    :  *${obName}*
+
+Status saat ini
+
+🟡 *${status} (${ob})*
+
+Sistem akan melakukan pengecekan otomatis secara berkala.`,
 
   listTrack: (
     total: number,
@@ -225,21 +199,4 @@ to see available commands.`,
     listStr += `Total :\n${total} Container(s)`;
     return listStr;
   },
-
-  stopSuccess: () => `✅ Monitoring stopped`,
-
-  stopFailed: () => `Container is not currently monitored.`,
-
-  statusResult: (
-    container: string,
-    port: string,
-    status: string,
-    time: string,
-  ) => `📋 *Status Saat Ini*
-
-📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
-
-Status : ${status}
-Waktu  : ${time}`,
 };

@@ -9,10 +9,8 @@ import {
   BellRing,
   CheckCircle2,
 } from "lucide-react";
-import {
-  trackTerminalContainer,
-  TerminalTrackingResult,
-} from "@/actions/terminal-track-action";
+import { trackTerminalContainer } from "@/actions/terminal-track-action";
+import type { TerminalTrackingResult } from "@/actions/tracking/types";
 import { enableTerminalMonitoring } from "@/actions/monitor-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -213,7 +211,13 @@ export default function TerminalTrackerPage() {
 
             <div className="p-6">
               {(() => {
-                const isOutgate = ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some(s => result.status?.toUpperCase().includes(s));
+                const isOutgate = [
+                  "OUTGATE",
+                  "GATE OUT",
+                  "GATEOUT",
+                  "OUTGT",
+                  "DELIVERED",
+                ].some((s) => result.status?.toUpperCase().includes(s));
 
                 if (!result.success) {
                   return (
@@ -254,84 +258,91 @@ export default function TerminalTrackerPage() {
                           </p>
                           <Badge
                             variant={
-                              isOutgate ? "destructive" : result.status === "GNSTK" ? "default" : "secondary"
+                              isOutgate
+                                ? "destructive"
+                                : result.status === "GNSTK"
+                                  ? "default"
+                                  : "secondary"
                             }
                             className="font-black tracking-widest text-xs px-3 py-1"
                           >
                             {isOutgate
                               ? `SUDAH KELUAR (${result.status})`
                               : result.status === "GNSTK"
-                              ? "TERSEDIA (GNSTK)"
-                              : `BELUM TERSEDIA (${result.status})`}
+                                ? "TERSEDIA (GNSTK)"
+                                : `BELUM TERSEDIA (${result.status})`}
                           </Badge>
                         </div>
 
-                      {result.time && (
-                        <div className="space-y-1 text-right border-l border-border pl-4">
-                          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                            Time
-                          </p>
-                          <p className="font-mono font-bold text-sm bg-muted px-2 py-0.5 rounded border border-border text-foreground">
-                            {result.time}
+                        {result.time && (
+                          <div className="space-y-1 text-right border-l border-border pl-4">
+                            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                              {isOutgate ? "OUTGATE TIME" : "TIME"}
+                            </p>
+                            <p className="font-mono font-bold text-sm bg-muted px-2 py-0.5 rounded border border-border text-foreground">
+                              {isOutgate ? result.timeOut : result.time}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Monitoring Box */}
+                    {!isOutgate && (
+                      <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-primary flex items-center gap-2">
+                            <BellRing className="w-4 h-4" />
+                            Auto-Monitor Container
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            We will check this container every 30 minutes and
+                            notify you via WhatsApp on every status change until
+                            it leaves the port (OUTGATE).
                           </p>
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Monitoring Box */}
-                  {!isOutgate && (
-                    <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <h4 className="font-bold text-primary flex items-center gap-2">
-                          <BellRing className="w-4 h-4" />
-                          Auto-Monitor Container
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          We will check this container every 30 minutes and notify
-                          you via WhatsApp on every status change until it leaves the port (OUTGATE).
-                        </p>
-                      </div>
-                  <div>
-                    {monitorMessage ? (
-                      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
-                        <CheckCircle2 className="w-4 h-4" />
-                        {monitorMessage}
-                      </div>
-                    ) : result.isMonitored ? (
-                      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Already Monitored
-                      </div>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        <Input
-                          placeholder="WhatsApp Number (e.g. 62812...)"
-                          value={waNumber}
-                          onChange={(e) => setWaNumber(e.target.value)}
-                          className="w-full sm:w-64 bg-background border-primary/20 focus-visible:ring-primary/30"
-                          disabled={monitorLoading}
-                        />
-                        <Button
-                          onClick={handleMonitor}
-                          disabled={monitorLoading}
-                          variant="default"
-                          className="w-full sm:w-auto font-bold shadow-sm shadow-primary/20"
-                        >
-                          {monitorLoading ? "Enabling..." : "Enable Monitoring"}
-                        </Button>
+                        <div>
+                          {monitorMessage ? (
+                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
+                              <CheckCircle2 className="w-4 h-4" />
+                              {monitorMessage}
+                            </div>
+                          ) : result.isMonitored ? (
+                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
+                              <CheckCircle2 className="w-4 h-4" />
+                              Already Monitored
+                            </div>
+                          ) : (
+                            <div className="flex flex-col sm:flex-row gap-3">
+                              <Input
+                                placeholder="WhatsApp Number (e.g. 62812...)"
+                                value={waNumber}
+                                onChange={(e) => setWaNumber(e.target.value)}
+                                className="w-full sm:w-64 bg-background border-primary/20 focus-visible:ring-primary/30"
+                                disabled={monitorLoading}
+                              />
+                              <Button
+                                onClick={handleMonitor}
+                                disabled={monitorLoading}
+                                variant="default"
+                                className="w-full sm:w-auto font-bold shadow-sm shadow-primary/20"
+                              >
+                                {monitorLoading
+                                  ? "Enabling..."
+                                  : "Enable Monitoring"}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
-                  </div>
-                </div>
-              )}
-            </>
-          );
-        })()}
-      </div>
-    </Card>
-  </div>
-)}
+                  </>
+                );
+              })()}
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

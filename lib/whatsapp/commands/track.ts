@@ -34,8 +34,8 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
   const containerString = args.slice(1, portIndex).join(" ");
   const containers = containerString
     .split(/[\s,]+/)
-    .map(c => c.trim().toUpperCase())
-    .filter(c => c.length > 0);
+    .map((c) => c.trim().toUpperCase())
+    .filter((c) => c.length > 0);
 
   const port = args[portIndex].toLowerCase().replace(/,/g, "");
   const vesselName = args[portIndex + 1]?.toUpperCase();
@@ -50,35 +50,60 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
 
   // Send initial message
   if (containers.length > 1) {
-    console.log(`-> Sending initial 'Sedang memeriksa ${containers.length} kontainer' message...`);
-    await sendWhatsappMessage(sender, whatsappMessage.trackingMultiStarted(containers.length, port));
+    console.log(
+      `-> Sending initial 'Sedang memeriksa ${containers.length} kontainer' message...`,
+    );
+    await sendWhatsappMessage(
+      sender,
+      whatsappMessage.trackingMultiStarted(containers.length, port),
+    );
   } else {
     console.log("-> Sending initial 'Sedang memeriksa' message...");
-    await sendWhatsappMessage(sender, whatsappMessage.trackingStarted(containers[0], port));
+    await sendWhatsappMessage(
+      sender,
+      whatsappMessage.trackingStarted(containers[0], port),
+    );
   }
 
   // Process all containers sequentially or concurrently
   for (const containerNo of containers) {
     console.log(`-> Calling trackTerminalContainer for ${containerNo}...`);
-    const result = await trackTerminalContainer(port, containerNo, vesselName, voyageNo);
+    const result = await trackTerminalContainer(
+      port,
+      containerNo,
+      vesselName,
+      voyageNo,
+    );
     console.log(`-> trackTerminalContainer result for ${containerNo}:`, result);
 
     if (!result.success || !result.status) {
       console.log(`-> Error: Tracking failed for ${containerNo}`);
       await sendWhatsappMessage(
         sender,
-        whatsappMessage.trackingFailed(containerNo, port, result.error || "Unknown")
+        whatsappMessage.trackingFailed(
+          containerNo,
+          port,
+          result.error || "Unknown",
+        ),
       );
       continue;
     }
 
     // Check if it's already outgate
-    const isOutgate = ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some(s => result.status?.toUpperCase().includes(s));
+    const upperStatus = result.status?.toUpperCase() || "";
+    const isOutgate = ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some(s => upperStatus.includes(s)) && !upperStatus.includes("PLANNING");
+    
     if (isOutgate) {
-      console.log(`-> Status is already OUTGATE for ${containerNo}. Replying and skipping monitor...`);
+      console.log(
+        `-> Status is already OUTGATE for ${containerNo}. Replying and skipping monitor...`,
+      );
       await sendWhatsappMessage(
         sender,
-        whatsappMessage.outgate(result.containerNo, result.port, result.time || "-")
+        whatsappMessage.outgate(
+          result.containerNo,
+          result.port,
+          result.timeOut || result.time || "-",
+        ),
       );
       continue;
     }
@@ -91,14 +116,22 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
       result.status,
       sender,
       vesselName,
-      voyageNo
+      voyageNo,
     );
-    console.log(`-> enableTerminalMonitoring result for ${containerNo}:`, monitorRes);
+    console.log(
+      `-> enableTerminalMonitoring result for ${containerNo}:`,
+      monitorRes,
+    );
 
     if (!monitorRes.success) {
       await sendWhatsappMessage(
         sender,
-        whatsappMessage.monitoringFailed(result.containerNo, result.port, result.status, monitorRes.error || "Unknown error")
+        whatsappMessage.monitoringFailed(
+          result.containerNo,
+          result.port,
+          result.status,
+          monitorRes.error || "Unknown error",
+        ),
       );
     }
   }
