@@ -17,6 +17,7 @@ interface Ter3HandlingItem {
 interface Ter3DataRec {
   statusCode?: string;
   updateTime?: string;
+  customerName?: string;
   handling?: Ter3HandlingItem[];
 }
 
@@ -100,7 +101,9 @@ export async function login(): Promise<
   const rawSetCookies = loginRes.headers.getSetCookie
     ? loginRes.headers.getSetCookie()
     : [];
-  const cookieStr = rawSetCookies.map((c: string) => c.split(";")[0]).join("; ");
+  const cookieStr = rawSetCookies
+    .map((c: string) => c.split(";")[0])
+    .join("; ");
 
   const session: Ter3Session = {
     sessionId: loginData.sessionId,
@@ -116,7 +119,7 @@ export async function login(): Promise<
 
 export async function attemptTrack(
   session: Ter3Session | null,
-  containerNo: string
+  containerNo: string,
 ): Promise<Ter3TrackResponse | null> {
   if (!session) return null;
 
@@ -169,7 +172,7 @@ export function normalizeStatus(rec: Ter3DataRec): {
 }
 
 export async function trackTer3(
-  input: TrackInput
+  input: TrackInput,
 ): Promise<TerminalTrackingResult> {
   const { port, containerNo } = input;
 
@@ -186,7 +189,7 @@ export async function trackTer3(
 
   if (!trackData || trackData.code !== "1") {
     console.log(
-      `[TER3] Session empty or expired. Performing LOGIN for ${containerNo}...`
+      `[TER3] Session empty or expired. Performing LOGIN for ${containerNo}...`,
     );
     const loginResult = await login();
     if (!loginResult.success) {
@@ -200,7 +203,7 @@ export async function trackTer3(
     session = loginResult.session;
     trackData = await attemptTrack(session, containerNo);
   }
-
+  const customerName = trackData?.dataRec?.customerName;
   if (!trackData || trackData.code !== "1" || !trackData.dataRec) {
     return {
       success: false,
@@ -218,6 +221,7 @@ export async function trackTer3(
     containerNo,
     status: normalized.status,
     time: normalized.time,
+    customer: customerName,
   };
 }
 

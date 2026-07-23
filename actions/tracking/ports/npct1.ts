@@ -88,6 +88,7 @@ export async function parseTracking(html: string): Promise<{
   foundOutTime: string;
   foundOb: string;
   foundObName: string;
+  foundCustomer: string;
 }> {
   const $ = await getCheerio(html);
 
@@ -99,6 +100,7 @@ export async function parseTracking(html: string): Promise<{
   let foundOutTime = "";
   let foundOb = "";
   let foundObName = "";
+  let foundCustomer = "";
   $("p.hint-text").each((_, el) => {
     const text = $(el).text().trim().toUpperCase();
     if (text === "CONTAINER IN" || text.includes("STACK")) {
@@ -109,10 +111,19 @@ export async function parseTracking(html: string): Promise<{
       foundOb = $(el).next("h5").text().trim();
     } else if (text === "REMARK") {
       foundObName = $(el).next("h5").text().trim();
+    } else if (text === "SHIPPER / CONSIGNEE") {
+      foundCustomer = $(el).next("h5").text().trim();
     }
   });
 
-  return { foundStatus, foundTime, foundOutTime, foundOb, foundObName };
+  return {
+    foundStatus,
+    foundTime,
+    foundOutTime,
+    foundOb,
+    foundObName,
+    foundCustomer,
+  };
 }
 
 export function normalizeStatus(
@@ -215,6 +226,7 @@ export async function trackNpct1(
     time: normalized.time,
     ob: parsed.foundOb,
     obName: parsed.foundObName,
+    customer: parsed.foundCustomer,
   };
 }
 

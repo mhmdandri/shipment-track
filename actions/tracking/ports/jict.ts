@@ -5,7 +5,7 @@ import { getCheerio } from "../utils";
 function tlsFetch(
   hostname: string,
   path: string,
-  postData: string
+  postData: string,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const socket = tls.connect(
@@ -23,7 +23,7 @@ function tlsFetch(
           `Connection: close\r\n\r\n` +
           postData;
         socket.write(request);
-      }
+      },
     );
 
     let data = Buffer.alloc(0);
@@ -96,6 +96,7 @@ export function parseResponse(
     const status = (data[20] as string) || "";
     const time = (data[32] as string) || "";
     const timeOut = (data[31] as string) || "";
+    const customer = (data[26] as string) || "";
     return {
       success: true,
       port,
@@ -103,6 +104,7 @@ export function parseResponse(
       status,
       time,
       timeOut,
+      customer,
     };
   } else if (Array.isArray(data) && data[0] === "99") {
     return {

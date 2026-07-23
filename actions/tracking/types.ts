@@ -12,6 +12,7 @@ export interface TerminalTrackingResult {
   error?: string;
   raw?: unknown;
   isMonitored?: boolean;
+  customer?: string;
 }
 
 export interface TrackInput {

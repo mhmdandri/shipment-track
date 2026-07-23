@@ -80,7 +80,10 @@ export async function GET(request: Request) {
         });
 
         // Telegram Logic: Only send when it hits GNSTK for the first time
-        if (newStatus.startsWith("GNSTK") && !monitor.status.startsWith("GNSTK")) {
+        if (
+          newStatus.startsWith("GNSTK") &&
+          !monitor.status.startsWith("GNSTK")
+        ) {
           const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${newStatus}</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
           await sendTelegramMessage(telegramMsg);
         }
@@ -91,11 +94,23 @@ export async function GET(request: Request) {
           : result.time || "-";
         if (monitor.waNumber) {
           if (isOutgate) {
-            const waMsg = whatsappMessage.outgate(
-              monitor.containerNo,
-              monitor.port,
-              hasil,
-            );
+            const wasOb = isOb || monitor.status.includes("(OB)");
+            let waMsg: string;
+            if (wasOb) {
+              waMsg = whatsappMessage.pulledToOb(
+                monitor.containerNo,
+                monitor.port,
+                hasil,
+                result.obName || result.ob || "Gudang OB",
+              );
+            } else {
+              waMsg = whatsappMessage.outgate(
+                monitor.containerNo,
+                monitor.port,
+                hasil,
+                result.customer || "-",
+              );
+            }
             await sendWhatsappMessage(monitor.waNumber, waMsg);
           } else if (isOb) {
             const waMsg = whatsappMessage.changedToOb(

@@ -2,7 +2,7 @@ import { PortTracker, TerminalTrackingResult, TrackInput } from "../types";
 import { getCheerio } from "../utils";
 
 export async function fetchHtml(
-  containerNo: string
+  containerNo: string,
 ): Promise<{ ok: boolean; status: number; html?: string }> {
   const params = new URLSearchParams();
   params.set("CNTR_ID", containerNo);
@@ -16,7 +16,7 @@ export async function fetchHtml(
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: params.toString(),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -32,6 +32,7 @@ export async function parseLocation(html: string): Promise<{
   foundStatus: string;
   foundTime: string;
   foundOutTime: string;
+  foundCustomer: string;
 }> {
   const $ = await getCheerio(html);
   const table = $("table#datatables");
@@ -42,12 +43,14 @@ export async function parseLocation(html: string): Promise<{
       foundStatus: "",
       foundTime: "",
       foundOutTime: "",
+      foundCustomer: "",
     };
   }
 
   let foundStatus = "";
   let foundTime = "";
   let foundOutTime = "";
+  let foundCustomer = "";
 
   table.find("tr").each((_, row) => {
     $(row)
@@ -67,16 +70,25 @@ export async function parseLocation(html: string): Promise<{
         ) {
           foundOutTime = $(td).next("td").text().trim();
         }
+        if (text === "Consignee") {
+          foundCustomer = $(td).next("td").text().trim();
+        }
       });
   });
 
-  return { tableFound: true, foundStatus, foundTime, foundOutTime };
+  return {
+    tableFound: true,
+    foundStatus,
+    foundTime,
+    foundOutTime,
+    foundCustomer,
+  };
 }
 
 export function normalizeStatus(
   foundStatus: string,
   foundTime: string,
-  foundOutTime: string
+  foundOutTime: string,
 ): { status: string; time: string } {
   let finalStatus = foundStatus.toUpperCase();
   let finalTime = foundTime;
@@ -96,7 +108,7 @@ export function normalizeStatus(
     ) {
       finalTime = foundOutOutTimeOrTime(foundOutTime);
     }
-  } 
+  }
   // If not OUTGATE, check if it has a stack time (GNSTK)
   else if (finalStatus !== "GNSTK") {
     if (foundTime && foundTime.trim() !== "" && foundTime.trim() !== "-") {
@@ -112,7 +124,7 @@ function foundOutOutTimeOrTime(outTime: string): string {
 }
 
 export async function trackKoja(
-  input: TrackInput
+  input: TrackInput,
 ): Promise<TerminalTrackingResult> {
   const { port, containerNo } = input;
   const res = await fetchHtml(containerNo);
@@ -148,7 +160,7 @@ export async function trackKoja(
   const normalized = normalizeStatus(
     parsed.foundStatus,
     parsed.foundTime,
-    parsed.foundOutTime
+    parsed.foundOutTime,
   );
 
   return {
@@ -157,6 +169,7 @@ export async function trackKoja(
     containerNo,
     status: normalized.status,
     time: normalized.time,
+    customer: parsed.foundCustomer,
   };
 }
 

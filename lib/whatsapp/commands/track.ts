@@ -91,8 +91,11 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
 
     // Check if it's already outgate
     const upperStatus = result.status?.toUpperCase() || "";
-    const isOutgate = ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some(s => upperStatus.includes(s)) && !upperStatus.includes("PLANNING");
-    
+    const isOutgate =
+      ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some((s) =>
+        upperStatus.includes(s),
+      ) && !upperStatus.includes("PLANNING");
+
     if (isOutgate) {
       console.log(
         `-> Status is already OUTGATE for ${containerNo}. Replying and skipping monitor...`,
@@ -103,6 +106,23 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
           result.containerNo,
           result.port,
           result.timeOut || result.time || "-",
+          result.customer || "-",
+        ),
+      );
+      continue;
+    }
+
+    // Check if it's already monitored
+    if (result.isMonitored) {
+      console.log(
+        `-> Container ${containerNo} is already monitored. Replying and skipping monitor...`,
+      );
+      await sendWhatsappMessage(
+        sender,
+        whatsappMessage.alreadyMonitored(
+          result.containerNo,
+          result.port,
+          result.status,
         ),
       );
       continue;

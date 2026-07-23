@@ -98,6 +98,21 @@ Detail
 
 ${error}`,
 
+  alreadyMonitored: (
+    container: string,
+    port: string,
+    status: string,
+  ) => `ℹ️ *Kontainer Sudah Dipantau*
+
+📦 Container : *${container}*
+🏗️ Terminal   : *${port.toUpperCase()}*
+
+Status saat ini
+
+🟡 *${status}*
+
+Kontainer ini sudah masuk dalam daftar auto monitoring aktif.`,
+
   statusChangedToGNSTK: (
     container: string,
     port: string,
@@ -138,13 +153,33 @@ Waktu
     container: string,
     port: string,
     time: string,
+    customer: string,
   ) => `🚚 *Kontainer OUTGATE*
 
 📦 Container : *${container}*
 🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status terbaru
-🏁 *OUTGATE*
+🏁 *OUTGATE* to *${customer}*
+
+Waktu Keluar
+🕒 ${time}
+
+Monitoring selesai`,
+
+  pulledToOb: (
+    container: string,
+    port: string,
+    time: string,
+    obName: string,
+  ) => `🚚 *Kontainer Ditarik ke Gudang OB*
+
+📦 Container : *${container}*
+🏗️ Terminal   : *${port.toUpperCase()}*
+🏢 Gudang     : *${obName}*
+
+Status terbaru
+🏁 *OUTGATE* to *${obName}*
 
 Waktu Keluar
 🕒 ${time}
