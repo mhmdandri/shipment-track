@@ -81,14 +81,7 @@ export function normalizeStatus(
   let finalStatus = foundStatus.toUpperCase();
   let finalTime = foundTime;
 
-  // If "In Time / Stack CY" is filled (meaning it has a valid timestamp),
-  // it means the container has secured a yard location, so we map to GNSTK.
-  if (finalStatus !== "GNSTK") {
-    if (foundTime && foundTime.trim() !== "" && foundTime.trim() !== "-") {
-      finalStatus = "GNSTK";
-    }
-  }
-
+  // Check OUTGATE first
   if (
     finalStatus.includes("GATE OUT") ||
     finalStatus.includes("GATEOUT") ||
@@ -102,6 +95,12 @@ export function normalizeStatus(
       foundOutTime.trim() !== "-"
     ) {
       finalTime = foundOutOutTimeOrTime(foundOutTime);
+    }
+  } 
+  // If not OUTGATE, check if it has a stack time (GNSTK)
+  else if (finalStatus !== "GNSTK") {
+    if (foundTime && foundTime.trim() !== "" && foundTime.trim() !== "-") {
+      finalStatus = "GNSTK";
     }
   }
 

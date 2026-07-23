@@ -45,7 +45,9 @@ export async function GET(request: Request) {
 
       const isOb =
         (result.ob?.length ?? 0) > 0 &&
-        (result.ob?.toUpperCase().includes("PLP") ?? false);
+        ((result.ob?.toUpperCase().includes("PLP") ||
+          result.ob?.toUpperCase().includes("OBX")) ??
+          false);
       let newStatus = result.status || "UNKNOWN";
 
       // Append (OB) to status so it's treated as a new change when OB appears

@@ -51,7 +51,7 @@ track EMCU6137410 NPCT1 EVBIT 080B`,
   ) => `❌ *Kontainer Tidak Ditemukan*
 
 📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
+🏗️ Terminal   : *${port.toUpperCase()}*
 
 Silakan pastikan:
 
@@ -70,7 +70,7 @@ ${error}`,
   ) => `✅ *Auto Monitoring Aktif*
 
 📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
+🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status saat ini
 
@@ -86,7 +86,7 @@ Sistem akan melakukan pengecekan otomatis secara berkala.`,
   ) => `⚠️ *Monitoring Gagal Diaktifkan*
 
 📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
+🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status saat ini
 
@@ -105,7 +105,7 @@ ${error}`,
   ) => `🎉 *Update Status Kontainer*
 
 📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
+🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status terbaru
 
@@ -126,7 +126,7 @@ Kontainer telah memperoleh lokasi yard.`,
   ) => `🔄 *Update Status Kontainer*
 
 📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
+🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status berubah dari *${oldStatus}* menjadi:
 🟡 *${newStatus}*
@@ -141,7 +141,7 @@ Waktu
   ) => `🚚 *Kontainer OUTGATE*
 
 📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
+🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status terbaru
 🏁 *OUTGATE*
@@ -177,8 +177,8 @@ to see available commands.`,
   ) => `🚨 *CONTAINER OB* 🚨
 
 📦 Container : *${container}*
-🏢 Terminal   : *${port.toUpperCase()}*
-🏗️ Gudang    :  *${obName}*
+🏗️ Terminal   : *${port.toUpperCase()}*
+🏢 Gudang     :  *${obName}*
 
 Status saat ini
 
