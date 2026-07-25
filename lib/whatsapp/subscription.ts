@@ -10,7 +10,6 @@ export type SubscriptionCheckStatus =
 export interface SubscriptionCheckResult {
   allowed: boolean;
   status: SubscriptionCheckStatus;
-  isDefaultOpen?: boolean;
   subscription?: {
     id: string;
     targetId: string;
@@ -62,25 +61,13 @@ export async function checkWaSubscription(
   try {
     const rawSender = sender.trim();
     if (!rawSender) {
-      return { allowed: true, status: "ALLOWED", isDefaultOpen: true };
+      return { allowed: false, status: "NOT_FOUND" };
     }
 
     const cleanId = rawSender.split("@")[0].trim();
     const normalizedSender = normalizeWaTargetId(sender);
 
-    // Check if system has any subscriptions configured
-    const totalSubscriptionsCount = await prisma.waSubscription.count();
-
-    // If no subscriptions exist in system, operate in default open mode
-    if (totalSubscriptionsCount === 0) {
-      return {
-        allowed: true,
-        status: "ALLOWED",
-        isDefaultOpen: true,
-      };
-    }
-
-    // Comprehensive multi-format matching (raw, clean numeric, @c.us, @g.us, @lid)
+    // Strict subscription check: find matching subscriber by rawSender, clean numeric ID, or normalized ID
     const subscription = await prisma.waSubscription.findFirst({
       where: {
         OR: [
@@ -158,11 +145,9 @@ export async function checkWaSubscription(
     };
   } catch (error) {
     console.error("Error checking WA subscription:", error);
-    // On unexpected error, default open so bot doesn't crash operations
     return {
-      allowed: true,
-      status: "ALLOWED",
-      isDefaultOpen: true,
+      allowed: false,
+      status: "NOT_FOUND",
     };
   }
 }

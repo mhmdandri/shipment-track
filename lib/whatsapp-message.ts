@@ -231,11 +231,14 @@ Contoh:
 
   subscriptionRequired: (
     sender: string,
-  ) => `⚠️ *Akses Langganan Diperlukan*
+  ) => {
+    const cleanId = sender.split("@")[0].trim();
+    return `⚠️ *Akses Langganan Diperlukan*
 
-Nomor / Grup WhatsApp Anda (*${sender}*) belum terdaftar dalam paket langganan Bot Container Tracker.
+Nomor / Grup WhatsApp Anda (*${cleanId}*) belum terdaftar dalam paket langganan Bot Container Tracker.
 
-Silakan hubungi Admin untuk mendaftarkan akun langganan Anda.`,
+Gunakan perintah /cekid untuk mendapatkan ID Anda, lalu hubungi Admin untuk mendaftarkan akun langganan Anda.`;
+  },
 
   subscriptionExpired: (
     expiredAt: Date,
