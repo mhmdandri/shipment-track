@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
   const [open, setOpen] = useState(false);
+  const closeSidebar = () => setOpen(false);
 
   return (
     <>
@@ -35,7 +36,7 @@ export function AppSidebar() {
       {open && (
         <div
           className="lg:hidden fixed inset-0 z-40 bg-black/50"
-          onClick={() => setOpen(false)}
+          onClick={closeSidebar}
           aria-hidden="true"
         />
       )}
@@ -58,7 +59,7 @@ export function AppSidebar() {
           <nav className="space-y-1">
             <Link
               href="/"
-              onClick={() => setOpen(false)}
+              onClick={closeSidebar}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
             >
               <LayoutDashboard className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
@@ -66,7 +67,7 @@ export function AppSidebar() {
             </Link>
             <Link
               href="/shipments"
-              onClick={() => setOpen(false)}
+              onClick={closeSidebar}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
             >
               <Ship className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
@@ -74,6 +75,7 @@ export function AppSidebar() {
             </Link>
             <Link
               href="/todos"
+              onClick={closeSidebar}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
             >
               <ListTodo className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
@@ -81,7 +83,7 @@ export function AppSidebar() {
             </Link>
             <Link
               href="/tracker"
-              onClick={() => setOpen(false)}
+              onClick={closeSidebar}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
             >
               <Search className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
@@ -89,7 +91,7 @@ export function AppSidebar() {
             </Link>
             <Link
               href="/terminal-tracker"
-              onClick={() => setOpen(false)}
+              onClick={closeSidebar}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
             >
               <MapPin className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
@@ -97,7 +99,7 @@ export function AppSidebar() {
             </Link>
             <Link
               href="/subscriptions"
-              onClick={() => setOpen(false)}
+              onClick={closeSidebar}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
             >
               <CreditCard className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />

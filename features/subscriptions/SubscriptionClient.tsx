@@ -33,6 +33,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
+import DialogDelete from "./components/DialogDelete";
 
 interface Props {
   initialSubscriptions: SubscriptionWithCount[];
@@ -43,11 +44,13 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
     useState<SubscriptionWithCount[]>(initialSubscriptions);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dialogDeleteOpen, setDialogDeleteOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   // Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSub, setEditingSub] = useState<SubscriptionWithCount | null>(
-    null
+    null,
   );
 
   const [now] = useState(() => new Date());
@@ -57,8 +60,11 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
   const [name, setName] = useState("");
   const [plan, setPlan] = useState("STARTER");
   const [maxContainers, setMaxContainers] = useState(10);
-  const [expiredAt, setExpiredAt] = useState(() =>
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+  const [expiredAt, setExpiredAt] = useState(
+    () =>
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
   );
   const [isActive, setIsActive] = useState(true);
 
@@ -69,7 +75,9 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
     setPlan("STARTER");
     setMaxContainers(10);
     setExpiredAt(
-      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0],
     );
     setIsActive(true);
     setError(null);
@@ -111,7 +119,7 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
       setLoading(false);
       if (res.success) {
         setSubscriptions((prev) =>
-          prev.map((s) => (s.id === editingSub.id ? res.data : s))
+          prev.map((s) => (s.id === editingSub.id ? res.data : s)),
         );
         setDialogOpen(false);
       } else {
@@ -134,17 +142,21 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
     const res = await toggleSubscriptionAction(sub.id, nextStatus);
     if (res.success) {
       setSubscriptions((prev) =>
-        prev.map((s) => (s.id === sub.id ? { ...s, isActive: nextStatus } : s))
+        prev.map((s) => (s.id === sub.id ? { ...s, isActive: nextStatus } : s)),
       );
     }
   };
 
-  const handleQuickExtend = async (sub: SubscriptionWithCount, months: number) => {
+  const handleQuickExtend = async (
+    sub: SubscriptionWithCount,
+    months: number,
+  ) => {
     const nowTime = now.getTime();
-    const currentExpiry = new Date(sub.expiredAt).getTime() > nowTime
-      ? new Date(sub.expiredAt)
-      : new Date();
-    
+    const currentExpiry =
+      new Date(sub.expiredAt).getTime() > nowTime
+        ? new Date(sub.expiredAt)
+        : new Date();
+
     const newExpiry = new Date(currentExpiry);
     newExpiry.setMonth(newExpiry.getMonth() + months);
 
@@ -159,17 +171,22 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
 
     if (res.success) {
       setSubscriptions((prev) =>
-        prev.map((s) => (s.id === sub.id ? res.data : s))
+        prev.map((s) => (s.id === sub.id ? res.data : s)),
       );
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this subscription?")) return;
     const res = await deleteSubscriptionAction(id);
     if (res.success) {
       setSubscriptions((prev) => prev.filter((s) => s.id !== id));
     }
+    setDialogDeleteOpen(false);
+  };
+
+  const handleDeleteDialogOpen = (id: string) => {
+    setDialogDeleteOpen(true);
+    setDeleteTargetId(id);
   };
 
   return (
@@ -181,7 +198,8 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
             <Users className="w-5 h-5 text-primary" /> Active Subscribers
           </h2>
           <p className="text-sm text-muted-foreground">
-            Manage WhatsApp client access, subscription plans, and container quotas.
+            Manage WhatsApp client access, subscription plans, and container
+            quotas.
           </p>
         </div>
         <Button onClick={openCreateDialog} className="font-semibold shadow-sm">
@@ -198,7 +216,8 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
               No Subscriptions Configured
             </h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              The bot currently runs in <strong>Default Open Mode</strong>. Add your first subscriber to enforce subscription access control.
+              The bot currently runs in <strong>Default Open Mode</strong>. Add
+              your first subscriber to enforce subscription access control.
             </p>
             <Button onClick={openCreateDialog} className="mt-4">
               <Plus className="w-4 h-4 mr-2" /> Add First Subscriber
@@ -216,8 +235,8 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                   !sub.isActive
                     ? "opacity-60 bg-muted/40 border-border"
                     : isExpired
-                    ? "border-destructive/40 bg-destructive/5"
-                    : "border-border hover:border-primary/40"
+                      ? "border-destructive/40 bg-destructive/5"
+                      : "border-border hover:border-primary/40"
                 }`}
               >
                 <CardHeader className="pb-3 border-b border-border">
@@ -235,16 +254,16 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                         !sub.isActive
                           ? "secondary"
                           : isExpired
-                          ? "destructive"
-                          : "default"
+                            ? "destructive"
+                            : "default"
                       }
                       className="text-[10px] font-bold uppercase tracking-wider"
                     >
                       {!sub.isActive
                         ? "Suspended"
                         : isExpired
-                        ? "Expired"
-                        : sub.plan}
+                          ? "Expired"
+                          : sub.plan}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -266,8 +285,8 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                           !sub.isActive
                             ? "text-muted-foreground"
                             : isExpired
-                            ? "text-destructive"
-                            : "text-emerald-600"
+                              ? "text-destructive"
+                              : "text-emerald-600"
                         }`}
                       >
                         {!sub.isActive ? (
@@ -343,7 +362,9 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                             : "text-muted-foreground"
                         }`}
                         onClick={() => handleToggleActive(sub)}
-                        title={sub.isActive ? "Suspend Client" : "Activate Client"}
+                        title={
+                          sub.isActive ? "Suspend Client" : "Activate Client"
+                        }
                       >
                         <Power className="w-4 h-4" />
                       </Button>
@@ -360,7 +381,7 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-destructive/70 hover:text-destructive"
-                        onClick={() => handleDelete(sub.id)}
+                        onClick={() => handleDeleteDialogOpen(sub.id)}
                         title="Delete Subscription"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -373,6 +394,12 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
           })}
         </div>
       )}
+      <DialogDelete
+        open={dialogDeleteOpen}
+        id={deleteTargetId}
+        handleDelete={handleDelete}
+        handleClose={() => setDialogDeleteOpen(false)}
+      />
 
       {/* Add / Edit Subscription Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -402,7 +429,8 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                 required
               />
               <p className="text-[11px] text-muted-foreground">
-                Personal numbers end with <code>@c.us</code>, WhatsApp Groups end with <code>@g.us</code>.
+                Personal numbers end with <code>@c.us</code>, WhatsApp Groups
+                end with <code>@g.us</code>.
               </p>
             </div>
 
@@ -433,7 +461,10 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                     setPlan(selected);
                     if (selected === "STARTER") setMaxContainers(10);
                     else if (selected === "BUSINESS") setMaxContainers(25);
-                    else if (selected === "ENTERPRISE" || selected === "UNLIMITED")
+                    else if (
+                      selected === "ENTERPRISE" ||
+                      selected === "UNLIMITED"
+                    )
                       setMaxContainers(0);
                   }}
                 >
@@ -445,7 +476,10 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="maxContainers" className="text-xs font-semibold">
+                <Label
+                  htmlFor="maxContainers"
+                  className="text-xs font-semibold"
+                >
                   Max Active Containers
                 </Label>
                 <Input
@@ -489,8 +523,8 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                 {loading
                   ? "Saving..."
                   : editingSub
-                  ? "Update Subscription"
-                  : "Create Subscription"}
+                    ? "Update Subscription"
+                    : "Create Subscription"}
               </Button>
             </DialogFooter>
           </form>
