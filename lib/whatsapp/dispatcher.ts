@@ -4,6 +4,7 @@ import {
   handleListCommand,
   handleHelpCommand,
   handleStatusCommand,
+  handleCekIdCommand,
 } from "@/lib/whatsapp/commands";
 import { sendWhatsappMessage } from "../whatsapp";
 import { whatsappMessage } from "../whatsapp-message";
@@ -31,6 +32,10 @@ export async function dispatchWhatsappCommand(context: WhatsappCommandContext) {
       break;
     case "list":
       await handleListCommand(context);
+      break;
+    case "cekid":
+    case "id":
+      await handleCekIdCommand(context);
       break;
     case "help":
       await handleHelpCommand(context);

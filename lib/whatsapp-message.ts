@@ -204,7 +204,20 @@ to see available commands.`,
 
 /list
 
+/cekid
+
 /help`,
+
+  cekId: (sender: string) => {
+    const isGroup = sender.toLowerCase().endsWith("@g.us");
+    const cleanId = sender.replace(/@(g|c)\.us$/i, "").trim();
+
+    let msg = `🆔 *INFO ID WHATSAPP*\n\n`;
+    msg += `📍 *ID Target* : *${cleanId}*\n`;
+    msg += `👥 *Tipe*      : *${isGroup ? "Grup WhatsApp" : "Nomor Personal"}*\n\n`;
+    msg += `_Salin ID di atas untuk pendaftaran langganan di Web Dashboard._`;
+    return msg;
+  },
 
   invalidStatusCommand: () => `❌ *Format Perintah Salah*
 
@@ -215,6 +228,39 @@ Gunakan format berikut:
 Contoh:
 
 /status EMCU6137410`,
+
+  subscriptionRequired: (
+    sender: string,
+  ) => `⚠️ *Akses Langganan Diperlukan*
+
+Nomor / Grup WhatsApp Anda (*${sender}*) belum terdaftar dalam paket langganan Bot Container Tracker.
+
+Silakan hubungi Admin untuk mendaftarkan akun langganan Anda.`,
+
+  subscriptionExpired: (
+    expiredAt: Date,
+  ) => `❌ *Masa Langganan Berakhir*
+
+Masa langganan Bot Container Tracker Anda telah berakhir pada *${new Date(expiredAt).toLocaleDateString("id-ID")}*.
+
+Silakan lakukan perpanjangan langganan melalui Admin untuk mengaktifkan kembali layanan.`,
+
+  subscriptionSuspended: () => `🚫 *Akses Langganan Dinonaktifkan*
+
+Akun langganan Anda saat ini sedang dalam status dinonaktifkan / suspend.
+
+Silakan hubungi Admin untuk informasi lebih lanjut.`,
+
+  quotaExceeded: (
+    currentCount: number,
+    maxAllowed: number,
+  ) => `⚠️ *Kuota Kontainer Terpenuhi*
+
+Jumlah kontainer aktif Anda telah mencapai batas maksimal paket langganan:
+
+📦 Kontainer Aktif : *${currentCount}* dari *${maxAllowed}*
+
+Silakan upgrade paket langganan atau tunggu hingga kontainer yang ada selesai (OUTGATE) untuk mendaftarkan kontainer baru.`,
 
   containerNotFoundForStatus: (
     container: string,

@@ -9,6 +9,7 @@ import {
   Search,
   ListTodo,
   MapPin,
+  CreditCard,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,14 @@ export function AppSidebar() {
             >
               <MapPin className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
               <span className="text-sm font-medium">Track Container</span>
+            </Link>
+            <Link
+              href="/subscriptions"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
+            >
+              <CreditCard className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
+              <span className="text-sm font-medium">Bot Subscriptions</span>
             </Link>
           </nav>
         </div>

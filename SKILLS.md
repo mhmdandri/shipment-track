@@ -301,3 +301,25 @@ npx eslint .
    });
    ```
 4. Eksport dan gunakan via `env.NEW_ENV_VAR` atau `process.env.NEW_ENV_VAR`.
+
+---
+
+## 16. Cara Mengelola SaaS Subscriptions & Access Control
+
+### Langkah-langkah:
+1. **Pendaftaran Klien via Dashboard UI**:
+   - Buka menu **Bot Subscriptions** (`/subscriptions`).
+   - Klik **Add Subscriber**.
+   - Isi Target WhatsApp ID (`628123456789@c.us` untuk nomor personal atau `120363...@g.us` untuk grup WA).
+   - Tentukan paket (`STARTER`, `BUSINESS`, `ENTERPRISE`, atau `UNLIMITED`) & kuota kontainer.
+   - Atur tanggal kadaluarsa (`expiredAt`).
+2. **Aturan Default Open (Mode Pengembangan)**:
+   - Jika tabel `WaSubscription` kosong (0 subscriber), bot akan beroperasi dalam mode bebas (open).
+   - Setelah subscriber pertama didaftarkan, sistem akan otomatis memberlakukan verifikasi otorisasi & kuota secara ketat.
+3. **Normalisasi Target ID**:
+   - Sistem secara otomatis menormalisasi nomor HP yang diinput admin (contoh `08123456789` atau `+628123456789`) menjadi format standar WAHA (`628123456789@c.us`).
+4. **Ekstensi & Suspend Manual**:
+   - Gunakan tombol quick extend (`+1 Mo` / `+1 Yr`) untuk memperpanjang masa aktif dalam 1 klik.
+   - Gunakan tombol power/suspend untuk memblokir sementara pengakses tanpa menghapus data.
+5. **Prisma Database Migration**:
+   - Setiap penambahan model Prisma baru wajib dieksekusi via `npx prisma migrate dev --name <deskripsi>` agar file migrasi SQL dibuat di `prisma/migrations/` dan diterapkan ke PostgreSQL.

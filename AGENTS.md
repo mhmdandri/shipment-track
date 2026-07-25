@@ -118,7 +118,7 @@ shipment-track/
 - **File Kunci**: `actions/monitor-action.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
 ### 5. WhatsApp Integration Module (WAHA)
-- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/status`, `/list`, `/help`), serta pengiriman alert status kontainer.
+- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/status`, `/list`, `/cekid`, `/help`), serta pengiriman alert status kontainer.
 - **File Kunci**: `app/api/webhook/waha/route.ts`, `lib/whatsapp/dispatcher.ts`, `lib/whatsapp/commands/*`, `lib/whatsapp.ts`, `lib/whatsapp-message.ts`.
 
 ### 6. Telegram Notification Module
@@ -142,6 +142,10 @@ shipment-track/
 ### 10. Todos Module (Daily & Shipment Todos)
 - **Fungsi**: Catatan tugas harian independen (`DailyTodo`) dan catatan tugas khusus shipment (`Todo`).
 - **File Kunci**: `actions/daily-todo-action.ts`, `actions/todo-action.ts`, `app/todos/page.tsx`, `features/todos/*`.
+
+### 11. Subscription & Access Control Module
+- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`), pembatasan kuota kontainer aktif (STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), serta saklar aktif/suspend manual.
+- **File Kunci**: `prisma/schema.prisma`, `lib/whatsapp/subscription.ts`, `actions/subscription-action.ts`, `app/subscriptions/page.tsx`, `features/subscriptions/*`.
 
 ---
 
@@ -244,6 +248,18 @@ erDiagram
         DateTime updatedAt
     }
 
+    WaSubscription {
+        String id PK "UUID"
+        String targetId UK "Unique WA Target (Number or Group ID)"
+        String name "Client / Group Name"
+        String plan "STARTER | BUSINESS | ENTERPRISE | UNLIMITED"
+        Int maxContainers "Max active containers allowed (0 = Unlimited)"
+        DateTime expiredAt "Subscription expiration timestamp"
+        Boolean isActive "Active / Suspended Toggle"
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
     SystemConfig {
         String key PK "Key Identifikasi (misal: TER3_SESSION)"
         String value "JSON Stringified Data"
@@ -259,6 +275,7 @@ erDiagram
 - `Reminder`: `@@index([shipmentId])`, `@@index([completed, dueDate])`
 - `Todo`: `@@index([shipmentId])`
 - `TerminalMonitor`: `@unique([containerNo])`, `@@index([isActive])`
+- `WaSubscription`: `@unique([targetId])`, `@@index([isActive, expiredAt])`
 
 ---
 

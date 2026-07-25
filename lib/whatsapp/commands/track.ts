@@ -2,6 +2,7 @@ import { trackTerminalContainer } from "@/actions/terminal-track-action";
 import { enableTerminalMonitoring } from "@/actions/monitor-action";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
+import { checkWaSubscription } from "@/lib/whatsapp/subscription";
 import { WhatsappCommandContext } from "../types";
 
 export async function handleTrackCommand(context: WhatsappCommandContext) {
@@ -36,6 +37,40 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
     .split(/[\s,]+/)
     .map((c) => c.trim().toUpperCase())
     .filter((c) => c.length > 0);
+
+  // Check subscription before proceeding
+  const subCheck = await checkWaSubscription(sender, containers.length);
+  if (!subCheck.allowed) {
+    if (subCheck.status === "NOT_FOUND") {
+      await sendWhatsappMessage(
+        sender,
+        whatsappMessage.subscriptionRequired(sender)
+      );
+    } else if (subCheck.status === "EXPIRED" && subCheck.subscription) {
+      await sendWhatsappMessage(
+        sender,
+        whatsappMessage.subscriptionExpired(subCheck.subscription.expiredAt)
+      );
+    } else if (subCheck.status === "SUSPENDED") {
+      await sendWhatsappMessage(
+        sender,
+        whatsappMessage.subscriptionSuspended()
+      );
+    } else if (
+      subCheck.status === "QUOTA_EXCEEDED" &&
+      subCheck.activeContainersCount !== undefined &&
+      subCheck.maxContainers !== undefined
+    ) {
+      await sendWhatsappMessage(
+        sender,
+        whatsappMessage.quotaExceeded(
+          subCheck.activeContainersCount,
+          subCheck.maxContainers
+        )
+      );
+    }
+    return;
+  }
 
   const port = args[portIndex].toLowerCase().replace(/,/g, "");
   const vesselName = args[portIndex + 1]?.toUpperCase();
