@@ -238,8 +238,9 @@ export async function updateExampleAction(
      voyageNo,
    );
    ```
-2. Kontainer akan dimasukkan ke tabel `TerminalMonitor` dengan `isActive = true`.
-3. Siklus cron `/api/cron/monitor` otomatis mendeteksi baris baru ini pada eksekusi interval berikutnya.
+2. Server action `enableTerminalMonitoring` secara otomatis melakukan verifikasi langganan WhatsApp (`checkWaSubscription`) jika `waNumber` diberikan. Jika nomor tidak terdaftar, di-suspend, kadaluarsa, atau kuota kontainer aktif telah penuh, pendaftaran dibatalkan dan mengembalikan pesan error terstruktur.
+3. Kontainer yang memenuhi syarat dimasukkan/diperbarui ke tabel `TerminalMonitor` dengan `isActive = true`.
+4. Siklus cron `/api/cron/monitor` otomatis mendeteksi baris baru ini pada eksekusi interval berikutnya.
 
 ---
 
@@ -348,9 +349,9 @@ npx eslint .
    - Isi Target WhatsApp ID (`628123456789@c.us` untuk nomor personal atau `120363...@g.us` untuk grup WA).
    - Tentukan paket (`STARTER`, `BUSINESS`, `ENTERPRISE`, atau `UNLIMITED`) & kuota kontainer.
    - Atur tanggal kadaluarsa (`expiredAt`).
-2. **Aturan Default Open (Mode Pengembangan)**:
-   - Jika tabel `WaSubscription` kosong (0 subscriber), bot akan beroperasi dalam mode bebas (open).
-   - Setelah subscriber pertama didaftarkan, sistem akan otomatis memberlakukan verifikasi otorisasi & kuota secara ketat.
+2. **Aturan Otorisasi Ketat 100% (Strict Zero-Trust)**:
+   - Seluruh request notifikasi WhatsApp (baik via Web UI Terminal Tracker maupun Command Bot WhatsApp) wajib terdaftar aktif pada tabel `WaSubscription`.
+   - Jika nomor WhatsApp pengirim/target tidak terdaftar, di-suspend, kadaluarsa, atau melebihi kuota kontainer aktif, sistem akan langsung menolak pendaftaran dan mengembalikan pesan error.
 3. **Normalisasi Target ID**:
    - Sistem secara otomatis menormalisasi nomor HP yang diinput admin (contoh `08123456789` atau `+628123456789`) menjadi format standar WAHA (`628123456789@c.us`).
 4. **Ekstensi & Suspend Manual**:
@@ -358,3 +359,26 @@ npx eslint .
    - Gunakan tombol power/suspend untuk memblokir sementara pengakses tanpa menghapus data.
 5. **Prisma Database Migration**:
    - Setiap penambahan model Prisma baru wajib dieksekusi via `npx prisma migrate dev --name <deskripsi>` agar file migrasi SQL dibuat di `prisma/migrations/` dan diterapkan ke PostgreSQL.
+
+---
+
+## 17. Cara Mengelola Authentication & User Session
+
+### Langkah-langkah:
+
+1. **User Credentials Default**:
+   - User default diinisialisasi otomatis saat pertama kali login:
+     - **Username**: `admin`
+     - **Password**: `adminpassword`
+     - **Nama**: `Muhamad Andri`
+     - **Role**: `ADMIN`
+2. **Kredensial Password**:
+   - Selalu gunakan helper `hashPassword(password)` dari `@/lib/auth` untuk menyimpan password baru.
+   - Gunakan `comparePassword(plain, hashed)` untuk memvalidasi login.
+3. **JWT Security & Token Verification**:
+   - Panggil `signJWT(payload)` untuk menghasilkan token JWT 7 hari.
+   - Di Server Components atau Server Actions, gunakan `getCurrentUser()` dari `@/lib/auth` untuk mendapatkan user terautentikasi.
+   - Untuk hit API eksternal/client, kirim header `Authorization: Bearer <token>` atau manfaatkan HttpOnly cookie `auth_token`.
+4. **Proteksi Route via `proxy.ts` (Next.js 16 Proxy Convention)**:
+   - Tambahkan path ke `PUBLIC_PATHS` di `proxy.ts` jika route baru diizinkan diakses tanpa login (seperti tracker publik).
+

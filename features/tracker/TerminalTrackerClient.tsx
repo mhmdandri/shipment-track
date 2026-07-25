@@ -8,6 +8,7 @@ import {
   Info,
   BellRing,
   CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
 import type { TerminalTrackingResult } from "@/actions/tracking/types";
@@ -47,6 +48,7 @@ export default function TerminalTrackerPage() {
   const [loading, setLoading] = useState(false);
   const [monitorLoading, setMonitorLoading] = useState(false);
   const [monitorMessage, setMonitorMessage] = useState("");
+  const [monitorError, setMonitorError] = useState("");
   const [result, setResult] = useState<TerminalTrackingResult | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -56,6 +58,7 @@ export default function TerminalTrackerPage() {
     setLoading(true);
     setResult(null);
     setMonitorMessage("");
+    setMonitorError("");
 
     if (port === "npct1") {
       if (!vesselName.trim() || !voyageNo.trim()) {
@@ -90,6 +93,9 @@ export default function TerminalTrackerPage() {
     }
 
     setMonitorLoading(true);
+    setMonitorMessage("");
+    setMonitorError("");
+
     const res = await enableTerminalMonitoring(
       result.containerNo,
       result.port,
@@ -99,9 +105,9 @@ export default function TerminalTrackerPage() {
       voyageNo.trim() || undefined,
     );
     if (res.success) {
-      setMonitorMessage(res.message || "Monitoring enabled.");
+      setMonitorMessage(res.data.message || "Monitoring enabled successfully.");
     } else {
-      setMonitorMessage(res.error || "Failed to monitor.");
+      setMonitorError(res.error || "Gagal mengaktifkan auto-monitoring.");
     }
     setMonitorLoading(false);
   };
@@ -301,14 +307,21 @@ export default function TerminalTrackerPage() {
                             it leaves the port (OUTGATE).
                           </p>
                         </div>
-                        <div>
+                        <div className="flex flex-col items-start sm:items-end gap-2">
+                          {monitorError && (
+                            <div className="flex items-center gap-2 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 px-3 py-2 rounded-lg max-w-md animate-in fade-in slide-in-from-top-1">
+                              <AlertCircle className="w-4 h-4 shrink-0" />
+                              <span>{monitorError}</span>
+                            </div>
+                          )}
+
                           {monitorMessage ? (
-                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg">
                               <CheckCircle2 className="w-4 h-4" />
                               {monitorMessage}
                             </div>
                           ) : result.isMonitored ? (
-                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-lg">
                               <CheckCircle2 className="w-4 h-4" />
                               Already Monitored
                             </div>
@@ -318,7 +331,7 @@ export default function TerminalTrackerPage() {
                                 placeholder="WhatsApp Number (e.g. 62812...)"
                                 value={waNumber}
                                 onChange={(e) => setWaNumber(e.target.value)}
-                                className="w-full sm:w-64 bg-background border-primary/20 focus-visible:ring-primary/30"
+                                className="w-full sm:w-64 bg-background border-primary/20 focus-visible:ring-primary/30 font-mono text-sm"
                                 disabled={monitorLoading}
                               />
                               <Button

@@ -164,3 +164,16 @@ model WaSubscription {
   @@index([isActive, expiredAt])
 }
 
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String   // Hashed with bcrypt
+  name      String   // Full Name (e.g. "Muhamad Andri")
+  role      String   @default("ADMIN") // ADMIN, CS
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([username])
+}
+
+

@@ -144,7 +144,7 @@ shipment-track/
 - **File Kunci**: `actions/daily-todo-action.ts`, `actions/todo-action.ts`, `app/todos/page.tsx`, `features/todos/*`.
 
 ### 11. Subscription & Access Control Module
-- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`), pembatasan kuota kontainer aktif (STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, serta penghitungan kuota kontainer aktif serba fleksibel (`countActiveContainersForTarget`) yang mencakup berbagai format ID pengirim (`@lid`, `@c.us`, `@g.us`, clean numeric ID).
+- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`) dengan prinsip **Strict 100% Zero-Trust Access Control**, pembatasan kuota kontainer aktif (STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, serta penghitungan kuota kontainer aktif serba fleksibel (`countActiveContainersForTarget`) yang mencakup berbagai format ID pengirim (`@lid`, `@c.us`, `@g.us`, clean numeric ID). Seluruh pendaftaran notifikasi WA baik via Web UI maupun Chat Bot wajib terdaftar aktif di database.
 - **File Kunci**: `prisma/schema.prisma`, `lib/whatsapp/subscription.ts`, `actions/subscription-action.ts`, `app/subscriptions/page.tsx`, `features/subscriptions/*`.
 
 ---
@@ -401,21 +401,31 @@ erDiagram
 
 ---
 
-## 9. Middleware & Control Flow
+## 9. Middleware & Control Flow (`proxy.ts`)
 
-Project ini **tidak menggunakan file `middleware.ts` global** di root app. Sebagai gantinya, kontrol alur dan perlindungan API dikelola melalui:
-1. **Dynamic Directive `export const dynamic = "force-dynamic"`**: Digunakan pada route `/api/cron/monitor` dan halaman-halaman dashboard real-time (`/terminal-tracker`, `/tracker`, `/shipments`) untuk mencegah Next.js caching static ISR.
-2. **Cron Bearer Authentication**: Verifikasi token `Authorization: Bearer <CRON_SECRET>` langsung pada handler `GET` di `/api/cron/monitor/route.ts`.
-3. **Zod Validation Input**: Pintu masuk Server Actions (`shipment-action.ts`, `monitor-action.ts`, `track-action.ts`) divalidasi ketat oleh Zod schema sebelum menyentuh layer Service/Database.
+Next.js 16+ menggunakan konvensi `proxy.ts` di root project untuk menggantikan `middleware.ts`. Kontrol alur dan perlindungan API dikelola melalui:
+1. **Request Interception (`proxy.ts`)**: Memeriksa token JWT (`auth_token` cookie / Bearer header) untuk memproteksi halaman dashboard dan API internal, serta mengizinkan akses ke halaman publik.
+2. **Dynamic Directive `export const dynamic = "force-dynamic"`**: Digunakan pada route `/api/cron/monitor` dan halaman-halaman dashboard real-time (`/terminal-tracker`, `/tracker`, `/shipments`) untuk mencegah Next.js caching static ISR.
+3. **Cron Bearer Authentication**: Verifikasi token `Authorization: Bearer <CRON_SECRET>` langsung pada handler `GET` di `/api/cron/monitor/route.ts`.
+4. **Zod Validation Input**: Pintu masuk Server Actions (`shipment-action.ts`, `monitor-action.ts`, `track-action.ts`) divalidasi ketat oleh Zod schema sebelum menyentuh layer Service/Database.
 
 ---
 
 ## 10. Authentication Flow
 
-1. **Dashboard & Internal App**: Saat ini sistem beroperasi sebagai internal application dashboard tanpa login screen (single-tenant internal tool CS).
+1. **User Credentials & JWT Authentication System**:
+   - **Credentials**: Autentikasi berbasis Username & Password. Password dienkripsi menggunakan `bcryptjs`.
+   - **Security**: Token JWT disign & diverifikasi menggunakan library Edge-compatible `jose`. Token disimpan dalam cookie HttpOnly `auth_token` dan didukung via `Authorization: Bearer <token>` header untuk request API langsung.
+   - **Proteksi Halaman & Intercept Proxy (`proxy.ts`)**:
+     - **Public Routes**: `/terminal-tracker` (Track Container), `/tracker` (Carrier Live Track), `/auth/login`, `/api/cron/*`, `/api/webhook/*`.
+     - **Protected Routes**: Seluruh halaman operasional (`/`, `/shipments/*`, `/todos*`, `/subscriptions*`) serta internal API endpoints. Pengakses tanpa token valid otomatis di-redirect ke `/auth/login?redirect=<path>`.
+   - **Default Admin Seed**: Sistem secara otomatis menginisialisasi user admin default (`admin` / `Muhamad Andri`) jika tabel `User` masih kosong.
+   - **UI Footer Sidebar**: Footer sidebar menampilkan inisial avatar & nama user terautentikasi (contoh: `MA (Muhamad Andri)`). Klik pada footer membuka modal profile user dan tombol logout.
+
 2. **Cron Authentication**:
    - Request luar (Vercel Cron / cron-job.org) mengirim header `Authorization: Bearer <CRON_SECRET>`.
    - Endpoint `/api/cron/monitor` membandingkan nilai header tersebut dengan `process.env.CRON_SECRET`. Jika tidak cocok, melempar HTTP 401 Unauthorized.
+
 3. **External Port Authentication (TER3 / PARAMA Pelindo)**:
    - Scraper `ter3.ts` memerlukan sesi terautentikasi ke server Pelindo (`https://parama.pelindo.co.id:8031/api/login`).
    - Kredensial disimpan di `.env` (`PARAMA_USERNAME` & `PARAMA_PASSWORD`).
@@ -454,6 +464,9 @@ Project ini **tidak menggunakan file `middleware.ts` global** di root app. Sebag
            ▼
 3. Register to Watchlist ──► [enableTerminalMonitoring()]
            │
+           ├───────────────► Check WhatsApp Target Subscription (`checkWaSubscription`)
+           │                 ├── Not Subscribed / Expired / Suspended / Quota Exceeded ──► Return Error (STOP)
+           │                 └── Allowed / No WA Number ──► Continue
            ▼
 4. Database Entry Created/Updated (TerminalMonitor: isActive = true, status = 'ONVSL'/'INITIAL')
            │
