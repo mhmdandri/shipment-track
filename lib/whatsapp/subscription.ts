@@ -54,6 +54,38 @@ export function normalizeWaTargetId(input: string): string {
   return cleaned.toLowerCase();
 }
 
+/**
+ * Counts active monitored containers for a target ID, supporting multi-format ID matching (raw, clean numeric, @c.us, @g.us, @lid).
+ */
+export async function countActiveContainersForTarget(
+  targetId: string
+): Promise<number> {
+  try {
+    const raw = targetId.trim();
+    if (!raw) return 0;
+
+    const cleanId = raw.split("@")[0].trim();
+    const normalized = normalizeWaTargetId(targetId);
+
+    return await prisma.terminalMonitor.count({
+      where: {
+        isActive: true,
+        OR: [
+          { waNumber: raw },
+          { waNumber: cleanId },
+          { waNumber: normalized },
+          { waNumber: `${cleanId}@c.us` },
+          { waNumber: `${cleanId}@g.us` },
+          { waNumber: `${cleanId}@lid` },
+        ],
+      },
+    });
+  } catch (error) {
+    console.error("Error counting active containers for target:", error);
+    return 0;
+  }
+}
+
 export async function checkWaSubscription(
   sender: string,
   newContainersCount: number = 0
@@ -105,19 +137,7 @@ export async function checkWaSubscription(
     }
 
     if (subscription.maxContainers > 0) {
-      const activeCount = await prisma.terminalMonitor.count({
-        where: {
-          OR: [
-            { waNumber: rawSender },
-            { waNumber: cleanId },
-            { waNumber: normalizedSender },
-            { waNumber: `${cleanId}@c.us` },
-            { waNumber: `${cleanId}@g.us` },
-            { waNumber: `${cleanId}@lid` },
-          ],
-          isActive: true,
-        },
-      });
+      const activeCount = await countActiveContainersForTarget(rawSender);
 
       if (activeCount + newContainersCount > subscription.maxContainers) {
         return {

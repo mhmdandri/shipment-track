@@ -3,7 +3,10 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ActionResponse } from "@/lib";
-import { normalizeWaTargetId } from "@/lib/whatsapp/subscription";
+import {
+  normalizeWaTargetId,
+  countActiveContainersForTarget,
+} from "@/lib/whatsapp/subscription";
 import { z } from "zod";
 
 const subscriptionSchema = z.object({
@@ -38,12 +41,7 @@ export async function getSubscriptionsAction(): Promise<
 
     const results: SubscriptionWithCount[] = await Promise.all(
       subs.map(async (sub) => {
-        const activeCount = await prisma.terminalMonitor.count({
-          where: {
-            waNumber: sub.targetId,
-            isActive: true,
-          },
-        });
+        const activeCount = await countActiveContainersForTarget(sub.targetId);
 
         return {
           ...sub,
@@ -92,10 +90,12 @@ export async function createSubscriptionAction(
       },
     });
 
+    const activeCount = await countActiveContainersForTarget(created.targetId);
+
     revalidatePath("/subscriptions");
     return {
       success: true,
-      data: { ...created, activeContainersCount: 0 },
+      data: { ...created, activeContainersCount: activeCount },
     };
   } catch (error: unknown) {
     console.error("Error creating subscription:", error);
@@ -152,12 +152,7 @@ export async function updateSubscriptionAction(
       },
     });
 
-    const activeCount = await prisma.terminalMonitor.count({
-      where: {
-        waNumber: updated.targetId,
-        isActive: true,
-      },
-    });
+    const activeCount = await countActiveContainersForTarget(updated.targetId);
 
     revalidatePath("/subscriptions");
     return {

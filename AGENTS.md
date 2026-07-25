@@ -144,7 +144,7 @@ shipment-track/
 - **File Kunci**: `actions/daily-todo-action.ts`, `actions/todo-action.ts`, `app/todos/page.tsx`, `features/todos/*`.
 
 ### 11. Subscription & Access Control Module
-- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`), pembatasan kuota kontainer aktif (STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), serta saklar aktif/suspend manual.
+- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`), pembatasan kuota kontainer aktif (STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, serta penghitungan kuota kontainer aktif serba fleksibel (`countActiveContainersForTarget`) yang mencakup berbagai format ID pengirim (`@lid`, `@c.us`, `@g.us`, clean numeric ID).
 - **File Kunci**: `prisma/schema.prisma`, `lib/whatsapp/subscription.ts`, `actions/subscription-action.ts`, `app/subscriptions/page.tsx`, `features/subscriptions/*`.
 
 ---

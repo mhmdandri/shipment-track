@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import SubscriptionClient from "@/features/subscriptions/SubscriptionClient";
 import { CreditCard } from "lucide-react";
 import { SubscriptionWithCount } from "@/actions/subscription-action";
+import { countActiveContainersForTarget } from "@/lib/whatsapp/subscription";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +16,7 @@ export default async function SubscriptionsPage() {
 
     subscriptionsWithCount = await Promise.all(
       subs.map(async (sub) => {
-        const activeCount = await prisma.terminalMonitor.count({
-          where: {
-            waNumber: sub.targetId,
-            isActive: true,
-          },
-        });
+        const activeCount = await countActiveContainersForTarget(sub.targetId);
 
         return {
           ...sub,
