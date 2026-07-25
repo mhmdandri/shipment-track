@@ -210,7 +210,7 @@ to see available commands.`,
 
   cekId: (sender: string) => {
     const isGroup = sender.toLowerCase().endsWith("@g.us");
-    const cleanId = sender.replace(/@(g|c)\.us$/i, "").trim();
+    const cleanId = sender.split("@")[0].trim();
 
     let msg = `🆔 *INFO ID WHATSAPP*\n\n`;
     msg += `📍 *ID Target* : *${cleanId}*\n`;

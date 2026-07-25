@@ -61,12 +61,12 @@ export async function checkWaSubscription(
 ): Promise<SubscriptionCheckResult> {
   try {
     const rawSender = sender.trim();
-    const normalizedSender = normalizeWaTargetId(sender);
-    const cleanId = rawSender.replace(/@(g|c)\.us$/i, "").trim();
-
     if (!rawSender) {
       return { allowed: true, status: "ALLOWED", isDefaultOpen: true };
     }
+
+    const cleanId = rawSender.split("@")[0].trim();
+    const normalizedSender = normalizeWaTargetId(sender);
 
     // Check if system has any subscriptions configured
     const totalSubscriptionsCount = await prisma.waSubscription.count();
@@ -80,13 +80,16 @@ export async function checkWaSubscription(
       };
     }
 
-    // Flexible query matching normalized, raw, or clean ID format
+    // Comprehensive multi-format matching (raw, clean numeric, @c.us, @g.us, @lid)
     const subscription = await prisma.waSubscription.findFirst({
       where: {
         OR: [
-          { targetId: normalizedSender },
           { targetId: rawSender },
           { targetId: cleanId },
+          { targetId: normalizedSender },
+          { targetId: `${cleanId}@c.us` },
+          { targetId: `${cleanId}@g.us` },
+          { targetId: `${cleanId}@lid` },
         ],
       },
     });
@@ -118,9 +121,12 @@ export async function checkWaSubscription(
       const activeCount = await prisma.terminalMonitor.count({
         where: {
           OR: [
-            { waNumber: normalizedSender },
             { waNumber: rawSender },
             { waNumber: cleanId },
+            { waNumber: normalizedSender },
+            { waNumber: `${cleanId}@c.us` },
+            { waNumber: `${cleanId}@g.us` },
+            { waNumber: `${cleanId}@lid` },
           ],
           isActive: true,
         },
