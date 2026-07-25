@@ -60,8 +60,11 @@ export async function checkWaSubscription(
   newContainersCount: number = 0
 ): Promise<SubscriptionCheckResult> {
   try {
+    const rawSender = sender.trim();
     const normalizedSender = normalizeWaTargetId(sender);
-    if (!normalizedSender) {
+    const cleanId = rawSender.replace(/@(g|c)\.us$/i, "").trim();
+
+    if (!rawSender) {
       return { allowed: true, status: "ALLOWED", isDefaultOpen: true };
     }
 
@@ -77,8 +80,15 @@ export async function checkWaSubscription(
       };
     }
 
-    const subscription = await prisma.waSubscription.findUnique({
-      where: { targetId: normalizedSender },
+    // Flexible query matching normalized, raw, or clean ID format
+    const subscription = await prisma.waSubscription.findFirst({
+      where: {
+        OR: [
+          { targetId: normalizedSender },
+          { targetId: rawSender },
+          { targetId: cleanId },
+        ],
+      },
     });
 
     if (!subscription) {
@@ -107,7 +117,11 @@ export async function checkWaSubscription(
     if (subscription.maxContainers > 0) {
       const activeCount = await prisma.terminalMonitor.count({
         where: {
-          waNumber: normalizedSender,
+          OR: [
+            { waNumber: normalizedSender },
+            { waNumber: rawSender },
+            { waNumber: cleanId },
+          ],
           isActive: true,
         },
       });
