@@ -89,9 +89,7 @@ export async function GET(request: Request) {
         }
 
         // WhatsApp Logic: Every change
-        const hasil = isOutgate
-          ? result.timeOut || result.time || "-"
-          : result.time || "-";
+        const hasil = isOutgate ? result.timeOut || "-" : result.time || "-";
         if (monitor.waNumber) {
           if (isOutgate) {
             const wasOb = isOb || monitor.status.includes("(OB)");

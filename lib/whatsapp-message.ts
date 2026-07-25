@@ -200,9 +200,82 @@ to see available commands.`,
 
 /track <container> NPCT1 <Vessel> <Voyage>
 
+/status <container>
+
 /list
 
 /help`,
+
+  invalidStatusCommand: () => `❌ *Format Perintah Salah*
+
+Gunakan format berikut:
+
+/status <no_container>
+
+Contoh:
+
+/status EMCU6137410`,
+
+  containerNotFoundForStatus: (
+    container: string,
+  ) => `❌ *Kontainer Tidak Ditemukan*
+
+Kontainer *${container}* tidak ditemukan dalam sistem monitoring aktif.
+
+Gunakan perintah berikut untuk mendaftarkan kontainer:
+
+/track ${container} <terminal>`,
+
+  statusFetchFailed: (
+    container: string,
+    port: string,
+    lastStatus: string,
+    error: string,
+  ) => `⚠️ *Gagal Fetch Realtime Status*
+
+📦 Container : *${container}*
+🏗️ Terminal   : *${port.toUpperCase()}*
+
+Status Terakhir:
+🟡 *${lastStatus}*
+
+Detail Error:
+${error}`,
+
+  statusRealtime: (
+    container: string,
+    port: string,
+    status: string,
+    time: string,
+    isMonitored: boolean,
+    vessel?: string,
+    voyage?: string,
+    obName?: string,
+  ) => {
+    const upper = status.toUpperCase();
+    let emoji = "🟡";
+    if (upper.startsWith("GNSTK")) emoji = "🟢";
+    if (
+      ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some((s) =>
+        upper.includes(s),
+      ) &&
+      !upper.includes("PLANNING")
+    ) {
+      emoji = "🏁";
+    }
+    if (upper.includes("(OB)") || upper.includes("OB ")) emoji = "🚨";
+
+    let msg = `📊 *Status Kontainer*\n\n`;
+    msg += `📦 Container : *${container}*\n`;
+    msg += `🏗️ Terminal   : *${port.toUpperCase()}*\n`;
+    if (vessel) msg += `🚢 Vessel     : *${vessel}*\n`;
+    if (voyage) msg += `⛵ Voyage     : *${voyage}*\n`;
+    if (obName) msg += `🏢 Gudang OB  : *${obName}*\n`;
+    msg += `\nStatus Terbaru:\n${emoji} *${status}*\n`;
+    msg += `\nWaktu Update:\n🕒 ${time}\n`;
+    msg += `\nMonitoring:\n${isMonitored ? "✅ *Aktif*" : "⚪ *Selesai / Non-aktif*"}`;
+    return msg;
+  },
   changedToOb: (
     container: string,
     port: string,
