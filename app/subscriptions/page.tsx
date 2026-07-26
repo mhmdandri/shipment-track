@@ -16,7 +16,10 @@ export default async function SubscriptionsPage() {
 
     subscriptionsWithCount = await Promise.all(
       subs.map(async (sub) => {
-        const activeCount = await countActiveContainersForTarget(sub.targetId);
+        const activeCount = await countActiveContainersForTarget(
+          sub.targetId,
+          sub.phoneNumber || undefined
+        );
 
         return {
           ...sub,

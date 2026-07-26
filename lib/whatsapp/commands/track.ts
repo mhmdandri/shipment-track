@@ -6,7 +6,7 @@ import { checkWaSubscription } from "@/lib/whatsapp/subscription";
 import { WhatsappCommandContext } from "../types";
 
 export async function handleTrackCommand(context: WhatsappCommandContext) {
-  const { sender, args } = context;
+  const { sender, alternateSender, args } = context;
 
   if (args.length < 3) {
     console.log("-> Error: Invalid format (less than 3 args)");
@@ -39,7 +39,7 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
     .filter((c) => c.length > 0);
 
   // Check subscription before proceeding
-  const subCheck = await checkWaSubscription(sender, containers.length);
+  const subCheck = await checkWaSubscription(sender, containers.length, alternateSender);
   if (!subCheck.allowed) {
     if (subCheck.status === "NOT_FOUND") {
       await sendWhatsappMessage(

@@ -145,7 +145,7 @@ shipment-track/
 - **File Kunci**: `actions/daily-todo-action.ts`, `actions/todo-action.ts`, `app/todos/page.tsx`, `features/todos/*`.
 
 ### 11. Subscription & Access Control Module
-- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`) dengan prinsip **Strict 100% Zero-Trust Access Control**, pembatasan kuota monitor aktif bersama (Shared Quota Pool: Kontainer + Kapal; STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, serta penghitungan kuota aktif serba fleksibel (`countActiveContainersForTarget`) yang menjumlahkan `TerminalMonitor` dan `VesselMonitor` aktif untuk berbagai format ID pengirim (`@lid`, `@c.us`, `@g.us`, clean numeric ID). Seluruh pendaftaran notifikasi WA baik via Web UI maupun Chat Bot wajib terdaftar aktif di database.
+- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`) dengan prinsip **Strict 100% Zero-Trust Access Control**, pembatasan kuota monitor aktif bersama (Shared Quota Pool: Kontainer + Kapal; STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, serta **Dua Identitas WhatsApp (Phone Number & Meta LID `@lid`)** dengan fitur **Dual-Identity Matching & Auto-Linking (`checkWaSubscription`)** yang secara otomatis menautkan ID LID dan Nomor HP saat user berinteraksi dari WhatsApp Bot maupun Web UI.
 - **File Kunci**: `prisma/schema.prisma`, `lib/whatsapp/subscription.ts`, `actions/subscription-action.ts`, `app/subscriptions/page.tsx`, `features/subscriptions/*`.
 
 ---

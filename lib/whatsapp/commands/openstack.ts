@@ -6,7 +6,7 @@ import { checkWaSubscription } from "@/lib/whatsapp/subscription";
 import { WhatsappCommandContext } from "../types";
 
 export async function handleOpenStackCommand(context: WhatsappCommandContext) {
-  const { sender, args } = context;
+  const { sender, alternateSender, args } = context;
 
   // Expected format: /openstack <vesselName> [port] or /vessel <vesselName> [port]
   if (args.length < 2) {
@@ -39,7 +39,7 @@ export async function handleOpenStackCommand(context: WhatsappCommandContext) {
   }
 
   // Strict Subscription Check
-  const subCheck = await checkWaSubscription(sender, 1);
+  const subCheck = await checkWaSubscription(sender, 1, alternateSender);
   if (!subCheck.allowed) {
     if (subCheck.status === "NOT_FOUND") {
       await sendWhatsappMessage(

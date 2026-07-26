@@ -10,7 +10,8 @@ import {
 import { z } from "zod";
 
 const subscriptionSchema = z.object({
-  targetId: z.string().min(3, "Target ID / WhatsApp number is required"),
+  targetId: z.string().min(3, "Target ID / WhatsApp number / LID is required"),
+  phoneNumber: z.string().optional().nullable(),
   name: z.string().min(2, "Subscriber / Client name is required"),
   plan: z.string().min(1, "Plan selection is required"),
   maxContainers: z.coerce.number().int().min(0, "Max containers must be 0 or greater"),
@@ -21,6 +22,7 @@ const subscriptionSchema = z.object({
 export interface SubscriptionWithCount {
   id: string;
   targetId: string;
+  phoneNumber?: string | null;
   name: string;
   plan: string;
   maxContainers: number;
@@ -41,7 +43,10 @@ export async function getSubscriptionsAction(): Promise<
 
     const results: SubscriptionWithCount[] = await Promise.all(
       subs.map(async (sub) => {
-        const activeCount = await countActiveContainersForTarget(sub.targetId);
+        const activeCount = await countActiveContainersForTarget(
+          sub.targetId,
+          sub.phoneNumber || undefined
+        );
 
         return {
           ...sub,
@@ -69,6 +74,9 @@ export async function createSubscriptionAction(
   try {
     const parsed = subscriptionSchema.parse(data);
     const normalizedTarget = normalizeWaTargetId(parsed.targetId);
+    const normalizedPhone = parsed.phoneNumber
+      ? normalizeWaTargetId(parsed.phoneNumber)
+      : null;
 
     if (!normalizedTarget) {
       return { success: false, error: "Invalid WhatsApp target ID format" };
@@ -82,6 +90,7 @@ export async function createSubscriptionAction(
     const created = await prisma.waSubscription.create({
       data: {
         targetId: normalizedTarget,
+        phoneNumber: normalizedPhone,
         name: parsed.name.trim(),
         plan: parsed.plan,
         maxContainers: parsed.maxContainers,
@@ -90,7 +99,10 @@ export async function createSubscriptionAction(
       },
     });
 
-    const activeCount = await countActiveContainersForTarget(created.targetId);
+    const activeCount = await countActiveContainersForTarget(
+      created.targetId,
+      created.phoneNumber || undefined
+    );
 
     revalidatePath("/subscriptions");
     return {
@@ -130,6 +142,9 @@ export async function updateSubscriptionAction(
   try {
     const parsed = subscriptionSchema.parse(data);
     const normalizedTarget = normalizeWaTargetId(parsed.targetId);
+    const normalizedPhone = parsed.phoneNumber
+      ? normalizeWaTargetId(parsed.phoneNumber)
+      : null;
 
     if (!normalizedTarget) {
       return { success: false, error: "Invalid WhatsApp target ID format" };
@@ -144,6 +159,7 @@ export async function updateSubscriptionAction(
       where: { id },
       data: {
         targetId: normalizedTarget,
+        phoneNumber: normalizedPhone,
         name: parsed.name.trim(),
         plan: parsed.plan,
         maxContainers: parsed.maxContainers,
@@ -152,7 +168,10 @@ export async function updateSubscriptionAction(
       },
     });
 
-    const activeCount = await countActiveContainersForTarget(updated.targetId);
+    const activeCount = await countActiveContainersForTarget(
+      updated.targetId,
+      updated.phoneNumber || undefined
+    );
 
     revalidatePath("/subscriptions");
     return {
@@ -187,20 +206,25 @@ export async function updateSubscriptionAction(
 export async function toggleSubscriptionAction(
   id: string,
   isActive: boolean
-): Promise<ActionResponse<{ id: string; isActive: boolean }>> {
+): Promise<ActionResponse<SubscriptionWithCount>> {
   try {
     const updated = await prisma.waSubscription.update({
       where: { id },
       data: { isActive },
     });
 
+    const activeCount = await countActiveContainersForTarget(
+      updated.targetId,
+      updated.phoneNumber || undefined
+    );
+
     revalidatePath("/subscriptions");
     return {
       success: true,
-      data: { id: updated.id, isActive: updated.isActive },
+      data: { ...updated, activeContainersCount: activeCount },
     };
   } catch (error) {
-    console.error("Error toggling subscription status:", error);
+    console.error("Error toggling subscription:", error);
     return {
       success: false,
       error:
@@ -213,14 +237,14 @@ export async function toggleSubscriptionAction(
 
 export async function deleteSubscriptionAction(
   id: string
-): Promise<ActionResponse<{ id: string }>> {
+): Promise<ActionResponse<null>> {
   try {
     await prisma.waSubscription.delete({
       where: { id },
     });
 
     revalidatePath("/subscriptions");
-    return { success: true, data: { id } };
+    return { success: true, data: null };
   } catch (error) {
     console.error("Error deleting subscription:", error);
     return {

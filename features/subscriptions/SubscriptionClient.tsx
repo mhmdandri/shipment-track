@@ -57,6 +57,7 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
 
   // Form Fields State
   const [targetId, setTargetId] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [name, setName] = useState("");
   const [plan, setPlan] = useState("STARTER");
   const [maxContainers, setMaxContainers] = useState(10);
@@ -71,6 +72,7 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
   const resetForm = () => {
     setEditingSub(null);
     setTargetId("");
+    setPhoneNumber("");
     setName("");
     setPlan("STARTER");
     setMaxContainers(10);
@@ -91,6 +93,7 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
   const openEditDialog = (sub: SubscriptionWithCount) => {
     setEditingSub(sub);
     setTargetId(sub.targetId);
+    setPhoneNumber(sub.phoneNumber || "");
     setName(sub.name);
     setPlan(sub.plan);
     setMaxContainers(sub.maxContainers);
@@ -107,6 +110,7 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
 
     const payload = {
       targetId: targetId.trim(),
+      phoneNumber: phoneNumber.trim() || undefined,
       name: name.trim(),
       plan,
       maxContainers: Number(maxContainers),
@@ -247,6 +251,11 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                       </CardTitle>
                       <p className="text-xs font-mono text-muted-foreground mt-0.5">
                         {sub.targetId}
+                        {sub.phoneNumber && (
+                          <span className="text-primary block text-[11px] font-sans">
+                            Alt: {sub.phoneNumber}
+                          </span>
+                        )}
                       </p>
                     </div>
                     <Badge
@@ -429,8 +438,22 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                 required
               />
               <p className="text-[11px] text-muted-foreground">
-                Personal numbers end with <code>@c.us</code>, WhatsApp Groups
-                end with <code>@g.us</code>.
+                Personal numbers end with <code>@c.us</code>, LID numbers end with <code>@lid</code>, Groups end with <code>@g.us</code>.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="phoneNumber" className="text-xs font-semibold">
+                Alternate Phone / WA Number (Optional)
+              </Label>
+              <Input
+                id="phoneNumber"
+                placeholder="e.g. 6281210860242 or 081210860242"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Optional alternate phone number linked for Web UI & WhatsApp Bot dual-identity matching.
               </p>
             </div>
 

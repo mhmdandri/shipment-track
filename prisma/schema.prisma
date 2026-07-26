@@ -151,7 +151,8 @@ model SystemConfig {
 
 model WaSubscription {
   id            String   @id @default(uuid())
-  targetId      String   @unique // WA Number (e.g. 628123456789@c.us) or Group ID (120363...@g.us)
+  targetId      String   @unique // Primary WA Number / LID (e.g. 628123456789@c.us or 145844254802166@lid) or Group ID
+  phoneNumber   String?  // Alternate WA Phone Number (e.g. 628123456789@c.us)
   name          String   // Client / Group Name
   plan          String   @default("STARTER") // STARTER, BUSINESS, ENTERPRISE, UNLIMITED
   maxContainers Int      @default(10) // Max active monitored containers allowed (0 = Unlimited)
@@ -161,6 +162,7 @@ model WaSubscription {
   updatedAt     DateTime @updatedAt
 
   @@index([targetId])
+  @@index([phoneNumber])
   @@index([isActive, expiredAt])
 }
 

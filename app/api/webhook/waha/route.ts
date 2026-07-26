@@ -26,9 +26,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: "Ignored empty message" });
     }
 
-    // 3. Construct context and dispatch
+    // 3. Extract alternate sender identity (e.g. phone number vs LID)
+    let alternateSender: string | undefined = undefined;
+    const candidate =
+      payload._data?.author ||
+      payload.author ||
+      payload._data?.fromNumber ||
+      payload.participant;
+
+    if (candidate && typeof candidate === "string" && candidate !== sender) {
+      alternateSender = candidate;
+    }
+
+    // 4. Construct context and dispatch
     const context: WhatsappCommandContext = {
       sender,
+      alternateSender,
       payload,
       text,
       args: text.trim().split(/\s+/),
