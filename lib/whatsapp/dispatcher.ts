@@ -5,6 +5,7 @@ import {
   handleHelpCommand,
   handleStatusCommand,
   handleCekIdCommand,
+  handleOpenStackCommand,
 } from "@/lib/whatsapp/commands";
 import { sendWhatsappMessage } from "../whatsapp";
 import { whatsappMessage } from "../whatsapp-message";
@@ -27,6 +28,10 @@ export async function dispatchWhatsappCommand(context: WhatsappCommandContext) {
     case "track":
       await handleTrackCommand(context);
       break;
+    case "openstack":
+    case "vessel":
+      await handleOpenStackCommand(context);
+      break;
     case "status":
       await handleStatusCommand(context);
       break;
@@ -46,3 +51,4 @@ export async function dispatchWhatsappCommand(context: WhatsappCommandContext) {
       break;
   }
 }
+

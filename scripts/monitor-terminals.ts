@@ -2,70 +2,28 @@ import cron from "node-cron";
 import dotenv from "dotenv";
 dotenv.config();
 
-import { PrismaClient } from "../app/generated/prisma/client";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { trackTerminalContainer } from "../actions/terminal-track-action";
-import { sendTelegramMessage } from "../lib/telegram";
-import { sendWhatsappMessage } from "../lib/whatsapp";
-import { whatsappMessage } from "../lib/whatsapp-message";
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import {
+  processContainerMonitors,
+  processVesselMonitors,
+} from "../service/cron-monitor-service";
 
 async function runMonitor() {
-  console.log(`[${new Date().toISOString()}] Running terminal monitor check...`);
+  console.log(`[${new Date().toISOString()}] Running terminal & vessel monitor check...`);
   try {
-    const activeMonitors = await prisma.terminalMonitor.findMany({
-      where: { isActive: true },
-    });
+    const [containerResults, vesselResults] = await Promise.all([
+      processContainerMonitors(),
+      processVesselMonitors(),
+    ]);
 
-    if (activeMonitors.length === 0) {
-      console.log("No active monitors.");
-      return;
-    }
-
-    for (const monitor of activeMonitors) {
-      const result = await trackTerminalContainer(
-        monitor.port,
-        monitor.containerNo,
-        monitor.vesselName || undefined,
-        monitor.voyageNo || undefined
-      );
-
-      const isGnstkExact = result.status === "GNSTK";
-      const isUnknownPortChange = 
-        monitor.port === "koja" && 
-        result.status && result.status !== "ONVSL" && result.status !== monitor.status;
-
-      if (result.success && (isGnstkExact || isUnknownPortChange)) {
-        const finalStatus = isGnstkExact ? "GNSTK" : result.status!;
-        
-        await prisma.terminalMonitor.update({
-          where: { id: monitor.id },
-          data: { isActive: false, status: finalStatus, updatedAt: new Date() },
-        });
-
-        const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${finalStatus}</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
-        await sendTelegramMessage(telegramMsg);
-
-        if (monitor.waNumber) {
-          const waMsg = whatsappMessage.statusChangedToGNSTK(monitor.containerNo, monitor.port, result.time || "-");
-          await sendWhatsappMessage(monitor.waNumber, waMsg);
-        }
-
-        console.log(`Container ${monitor.containerNo} updated to ${finalStatus}`);
-      } else {
-        console.log(`Container ${monitor.containerNo} status: ${result.status || "Unchanged"}`);
-      }
-    }
+    console.log(
+      `Processed ${containerResults.length} container monitor(s) and ${vesselResults.length} vessel monitor(s).`
+    );
   } catch (error) {
     console.error("Monitor cron error:", error);
   }
 }
 
-console.log("Starting Container Monitor Cron Job (runs every 30 minutes)...");
+console.log("Starting Terminal & Vessel Monitor Cron Job (runs every 30 minutes)...");
 cron.schedule("*/30 * * * *", runMonitor);
 
 runMonitor();

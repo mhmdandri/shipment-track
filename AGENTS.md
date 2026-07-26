@@ -23,6 +23,7 @@ CS Eksim Tracker (`shipment-track`) adalah sistem dashboard operasional freight 
 - **Framework**: Next.js 16 (App Router, Server Actions, Dynamic Routes)
 - **Language**: TypeScript (Strict type checking, no `any`)
 - **Database & ORM**: PostgreSQL via Prisma ORM v7 (dengan `@prisma/adapter-pg` & `pg` connection pool)
+- **Database Migration Rule (WAJIB)**: Setiap kali ada penambahan atau perubahan schema Prisma (`prisma/schema.prisma`), **WAJIB MENGGUNAKAN `npx prisma migrate dev --name <deskripsi>`**. **SANGAT DILARANG / TIDAK BOLEH MENGGUNAKAN `npx prisma db push`** agar histori migrasi terawat dan aman untuk staging/production.
 - **Scraping & HTML Parsing**: Cheerio v1.2.0, Native `fetch` API, Node.js `tls` socket module
 - **Validation**: Zod (Form validation & API payloads)
 - **Styling**: Tailwind CSS v4, Shadcn UI, Radix UI, Lucide Icons, tw-animate-css
@@ -109,25 +110,25 @@ shipment-track/
 - **Fungsi**: Pelacakan posisi kontainer pada shipping lines global (ONE Line & Evergreen EMC) melalui API eksternal dan HTML scraping.
 - **File Kunci**: `actions/track-action.ts`, `app/tracker/page.tsx`, `features/tracker/*`.
 
-### 3. Terminal Tracking Module (Port Terminals)
-- **Fungsi**: Scraping dan query data real-time ke terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB).
-- **File Kunci**: `actions/tracking/index.ts`, `actions/tracking/ports/*`, `actions/terminal-track-action.ts`, `app/terminal-tracker/page.tsx`.
+### 3. Terminal Tracking Module (Port Terminals & Vessel Schedules)
+- **Fungsi**: Scraping dan query data real-time ke terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB) serta jadwal Open Stacking kapal (NPCT1, JICT).
+- **File Kunci**: `actions/tracking/index.ts`, `actions/tracking/vessel/index.ts`, `actions/tracking/vessel/ports/*`, `actions/vessel-action.ts`, `app/terminal-tracker/page.tsx`.
 
 ### 4. Auto-Monitoring Module
-- **Fungsi**: Pendaftaran kontainer aktif ke dalam watchlist `TerminalMonitor`. Cron job memeriksa kontainer berstatus belum `OUTGT` secara berkala.
-- **File Kunci**: `actions/monitor-action.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
+- **Fungsi**: Pendaftaran kontainer aktif ke watchlist `TerminalMonitor` dan kapal aktif ke watchlist `VesselMonitor`. Cron job memeriksa kontainer (`OUTGT`) dan jadwal Open Stacking kapal secara berkala. Kapal yang berstatus `SAILING` atau `COMPLETED` di-deaktivasi otomatis (`isActive: false`).
+- **File Kunci**: `actions/monitor-action.ts`, `actions/vessel-action.ts`, `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
 ### 5. WhatsApp Integration Module (WAHA)
-- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/status`, `/list`, `/cekid`, `/help`), serta pengiriman alert status kontainer.
+- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/openstack`, `/status`, `/list`, `/cekid`, `/help`), serta pengiriman alert status kontainer dan Open Stacking kapal multi-port.
 - **File Kunci**: `app/api/webhook/waha/route.ts`, `lib/whatsapp/dispatcher.ts`, `lib/whatsapp/commands/*`, `lib/whatsapp.ts`, `lib/whatsapp-message.ts`.
 
 ### 6. Telegram Notification Module
-- **Fungsi**: Pengiriman alert prioritas tinggi (misalnya penentuan alokasi yard `GNSTK`) ke grup/channel Telegram via Telegram Bot API (HTML format).
+- **Fungsi**: Pengiriman alert prioritas tinggi (misalnya penentuan alokasi yard `GNSTK` & ketersediaan Open Stack kapal) ke grup/channel Telegram via Telegram Bot API (HTML format).
 - **File Kunci**: `lib/telegram.ts`.
 
 ### 7. Cron & Scheduler Module
-- **Fungsi**: Menjalankan pengecekan periodik status kontainer setiap 30 menit melalui HTTP endpoint (`/api/cron/monitor`) atau daemon script (`scripts/monitor-terminals.ts`).
-- **File Kunci**: `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
+- **Fungsi**: Menjalankan pengecekan periodik status kontainer & jadwal kapal setiap 30 menit via service `cron-monitor-service.ts` melalui HTTP endpoint (`/api/cron/monitor`) atau daemon script (`scripts/monitor-terminals.ts`).
+- **File Kunci**: `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
 ### 8. Authentication Module
 - **Fungsi**:
@@ -144,7 +145,7 @@ shipment-track/
 - **File Kunci**: `actions/daily-todo-action.ts`, `actions/todo-action.ts`, `app/todos/page.tsx`, `features/todos/*`.
 
 ### 11. Subscription & Access Control Module
-- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`) dengan prinsip **Strict 100% Zero-Trust Access Control**, pembatasan kuota kontainer aktif (STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, serta penghitungan kuota kontainer aktif serba fleksibel (`countActiveContainersForTarget`) yang mencakup berbagai format ID pengirim (`@lid`, `@c.us`, `@g.us`, clean numeric ID). Seluruh pendaftaran notifikasi WA baik via Web UI maupun Chat Bot wajib terdaftar aktif di database.
+- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`) dengan prinsip **Strict 100% Zero-Trust Access Control**, pembatasan kuota monitor aktif bersama (Shared Quota Pool: Kontainer + Kapal; STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, serta penghitungan kuota aktif serba fleksibel (`countActiveContainersForTarget`) yang menjumlahkan `TerminalMonitor` dan `VesselMonitor` aktif untuk berbagai format ID pengirim (`@lid`, `@c.us`, `@g.us`, clean numeric ID). Seluruh pendaftaran notifikasi WA baik via Web UI maupun Chat Bot wajib terdaftar aktif di database.
 - **File Kunci**: `prisma/schema.prisma`, `lib/whatsapp/subscription.ts`, `actions/subscription-action.ts`, `app/subscriptions/page.tsx`, `features/subscriptions/*`.
 
 ---
@@ -248,6 +249,28 @@ erDiagram
         DateTime updatedAt
     }
 
+    VesselMonitor {
+        String id PK "UUID"
+        String vesselName "Vessel Code / Name"
+        String port "Port Code (npct1|jict|koja|tmal|ter3)"
+        String line "Carrier / Line Name"
+        String voyageIn "Voyage In"
+        String voyageOut "Voyage Out"
+        String service "Service Name"
+        String status "REGISTER | ACTIVE"
+        DateTime etb "Estimated Time of Berthing"
+        DateTime ata "Actual Time of Arrival"
+        DateTime etd "Estimated Time of Departure"
+        DateTime atd "Actual Time of Departure"
+        DateTime openStacking "Jadwal Open Stacking"
+        DateTime closingDoc "Closing Document Time"
+        DateTime closingPhysic "Closing Physic Time"
+        String waNumber "WhatsApp Target (Optional)"
+        Boolean isActive "Status Monitoring"
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
     WaSubscription {
         String id PK "UUID"
         String targetId UK "Unique WA Target (Number or Group ID)"
@@ -275,6 +298,7 @@ erDiagram
 - `Reminder`: `@@index([shipmentId])`, `@@index([completed, dueDate])`
 - `Todo`: `@@index([shipmentId])`
 - `TerminalMonitor`: `@unique([containerNo])`, `@@index([isActive])`
+- `VesselMonitor`: `@@unique([vesselName, port])`, `@@index([isActive])`
 - `WaSubscription`: `@unique([targetId])`, `@@index([isActive, expiredAt])`
 
 ---
@@ -292,19 +316,15 @@ erDiagram
     "success": true,
     "message": "Cron job executed successfully.",
     "details": [
-      { "containerNo": "EMCU6137410", "status": "Updated to GNSTK (isActive: true)" }
+      { "type": "container", "containerNo": "EMCU6137410", "status": "Updated to GNSTK (isActive: true)" },
+      { "type": "vessel", "vesselName": "JOSEPHINE MAERSK", "port": "npct1", "status": "OpenStack updated: 2026-07-25 01:00:00" }
     ]
   }
   ```
 - **Flow**:
-  1. Ambil semua baris `TerminalMonitor` di mana `isActive = true`.
-  2. Untuk setiap kontainer, panggil `trackTerminalContainer(port, containerNo, vesselName, voyageNo)`.
-  3. Cek perubahan status dan kriteria `isOb` (jika objek memuat PLP/OBX).
-  4. Jika status berubah dari nilai lama:
-     - Update status di DB (`TerminalMonitor.update`).
-     - Jika status berubah ke `OUTGT` / `DELIVERED`, set `isActive = false`.
-     - Kirim Telegram message (jika status berubah menjadi `GNSTK`).
-     - Kirim WhatsApp message ke `waNumber` (jika terdaftar).
+  1. Ambil semua baris `TerminalMonitor` dan `VesselMonitor` di mana `isActive = true`.
+  2. Untuk kontainer, panggil `trackTerminalContainer`. Jika status berubah/GNSTK/OUTGT, kirim notifikasi & update DB.
+  3. Untuk kapal, panggil `trackVesselSchedule(port, vesselName)`. Jika jadwal Open Stacking tersedia / berubah, update DB `VesselMonitor` dan kirim notifikasi instan WhatsApp & Telegram.
 
 ### 2. WhatsApp WAHA Webhook Endpoint
 - **URL**: `/api/webhook/waha`
@@ -317,15 +337,11 @@ erDiagram
     "payload": {
       "from": "628123456789@c.us",
       "fromMe": false,
-      "body": "/track EMCU6137410 JICT"
+      "body": "/openstack JOSEPHINE MAERSK NPCT1"
     }
   }
   ```
 - **Response**: `{ "success": true, "message": "Command dispatched successfully" }`
-- **Flow**:
-  1. Periksa `event.startsWith("message")` dan `fromMe === false`.
-  2. Ambil `body` dan `from` sender.
-  3. Buat `WhatsappCommandContext` dan teruskan ke `dispatchWhatsappCommand()`.
 
 ---
 
@@ -340,6 +356,8 @@ erDiagram
 | `actions/shipment-action.ts` | `toggleReminderAction` | `id, completed, shipmentId?` | `ActionResponse` | Update status reminder & sync otomatis ke matching task title jika ada. |
 | `actions/shipment-action.ts` | `getShipmentQuickViewAction` | `id: string` | `ActionResponse<unknown>` | Ambil detail singkat shipment untuk modal quick view (log terbaru & pending todos). |
 | `actions/monitor-action.ts` | `enableTerminalMonitoring` | `containerNo, port, status, waNumber?, vesselName?, voyageNo?` | `ActionResponse<{message: string}>` | Pendaftaran kontainer ke tabel `TerminalMonitor` (upsert) & notifikasi awal. |
+| `actions/vessel-action.ts` | `searchVesselScheduleAction` | `port, vesselName, line?` | `ActionResponse<VesselTrackingResult>` | Scrape & return real-time vessel schedule & open stacking data untuk terminal terkait. |
+| `actions/vessel-action.ts` | `enableVesselMonitoringAction` | `vesselName, port?, waNumber?` | `ActionResponse<{message: string}>` | Pendaftaran auto-monitoring open stack kapal ke tabel `VesselMonitor`. |
 | `actions/terminal-track-action.ts` | `trackTerminalContainer` | `port, containerNo, vesselName?, voyageNo?` | `TerminalTrackingResult` | Wrapper server action untuk memanggil port tracker terpilih. |
 | `actions/track-action.ts` | `trackShipmentAction` | `carrier, searchType, searchText` | `UnifiedTrackingResult` | Track live shipping lines (ONE Line / Evergreen EMC). |
 | `actions/todo-action.ts` | `addTodoAction` | `shipmentId, text` | `{ success: boolean, error?: string }` | Menambahkan todo khusus shipment. |
@@ -349,6 +367,7 @@ erDiagram
 | `actions/daily-todo-action.ts` | `createDailyTodoAction` | `text: string` | `{ success: boolean, data?: DailyTodo, error?: string }` | Buat daily todo baru. |
 | `actions/daily-todo-action.ts` | `toggleDailyTodoAction` | `id: string, isDone: boolean` | `{ success: boolean, data?: DailyTodo, error?: string }` | Toggle daily todo. |
 | `actions/daily-todo-action.ts` | `deleteDailyTodoAction` | `id: string` | `{ success: boolean, error?: string }` | Hapus daily todo. |
+
 
 ---
 

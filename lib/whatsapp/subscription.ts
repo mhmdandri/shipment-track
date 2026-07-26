@@ -55,7 +55,8 @@ export function normalizeWaTargetId(input: string): string {
 }
 
 /**
- * Counts active monitored containers for a target ID, supporting multi-format ID matching (raw, clean numeric, @c.us, @g.us, @lid).
+ * Counts total active monitored items (containers + vessels) for a target ID,
+ * supporting multi-format ID matching (raw, clean numeric, @c.us, @g.us, @lid).
  */
 export async function countActiveContainersForTarget(
   targetId: string
@@ -67,21 +68,33 @@ export async function countActiveContainersForTarget(
     const cleanId = raw.split("@")[0].trim();
     const normalized = normalizeWaTargetId(targetId);
 
-    return await prisma.terminalMonitor.count({
-      where: {
-        isActive: true,
-        OR: [
-          { waNumber: raw },
-          { waNumber: cleanId },
-          { waNumber: normalized },
-          { waNumber: `${cleanId}@c.us` },
-          { waNumber: `${cleanId}@g.us` },
-          { waNumber: `${cleanId}@lid` },
-        ],
-      },
-    });
+    const waMatchCondition = [
+      { waNumber: raw },
+      { waNumber: cleanId },
+      { waNumber: normalized },
+      { waNumber: `${cleanId}@c.us` },
+      { waNumber: `${cleanId}@g.us` },
+      { waNumber: `${cleanId}@lid` },
+    ];
+
+    const [containerCount, vesselCount] = await Promise.all([
+      prisma.terminalMonitor.count({
+        where: {
+          isActive: true,
+          OR: waMatchCondition,
+        },
+      }),
+      prisma.vesselMonitor.count({
+        where: {
+          isActive: true,
+          OR: waMatchCondition,
+        },
+      }),
+    ]);
+
+    return containerCount + vesselCount;
   } catch (error) {
-    console.error("Error counting active containers for target:", error);
+    console.error("Error counting active monitors for target:", error);
     return 0;
   }
 }

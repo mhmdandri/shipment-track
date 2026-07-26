@@ -176,4 +176,32 @@ model User {
   @@index([username])
 }
 
+model VesselMonitor {
+  id            String    @id @default(uuid())
+  vesselName    String
+  port          String    @default("npct1")
+  line          String?
+  voyageIn      String?
+  voyageOut     String?
+  service       String?
+  status        String    @default("REGISTER")
+  etb           DateTime?
+  ata           DateTime?
+  etd           DateTime?
+  atd           DateTime?
+  openStacking  DateTime?
+  closingDoc    DateTime?
+  closingPhysic DateTime?
+  waNumber      String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([vesselName, port])
+  @@index([isActive])
+  @@index([port, vesselName])
+}
+
+
+
 

@@ -196,7 +196,10 @@ export async function updateExampleAction(
 
 ---
 
-## 7. Cara Membuat Database Migration
+## 7. Cara Membuat Database Migration (WAJIB)
+
+> [!IMPORTANT]
+> **ATURAN WAJIB MIGRATION**: Setiap ada penambahan atau perubahan schema di `prisma/schema.prisma`, **WAJIB MENGGUNAKAN `npx prisma migrate dev`**. **DILARANG MENGGUNAKAN `npx prisma db push`** agar histori file SQL migrasi di folder `prisma/migrations/` selalu konsisten.
 
 ### Langkah-langkah:
 
@@ -381,4 +384,29 @@ npx eslint .
    - Untuk hit API eksternal/client, kirim header `Authorization: Bearer <token>` atau manfaatkan HttpOnly cookie `auth_token`.
 4. **Proteksi Route via `proxy.ts` (Next.js 16 Proxy Convention)**:
    - Tambahkan path ke `PUBLIC_PATHS` di `proxy.ts` jika route baru diizinkan diakses tanpa login (seperti tracker publik).
+
+---
+
+## 18. Cara Pengecekan & Auto-Monitoring Vessel Open Stack (Multi-Port: NPCT1, JICT)
+
+### Langkah-langkah:
+
+1. **Scraping Real-Time Vessel Schedule (Multi-Port Engine)**:
+   - Panggil `trackVesselSchedule(port, vesselName, line)` dari `@/actions/tracking/vessel`.
+   - **NPCT1 (`actions/tracking/vessel/ports/npct1.ts`)**:
+     Engine mengambil CSRF token & cookie session, melakukan POST request ke `https://www.npct1.co.id/req/vessel`, mendownload HTML redirect, dan memparse `#idTableVesselSchedule`.
+   - **JICT (`actions/tracking/vessel/ports/jict.ts`)**:
+     Engine mendownload HTML dari `https://www.jict.co.id/vessel-schedule`, memparse tabel `.working-vessel-table`, mencocokkan kapal (e.g. `SKY PRIDE 2606N`), dan menormalisasi format tanggal `DD/MM/YYYY HH:mm` ke `YYYY-MM-DD HH:mm:ss`.
+2. **Pendaftaran Monitoring & Otorisasi SaaS**:
+   - Panggil `enableVesselMonitoringAction(vesselName, port, waNumber)` dari `@/actions/vessel-action`.
+   - Jika `waNumber` diberikan, sistem memverifikasi langganan WhatsApp via `checkWaSubscription`.
+   - Data disimpan/diperbarui di tabel Prisma `VesselMonitor` dengan `isActive = true` dan `port = port`.
+3. **Pemberitahuan via WhatsApp Command**:
+   - Pengguna WhatsApp dapat mengirim perintah `/openstack <Nama Kapal> [Terminal]` (misal `/openstack SKY PRIDE jict`).
+   - Bot membalas dengan status Open Stacking terbaru dan mendaftarkan pemantauan otomatis secara bersamaan.
+4. **Cron Job Alerting**:
+   - Endpoint `/api/cron/monitor` memeriksa seluruh kapal di `VesselMonitor` secara berkala (30 menit).
+   - Saat tanggal `openStacking` pertama kali tersedia atau diperbarui, notifikasi Telegram & WhatsApp dikirimkan secara instan.
+
+
 

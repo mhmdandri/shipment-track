@@ -356,4 +356,70 @@ Sistem akan melakukan pengecekan otomatis secara berkala.`,
     listStr += `Total :\n${total} Container(s)`;
     return listStr;
   },
+
+  npct1VesselMonitoringEnabled: (
+    vessel: string,
+    status: string,
+    openStacking: string,
+    etb: string,
+    port: string = "NPCT1"
+  ) => {
+    const cleanPort = port.toUpperCase();
+    return `🚢 *Auto Monitoring Kapal (${cleanPort}) Aktif*
+
+🚢 Vessel        : *${vessel}*
+📋 Status        : *${status}*
+📅 Open Stacking: *${openStacking}*
+🕒 ETB          : *${etb}*
+
+Sistem akan memberikan notifikasi otomatis saat jadwal Open Stacking tersedia / terupdate di ${cleanPort}.`;
+  },
+
+  npct1OpenStackResult: (
+    vessel: string,
+    line: string,
+    voyIn: string,
+    voyOut: string,
+    status: string,
+    openStacking: string,
+    etb: string,
+    etd: string,
+    closingPhysic: string,
+    port: string = "NPCT1"
+  ) => {
+    const cleanPort = port.toUpperCase();
+    return `⚓ *${cleanPort} Vessel Open Stack Schedule*
+
+🚢 Vessel        : *${vessel}*
+🏢 Line          : *${line || "-"}*
+⛵ Voy In / Out  : *${voyIn || "-"} / ${voyOut || "-"}*
+📊 Status        : *${status}*
+
+📅 *OPEN STACKING*: *${openStacking || "BELUM TERSEDIA"}*
+🕒 ETB          : *${etb || "-"}*
+🕒 ETD          : *${etd || "-"}*
+⏰ Closing Physic: *${closingPhysic || "-"}*`;
+  },
+
+  npct1OpenStackAvailableAlert: (
+    vessel: string,
+    openStacking: string,
+    etb: string,
+    etd: string,
+    status: string,
+    port: string = "NPCT1"
+  ) => {
+    const cleanPort = port.toUpperCase();
+    return `🎉 *JADWAL OPEN STACK (${cleanPort}) TERSEDIA!* 🎉
+
+🚢 Vessel        : *${vessel}*
+📊 Status        : *${status}*
+
+📅 *OPEN STACKING*: *${openStacking}*
+🕒 ETB          : *${etb || "-"}*
+🕒 ETD          : *${etd || "-"}*
+
+Silakan persiapkan pengiriman kontainer ke terminal ${cleanPort}.`;
+  },
 };
+
