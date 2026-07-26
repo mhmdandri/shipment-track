@@ -111,7 +111,7 @@ shipment-track/
 - **File Kunci**: `actions/track-action.ts`, `app/tracker/page.tsx`, `features/tracker/*`.
 
 ### 3. Terminal Tracking Module (Port Terminals & Vessel Schedules)
-- **Fungsi**: Scraping dan query data real-time ke terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB) serta jadwal Open Stacking kapal (NPCT1, JICT).
+- **Fungsi**: Scraping dan query data real-time ke 5 terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB) serta jadwal Open Stacking kapal multi-port (`searchVesselAllPorts`).
 - **File Kunci**: `actions/tracking/index.ts`, `actions/tracking/vessel/index.ts`, `actions/tracking/vessel/ports/*`, `actions/vessel-action.ts`, `app/terminal-tracker/page.tsx`.
 
 ### 4. Auto-Monitoring Module
@@ -119,7 +119,7 @@ shipment-track/
 - **File Kunci**: `actions/monitor-action.ts`, `actions/vessel-action.ts`, `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
 ### 5. WhatsApp Integration Module (WAHA)
-- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/openstack`, `/status`, `/list`, `/cekid`, `/help`), serta pengiriman alert status kontainer dan Open Stacking kapal multi-port.
+- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/openstack`, `/vessel`, `/cekport`, `/port`, `/status`, `/list`, `/cekid`, `/help`), serta pengiriman alert status kontainer dan Open Stacking kapal multi-port (JICT, NPCT1, KOJA, TMAL, TER3).
 - **File Kunci**: `app/api/webhook/waha/route.ts`, `lib/whatsapp/dispatcher.ts`, `lib/whatsapp/commands/*`, `lib/whatsapp.ts`, `lib/whatsapp-message.ts`.
 
 ### 6. Telegram Notification Module

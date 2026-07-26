@@ -6,6 +6,7 @@ import {
   handleStatusCommand,
   handleCekIdCommand,
   handleOpenStackCommand,
+  handleCekPortCommand,
 } from "@/lib/whatsapp/commands";
 import { sendWhatsappMessage } from "../whatsapp";
 import { whatsappMessage } from "../whatsapp-message";
@@ -29,9 +30,20 @@ export async function dispatchWhatsappCommand(context: WhatsappCommandContext) {
       await handleTrackCommand(context);
       break;
     case "openstack":
-    case "vessel":
       await handleOpenStackCommand(context);
       break;
+    case "vessel":
+    case "cekport":
+    case "port": {
+      const knownPorts = ["npct1", "jict", "koja", "tmal", "ter3", "parama"];
+      const lastArg = rawArgs[rawArgs.length - 1]?.toLowerCase();
+      if (rawArgs.length > 2 && knownPorts.includes(lastArg)) {
+        await handleOpenStackCommand(context);
+      } else {
+        await handleCekPortCommand(context);
+      }
+      break;
+    }
     case "status":
       await handleStatusCommand(context);
       break;
@@ -51,4 +63,3 @@ export async function dispatchWhatsappCommand(context: WhatsappCommandContext) {
       break;
   }
 }
-

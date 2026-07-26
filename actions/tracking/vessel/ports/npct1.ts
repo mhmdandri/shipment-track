@@ -147,6 +147,7 @@ export const npct1VesselTracker: VesselTracker = {
           voyOut: getVal(3),
           service: getVal(4),
           status: getVal(5),
+          eta: getVal(6) || null,
           etb: getVal(6) || null,
           ata: getVal(7) || null,
           etd: getVal(8) || null,
@@ -154,6 +155,7 @@ export const npct1VesselTracker: VesselTracker = {
           openStacking: getVal(10) || null,
           closingDoc: getVal(11) || null,
           closingPhysic: getVal(12) || null,
+          port: "npct1",
         });
       });
 

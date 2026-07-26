@@ -202,6 +202,10 @@ to see available commands.`,
 
 /status <container>
 
+/cekport <VESSEL NAME>
+
+/openstack <VESSEL NAME> <TERMINAL>
+
 /list
 
 /cekid
@@ -229,9 +233,7 @@ Contoh:
 
 /status EMCU6137410`,
 
-  subscriptionRequired: (
-    sender: string,
-  ) => {
+  subscriptionRequired: (sender: string) => {
     const cleanId = sender.split("@")[0].trim();
     return `⚠️ *Akses Langganan Diperlukan*
 
@@ -240,9 +242,7 @@ Nomor / Grup WhatsApp Anda (*${cleanId}*) belum terdaftar dalam paket langganan 
 Gunakan perintah /cekid untuk mendapatkan ID Anda, lalu hubungi Admin untuk mendaftarkan akun langganan Anda.`;
   },
 
-  subscriptionExpired: (
-    expiredAt: Date,
-  ) => `❌ *Masa Langganan Berakhir*
+  subscriptionExpired: (expiredAt: Date) => `❌ *Masa Langganan Berakhir*
 
 Masa langganan Bot Container Tracker Anda telah berakhir pada *${new Date(expiredAt).toLocaleDateString("id-ID")}*.
 
@@ -362,7 +362,7 @@ Sistem akan melakukan pengecekan otomatis secara berkala.`,
     status: string,
     openStacking: string,
     etb: string,
-    port: string = "NPCT1"
+    port: string = "NPCT1",
   ) => {
     const cleanPort = port.toUpperCase();
     return `🚢 *Auto Monitoring Kapal (${cleanPort}) Aktif*
@@ -385,7 +385,7 @@ Sistem akan memberikan notifikasi otomatis saat jadwal Open Stacking tersedia / 
     etb: string,
     etd: string,
     closingPhysic: string,
-    port: string = "NPCT1"
+    port: string = "NPCT1",
   ) => {
     const cleanPort = port.toUpperCase();
     return `⚓ *${cleanPort} Vessel Open Stack Schedule*
@@ -407,7 +407,7 @@ Sistem akan memberikan notifikasi otomatis saat jadwal Open Stacking tersedia / 
     etb: string,
     etd: string,
     status: string,
-    port: string = "NPCT1"
+    port: string = "NPCT1",
   ) => {
     const cleanPort = port.toUpperCase();
     return `🎉 *JADWAL OPEN STACK (${cleanPort}) TERSEDIA!* 🎉
@@ -421,5 +421,81 @@ Sistem akan memberikan notifikasi otomatis saat jadwal Open Stacking tersedia / 
 
 Silakan persiapkan pengiriman kontainer ke terminal ${cleanPort}.`;
   },
-};
 
+  vesselMultiPortResult: (
+    vesselNameQuery: string,
+    vessels: Array<{
+      vessel?: string;
+      vesselName?: string;
+      voyIn?: string;
+      voyageIn?: string;
+      voyOut?: string;
+      voyageOut?: string;
+      line?: string;
+      eta?: string | null;
+      etb?: string | null;
+      etd?: string | null;
+      openStacking?: string | null;
+      closingDoc?: string | null;
+      port?: string;
+      status?: string;
+    }>,
+  ) => {
+    if (vessels.length === 0) {
+      return `🔍 *HASIL CEK KAPAL*\n\nKapal: *${vesselNameQuery.toUpperCase()}*\nStatus: ❌ Tidak ditemukan di JICT, NPCT1, KOJA, TMAL, atau TER3.\n\n_Pastikan ejaan nama kapal sudah benar._`;
+    }
+
+    const portLabels: Record<string, string> = {
+      jict: "JICT",
+      npct1: "NPCT1",
+      koja: "TPK KOJA",
+      tmal: "TMAL",
+      ter3: "TER3 (Pelindo)",
+      parama: "TER3 (Pelindo)",
+    };
+
+    let msg = `🚢 *JADWAL KAPAL*\n\nPencarian: *${vesselNameQuery.toUpperCase()}*\nDitemukan: *${vessels.length} terminal*\n\n`;
+
+    vessels.forEach((v, index) => {
+      const portCode = (v.port || "").toLowerCase().trim();
+      const portName =
+        portLabels[portCode] || (v.port || "UNKNOWN PORT").toUpperCase();
+      const vName = v.vesselName || v.vessel || vesselNameQuery.toUpperCase();
+      const voyIn = v.voyageIn || v.voyIn || "";
+      const voyOut = v.voyageOut || v.voyOut || "";
+      const etaDisplay = v.eta || v.etb;
+
+      msg += `*${index + 1}. ${vName}*\n`;
+      msg += `📍 Terminal: *${portName}*\n`;
+      if (voyIn || voyOut) {
+        msg += `🚢 Voyage: ${voyIn || "-"}${voyOut ? ` / ${voyOut}` : ""}\n`;
+      }
+      if (v.line) {
+        msg += `🏢 Line: ${v.line}\n`;
+      }
+      if (etaDisplay) {
+        msg += `📅 ETA: ${etaDisplay}\n`;
+      }
+      if (v.etb && v.etb !== etaDisplay) {
+        msg += `⚓ Sandar (ETB): ${v.etb}\n`;
+      }
+      if (v.etd) {
+        msg += `🚀 Berangkat (ETD): ${v.etd}\n`;
+      }
+      if (v.openStacking) {
+        msg += `📦 Open Stack: *${v.openStacking}*\n`;
+      }
+      if (v.closingDoc) {
+        msg += `🔒 Closing Doc: ${v.closingDoc}\n`;
+      }
+      if (v.status) {
+        msg += `🏷️ Status: ${v.status}\n`;
+      }
+      if (index < vessels.length - 1) {
+        msg += `----------------------------------\n`;
+      }
+    });
+
+    return msg.trim();
+  },
+};

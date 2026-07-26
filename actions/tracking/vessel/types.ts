@@ -4,7 +4,8 @@ export interface VesselScheduleItem {
   voyIn: string;
   voyOut: string;
   service: string;
-  status: string; // REGISTER, ACTIVE, etc.
+  status: string; // REGISTER, ACTIVE, BERTHING, SAILING, etc.
+  eta?: string | null;
   etb: string | null;
   ata: string | null;
   etd: string | null;
@@ -12,6 +13,7 @@ export interface VesselScheduleItem {
   openStacking: string | null;
   closingDoc: string | null;
   closingPhysic: string | null;
+  port?: string;
 }
 
 export interface VesselTrackingResult {

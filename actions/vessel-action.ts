@@ -4,7 +4,9 @@ import prisma from "@/lib/prisma";
 import { ActionResponse } from "@/lib";
 import {
   trackVesselSchedule,
+  searchVesselAllPorts,
   VesselTrackingResult,
+  MultiPortVesselResult,
 } from "./tracking/vessel";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
@@ -60,6 +62,31 @@ export async function searchVesselScheduleAction(
         error instanceof Error
           ? error.message
           : "An unexpected error occurred while fetching vessel schedule.",
+    };
+  }
+}
+
+/**
+ * Searches vessel schedule in real-time across ALL supported ports simultaneously.
+ */
+export async function searchVesselAllPortsAction(
+  vesselName: string
+): Promise<ActionResponse<MultiPortVesselResult>> {
+  if (!vesselName || vesselName.trim().length < 2) {
+    return { success: false, error: "Nama kapal minimal 2 karakter" };
+  }
+
+  try {
+    const result = await searchVesselAllPorts(vesselName);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("searchVesselAllPortsAction Error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred while searching multi-port vessel schedules.",
     };
   }
 }

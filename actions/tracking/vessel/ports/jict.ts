@@ -121,6 +121,7 @@ export const jictVesselTracker: VesselTracker = {
           voyOut: voy,
           service: terminalCol || "-",
           status: statusRaw || "PLAN",
+          eta: parseJictDate(arrivalRaw) || parseJictDate(berthingRaw),
           etb: parseJictDate(berthingRaw) || parseJictDate(arrivalRaw),
           ata: statusRaw.toUpperCase() === "BERTH" || statusRaw.toUpperCase() === "WORKING" ? parseJictDate(berthingRaw) : null,
           etd: parseJictDate(departureRaw),
@@ -128,6 +129,7 @@ export const jictVesselTracker: VesselTracker = {
           openStacking: parseJictDate(openStackRaw),
           closingDoc: parseJictDate(closingRaw),
           closingPhysic: parseJictDate(closingRaw),
+          port: "jict",
         });
       });
 
