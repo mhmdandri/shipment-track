@@ -40,9 +40,9 @@ export async function askGeminiAI(userPrompt: string): Promise<string> {
   }
 
   try {
-    // Standard generateContent API (Fully supported worldwide across all VPS datacenters & Google AI Studio keys)
+    // Primary model: gemini-3.5-flash-lite (Fast, latest 3.5 series)
     const response = await aiClient.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.5-flash-lite",
       contents: userPrompt,
       config: {
         systemInstruction: systemInstructionText,
@@ -53,12 +53,12 @@ export async function askGeminiAI(userPrompt: string): Promise<string> {
       return formatWhatsappMarkdown(response.text);
     }
   } catch (error: unknown) {
-    console.error("Gemini AI Error:", error);
+    console.error("Gemini AI Primary Error (gemini-3.5-flash-lite):", error);
 
-    // Secondary fallback attempt if needed
+    // Fallback model: gemini-3.1-flash-lite or gemini-2.5-flash
     try {
       const fallbackRes = await aiClient.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: userPrompt,
         config: {
           systemInstruction: systemInstructionText,
@@ -69,7 +69,7 @@ export async function askGeminiAI(userPrompt: string): Promise<string> {
         return formatWhatsappMarkdown(fallbackRes.text);
       }
     } catch (fbErr: unknown) {
-      console.error("Gemini AI Fallback Error:", fbErr);
+      console.error("Gemini AI Fallback Error (gemini-2.5-flash):", fbErr);
     }
 
     return "Maaf, terjadi kendala saat menghubungkan pesan ke AI Service.";
