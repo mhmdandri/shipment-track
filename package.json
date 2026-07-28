@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@bprogress/next": "^3.2.12",
+    "@google/genai": "^2.13.0",
     "@hookform/resolvers": "^5.4.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
