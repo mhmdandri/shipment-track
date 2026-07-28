@@ -13,21 +13,7 @@ function formatWhatsappMarkdown(text: string): string {
   );
 }
 
-export async function askGeminiAI(userPrompt: string): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return "⚠️ GEMINI_API_KEY belum diatur pada environment server.";
-  }
-
-  try {
-    if (!aiClient) {
-      aiClient = new GoogleGenAI({ apiKey });
-    }
-
-    const interaction = await aiClient.interactions.create({
-      model: "gemini-3.6-flash",
-      input: userPrompt,
-      system_instruction: `Anda adalah moha, AI Assistant cerdas dan serba bisa yang dikembangkan oleh mohaproject.
+const systemInstructionText = `Anda adalah moha, AI Assistant cerdas dan serba bisa yang dikembangkan oleh mohaproject.
 
 Karakter & Gaya Komunikasi:
 - Ramah, komunikatif, solutif, dan menggunakan Bahasa Indonesia yang nyaman (tidak kaku).
@@ -41,16 +27,53 @@ Kemampuan:
    • /status <container>
    • /openstack <vessel> <pelabuhan>
    • /cekport <vessel>
-   • /help`,
+   • /help`;
+
+export async function askGeminiAI(userPrompt: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return "⚠️ GEMINI_API_KEY belum diatur pada environment server.";
+  }
+
+  if (!aiClient) {
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+
+  try {
+    // Standard generateContent API (Fully supported worldwide across all VPS datacenters & Google AI Studio keys)
+    const response = await aiClient.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: userPrompt,
+      config: {
+        systemInstruction: systemInstructionText,
+      },
     });
 
-    const rawOutput =
-      interaction.output_text ||
-      "Maaf, saya belum dapat memberikan balasan untuk pertanyaan tersebut.";
-
-    return formatWhatsappMarkdown(rawOutput);
-  } catch (error) {
+    if (response.text) {
+      return formatWhatsappMarkdown(response.text);
+    }
+  } catch (error: unknown) {
     console.error("Gemini AI Error:", error);
+
+    // Secondary fallback attempt if needed
+    try {
+      const fallbackRes = await aiClient.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: userPrompt,
+        config: {
+          systemInstruction: systemInstructionText,
+        },
+      });
+
+      if (fallbackRes.text) {
+        return formatWhatsappMarkdown(fallbackRes.text);
+      }
+    } catch (fbErr: unknown) {
+      console.error("Gemini AI Fallback Error:", fbErr);
+    }
+
     return "Maaf, terjadi kendala saat menghubungkan pesan ke AI Service.";
   }
+
+  return "Maaf, belum dapat memberikan balasan untuk pertanyaan tersebut.";
 }
