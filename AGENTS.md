@@ -111,7 +111,7 @@ shipment-track/
 - **File Kunci**: `actions/track-action.ts`, `app/tracker/page.tsx`, `features/tracker/*`.
 
 ### 3. Terminal Tracking Module (Port Terminals & Vessel Schedules)
-- **Fungsi**: Scraping dan query data real-time ke 5 terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB) serta jadwal Open Stacking kapal multi-port (`searchVesselAllPorts`).
+- **Fungsi**: Scraping dan query data real-time ke 5 terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB via BC On Demand `bcondemand.jict.co.id` untuk JICT & KOJA, serta `Remarks` KOJA). Khusus TMAL dinormalisasi ke `ONVSL`/`GNSTK`/`OUTGT` karena tidak memiliki string kode status bawaan.
 - **File Kunci**: `actions/tracking/index.ts`, `actions/tracking/vessel/index.ts`, `actions/tracking/vessel/ports/*`, `actions/vessel-action.ts`, `app/terminal-tracker/page.tsx`.
 
 ### 4. Auto-Monitoring Module
@@ -356,6 +356,7 @@ erDiagram
 | `actions/shipment-action.ts` | `toggleReminderAction` | `id, completed, shipmentId?` | `ActionResponse` | Update status reminder & sync otomatis ke matching task title jika ada. |
 | `actions/shipment-action.ts` | `getShipmentQuickViewAction` | `id: string` | `ActionResponse<unknown>` | Ambil detail singkat shipment untuk modal quick view (log terbaru & pending todos). |
 | `actions/monitor-action.ts` | `enableTerminalMonitoring` | `containerNo, port, status, waNumber?, vesselName?, voyageNo?` | `ActionResponse<{message: string}>` | Pendaftaran kontainer ke tabel `TerminalMonitor` (upsert) & notifikasi awal. |
+| `actions/monitor-action.ts` | `disableTerminalMonitoring` | `containerNo: string` | `ActionResponse<{message: string}>` | Mematikan (deaktivasi) auto-monitoring kontainer (`isActive: false`) secara manual dari Web UI. |
 | `actions/vessel-action.ts` | `searchVesselScheduleAction` | `port, vesselName, line?` | `ActionResponse<VesselTrackingResult>` | Scrape & return real-time vessel schedule & open stacking data untuk terminal terkait. |
 | `actions/vessel-action.ts` | `enableVesselMonitoringAction` | `vesselName, port?, waNumber?` | `ActionResponse<{message: string}>` | Pendaftaran auto-monitoring open stack kapal ke tabel `VesselMonitor`. |
 | `actions/terminal-track-action.ts` | `trackTerminalContainer` | `port, containerNo, vesselName?, voyageNo?` | `TerminalTrackingResult` | Wrapper server action untuk memanggil port tracker terpilih. |

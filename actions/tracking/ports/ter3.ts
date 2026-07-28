@@ -67,6 +67,16 @@ export async function login(): Promise<
   { success: true; session: Ter3Session } | { success: false; error: string }
 > {
   ter3SessionCache = null;
+  const username = process.env.PARAMA_USERNAME;
+  const password = process.env.PARAMA_PASSWORD;
+
+  if (!username || !password) {
+    return {
+      success: false,
+      error: "TER3 Login credentials (PARAMA_USERNAME/PARAMA_PASSWORD) are not configured in environment.",
+    };
+  }
+
   const loginUrl = "https://parama.pelindo.co.id:8031/api/login";
 
   const loginRes = await fetch(loginUrl, {
@@ -78,8 +88,8 @@ export async function login(): Promise<
     },
     cache: "no-store",
     body: JSON.stringify({
-      username: process.env.PARAMA_USERNAME || "Solichin80",
-      password: process.env.PARAMA_PASSWORD || "Arnesya@27",
+      username,
+      password,
     }),
   });
 
@@ -161,14 +171,7 @@ export function normalizeStatus(rec: Ter3DataRec): {
     time = latest.activityTime || time;
   }
 
-  const upperStatus = finalStatus.toUpperCase();
-  if (upperStatus.includes("YARD STACK")) {
-    finalStatus = "GNSTK";
-  } else if (upperStatus.includes("GATE OUT")) {
-    finalStatus = "OUTGT";
-  }
-
-  return { status: finalStatus, time };
+  return { status: finalStatus.trim(), time: time.trim() };
 }
 
 export async function trackTer3(

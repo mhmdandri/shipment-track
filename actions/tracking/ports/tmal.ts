@@ -83,21 +83,23 @@ export function normalizeStatus(
   foundOutTime: string
 ): { status: string; time: string; timeOut?: string } {
   let finalStatus =
-    foundStatus.toUpperCase() === "ON VESSEL" ? "ONVSL" : foundStatus;
-  let finalTime = foundTime;
-  let finalTimeOut = "";
+    foundStatus.trim().toUpperCase() === "ON VESSEL" ? "ONVSL" : foundStatus.trim();
+  let finalTime = foundTime.trim();
+  let finalTimeOut: string | undefined = undefined;
 
-  // If it's not ONVSL, it's typically a date (Tanggal Bongkar) meaning it's discharged to yard.
-  // We normalize it to GNSTK so our monitoring logic treats it uniformly.
+  // TMAL does not provide a standard status string when discharged; it returns the discharge date.
+  // We normalize non-ONVSL to GNSTK so it maps cleanly to yard allocation.
   if (finalStatus !== "ONVSL") {
-    finalTime = finalStatus; // the date it was discharged
+    if (finalStatus) {
+      finalTime = finalStatus;
+    }
     finalStatus = "GNSTK";
   }
 
-  // If there is an outgate time in the detail page, it overrides everything to OUTGT
-  if (foundOutTime && foundOutTime !== "" && foundOutTime !== "-") {
+  // If outgate time is available in detail page, set status to OUTGT
+  if (foundOutTime && foundOutTime.trim() !== "" && foundOutTime.trim() !== "-") {
     finalStatus = "OUTGT";
-    finalTimeOut = foundOutTime;
+    finalTimeOut = foundOutTime.trim();
   }
 
   return { status: finalStatus, time: finalTime, timeOut: finalTimeOut };

@@ -1,6 +1,6 @@
 import tls from "tls";
 import { PortTracker, TerminalTrackingResult, TrackInput } from "../types";
-import { getCheerio } from "../utils";
+import { getCheerio, isObType } from "../utils";
 
 function tlsFetch(
   hostname: string,
@@ -13,6 +13,7 @@ function tlsFetch(
         host: hostname,
         port: 443,
         servername: hostname,
+        timeout: 15000,
       },
       () => {
         const request =
@@ -25,6 +26,11 @@ function tlsFetch(
         socket.write(request);
       },
     );
+
+    socket.on("timeout", () => {
+      socket.destroy();
+      reject(new Error("JICT TLS Connection timed out after 15 seconds"));
+    });
 
     let data = Buffer.alloc(0);
     socket.on("data", (chunk) => {
@@ -177,7 +183,7 @@ export async function trackJict(
 
   if (parsed.success) {
     const obData = await checkJictOb(containerNo);
-    if (obData) {
+    if (obData && isObType(obData.ob)) {
       parsed.ob = obData.ob;
       parsed.obName = obData.obName;
     }

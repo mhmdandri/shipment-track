@@ -1,15 +1,31 @@
+"use client";
+
+import { useState } from "react";
 import TerminalTrackerClient from "./TerminalTrackerClient";
-import { Activity, Clock } from "lucide-react";
+import { Activity, Clock, BellOff } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import type { TerminalMonitor } from "@/app/generated/prisma/client";
+import { disableTerminalMonitoring } from "@/actions/monitor-action";
+import { useRouter } from "next/navigation";
 
 interface ContainerTrackerTabProps {
   activeMonitors: TerminalMonitor[];
 }
 
 export function ContainerTrackerTab({ activeMonitors }: ContainerTrackerTabProps) {
+  const router = useRouter();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  const handleStopMonitor = async (containerNo: string, id: string) => {
+    setLoadingId(id);
+    await disableTerminalMonitoring(containerNo);
+    setLoadingId(null);
+    router.refresh();
+  };
+
   return (
     <div className="space-y-6">
       {/* Top: Search Form & Tracking Result */}
@@ -52,7 +68,7 @@ export function ContainerTrackerTab({ activeMonitors }: ContainerTrackerTabProps
                     </div>
                     <Badge
                       variant="outline"
-                      className="text-[10px] py-0 font-bold tracking-wider"
+                      className="text-[10px] py-0 font-bold tracking-wider uppercase"
                     >
                       {monitor.status}
                     </Badge>
@@ -69,12 +85,25 @@ export function ContainerTrackerTab({ activeMonitors }: ContainerTrackerTabProps
                     </div>
                   )}
 
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium pt-1 border-t border-border mt-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    Updated{" "}
-                    {formatDistanceToNow(new Date(monitor.updatedAt), {
-                      addSuffix: true,
-                    })}
+                  <div className="flex items-center justify-between pt-2 border-t border-border mt-1">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                      <Clock className="w-3.5 h-3.5" />
+                      Updated{" "}
+                      {formatDistanceToNow(new Date(monitor.updatedAt), {
+                        addSuffix: true,
+                      })}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleStopMonitor(monitor.containerNo, monitor.id)}
+                      disabled={loadingId === monitor.id}
+                      className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 px-2 font-bold"
+                      title="Stop Monitoring"
+                    >
+                      <BellOff className="w-3.5 h-3.5 mr-1" />
+                      {loadingId === monitor.id ? "Stopping..." : "Stop"}
+                    </Button>
                   </div>
                 </div>
               ))}

@@ -30,6 +30,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { isOutgateStatus, isYardStatus } from "@/actions/tracking/utils";
 
 const TERMINALS = [
   { id: "jict", name: "JICT (Jakarta International Container Terminal)" },
@@ -217,13 +218,8 @@ export default function TerminalTrackerPage() {
 
             <div className="p-6">
               {(() => {
-                const isOutgate = [
-                  "OUTGATE",
-                  "GATE OUT",
-                  "GATEOUT",
-                  "OUTGT",
-                  "DELIVERED",
-                ].some((s) => result.status?.toUpperCase().includes(s));
+                const isOutgate = isOutgateStatus(result.status);
+                const isYard = isYardStatus(result.status);
 
                 if (!result.success) {
                   return (
@@ -266,17 +262,13 @@ export default function TerminalTrackerPage() {
                             variant={
                               isOutgate
                                 ? "destructive"
-                                : result.status === "GNSTK"
+                                : isYard
                                   ? "default"
                                   : "secondary"
                             }
-                            className="font-black tracking-widest text-xs px-3 py-1"
+                            className="font-black tracking-widest text-xs px-3 py-1 uppercase"
                           >
-                            {isOutgate
-                              ? `SUDAH KELUAR (${result.status})`
-                              : result.status === "GNSTK"
-                                ? "TERSEDIA (GNSTK)"
-                                : `BELUM TERSEDIA (${result.status})`}
+                            {result.status}
                           </Badge>
                         </div>
 
@@ -292,6 +284,32 @@ export default function TerminalTrackerPage() {
                         )}
                       </div>
                     </div>
+
+                    {((result.ob || result.obName) ||
+                      (result.raw &&
+                        typeof result.raw === "object" &&
+                        "remarks" in (result.raw as Record<string, unknown>) &&
+                        (result.raw as Record<string, unknown>).remarks)) && (
+                      <div className="mt-4 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 text-xs text-amber-900 dark:text-amber-300 font-medium flex flex-wrap items-center justify-between gap-2">
+                        {result.ob && (
+                          <div>
+                            <span className="font-bold uppercase tracking-wider">OB / PLP Status:</span>{" "}
+                            {result.ob} ({result.obName || "Gudang OB"})
+                          </div>
+                        )}
+                        {Boolean(
+                          result.raw &&
+                            typeof result.raw === "object" &&
+                            "remarks" in (result.raw as Record<string, unknown>) &&
+                            (result.raw as Record<string, unknown>).remarks
+                        ) && (
+                          <div>
+                            <span className="font-bold uppercase tracking-wider">Remarks:</span>{" "}
+                            {String((result.raw as Record<string, unknown>).remarks)}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Monitoring Box */}
                     {!isOutgate && (

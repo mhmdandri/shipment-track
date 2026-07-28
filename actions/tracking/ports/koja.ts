@@ -1,5 +1,6 @@
 import { PortTracker, TerminalTrackingResult, TrackInput } from "../types";
-import { getCheerio } from "../utils";
+import { getCheerio, isObType } from "../utils";
+import { checkJictOb } from "./jict";
 
 export async function fetchHtml(
   containerNo: string,
@@ -33,6 +34,7 @@ export async function parseLocation(html: string): Promise<{
   foundTime: string;
   foundOutTime: string;
   foundCustomer: string;
+  foundRemarks: string;
 }> {
   const $ = await getCheerio(html);
   const table = $("table#datatables");
@@ -44,6 +46,7 @@ export async function parseLocation(html: string): Promise<{
       foundTime: "",
       foundOutTime: "",
       foundCustomer: "",
+      foundRemarks: "",
     };
   }
 
@@ -51,6 +54,7 @@ export async function parseLocation(html: string): Promise<{
   let foundTime = "";
   let foundOutTime = "";
   let foundCustomer = "";
+  let foundRemarks = "";
 
   table.find("tr").each((_, row) => {
     $(row)
@@ -73,6 +77,9 @@ export async function parseLocation(html: string): Promise<{
         if (text === "Consignee") {
           foundCustomer = $(td).next("td").text().trim();
         }
+        if (text === "Remarks" || text.includes("Remark")) {
+          foundRemarks = $(td).next("td").text().trim();
+        }
       });
   });
 
@@ -82,6 +89,7 @@ export async function parseLocation(html: string): Promise<{
     foundTime,
     foundOutTime,
     foundCustomer,
+    foundRemarks,
   };
 }
 
@@ -89,38 +97,17 @@ export function normalizeStatus(
   foundStatus: string,
   foundTime: string,
   foundOutTime: string,
-): { status: string; time: string } {
-  let finalStatus = foundStatus.toUpperCase();
-  let finalTime = foundTime;
+): { status: string; time: string; timeOut?: string } {
+  const finalStatus = foundStatus.trim();
+  let finalTime = foundTime.trim();
+  const timeOut =
+    foundOutTime && foundOutTime.trim() !== "-" ? foundOutTime.trim() : undefined;
 
-  // Check OUTGATE first
-  if (
-    finalStatus.includes("GATE OUT") ||
-    finalStatus.includes("GATEOUT") ||
-    finalStatus.includes("DELIVERED") ||
-    finalStatus.includes("OUTGT")
-  ) {
-    finalStatus = "OUTGT";
-    if (
-      foundOutTime &&
-      foundOutTime.trim() !== "" &&
-      foundOutTime.trim() !== "-"
-    ) {
-      finalTime = foundOutOutTimeOrTime(foundOutTime);
-    }
-  }
-  // If not OUTGATE, check if it has a stack time (GNSTK)
-  else if (finalStatus !== "GNSTK") {
-    if (foundTime && foundTime.trim() !== "" && foundTime.trim() !== "-") {
-      finalStatus = "GNSTK";
-    }
+  if (timeOut && !finalTime) {
+    finalTime = timeOut;
   }
 
-  return { status: finalStatus, time: finalTime };
-}
-
-function foundOutOutTimeOrTime(outTime: string): string {
-  return outTime;
+  return { status: finalStatus, time: finalTime, timeOut };
 }
 
 export async function trackKoja(
@@ -163,13 +150,31 @@ export async function trackKoja(
     parsed.foundOutTime,
   );
 
+  // Check BC On Demand system (bcondemand.jict.co.id) to confirm if container officially moved to OB/PLP
+  let ob: string | undefined;
+  let obName: string | undefined;
+
+  try {
+    const obData = await checkJictOb(containerNo);
+    if (obData && isObType(obData.ob)) {
+      ob = obData.ob;
+      obName = obData.obName;
+    }
+  } catch (err) {
+    console.error("Error checking BC On Demand for KOJA:", err);
+  }
+
   return {
     success: true,
     port,
     containerNo,
     status: normalized.status,
     time: normalized.time,
+    timeOut: normalized.timeOut,
     customer: parsed.foundCustomer,
+    ob,
+    obName,
+    raw: parsed.foundRemarks ? { remarks: parsed.foundRemarks } : undefined,
   };
 }
 

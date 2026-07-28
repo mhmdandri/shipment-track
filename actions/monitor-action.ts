@@ -150,3 +150,42 @@ export async function enableTerminalMonitoring(
   }
 }
 
+export async function disableTerminalMonitoring(
+  containerNo: string
+): Promise<ActionResponse<{ message: string }>> {
+  try {
+    const cleanContainerNo = containerNo.trim().toUpperCase();
+    const existing = await prisma.terminalMonitor.findUnique({
+      where: { containerNo: cleanContainerNo },
+    });
+
+    if (!existing || !existing.isActive) {
+      return {
+        success: false,
+        error: `Container ${cleanContainerNo} is not currently monitored.`,
+      };
+    }
+
+    await prisma.terminalMonitor.update({
+      where: { containerNo: cleanContainerNo },
+      data: {
+        isActive: false,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      data: { message: `Monitoring stopped for container ${cleanContainerNo}.` },
+    };
+  } catch (error) {
+    console.error("Disable Monitor Action Error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to disable monitoring.",
+    };
+  }
+}
+
+

@@ -119,7 +119,8 @@ export async function updateExampleAction(
    - Implementasikan interface `PortTracker` dari `actions/tracking/types.ts`.
 3. **Tulis Logic Tracking & Parser Status**:
    - Gunakan `fetch` atau `getCheerio(html)` dari `actions/tracking/utils.ts`.
-   - Normalisasikan status alokasi yard ke `"GNSTK"` dan status keluar pelabuhan ke `"OUTGT"`.
+   - **Simpan & Kembalikan Raw Status Asli**: Jangan meng-override status asli dari pelabuhan menjadi string buatan (kecuali terminal TMAL yang dinormalisasi ke `ONVSL`/`GNSTK`/`OUTGT` karena TMAL hanya mengembalikan string tanggal bongkar).
+   - Gunakan helper terpusat `isOutgateStatus(status)` dan `isYardStatus(status)` dari `actions/tracking/utils.ts` untuk pengecekan status keluar pelabuhan maupun alokasi yard.
 4. **Register Provider Baru ke Tracking Registry**:
    - Buka `actions/tracking/index.ts`.
    - Import tracker baru dan tambahkan entry ke objek `trackers`:

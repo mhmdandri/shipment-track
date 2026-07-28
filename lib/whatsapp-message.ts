@@ -1,3 +1,5 @@
+import { isOutgateStatus, isYardStatus } from "@/actions/tracking/utils";
+
 export const whatsappMessage = {
   trackingStarted: (container: string, port: string) => `🔍 *Pengecekan Dimulai*
 
@@ -67,56 +69,75 @@ ${error}`,
     container: string,
     port: string,
     status: string,
-  ) => `✅ *Auto Monitoring Aktif*
+  ) => {
+    let emoji = "🟡";
+    if (isYardStatus(status)) emoji = "🟢";
+    if (isOutgateStatus(status)) emoji = "🏁";
+    if (status.includes("(OB)")) emoji = "🚨";
+    return `✅ *Auto Monitoring Aktif*
 
 📦 Container : *${container}*
 🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status saat ini
 
-🟡 *${status}*
+${emoji} *${status}*
 
-Sistem akan melakukan pengecekan otomatis secara berkala.`,
+Sistem akan melakukan pengecekan otomatis secara berkala.`;
+  },
 
   monitoringFailed: (
     container: string,
     port: string,
     status: string,
     error: string,
-  ) => `⚠️ *Monitoring Gagal Diaktifkan*
+  ) => {
+    let emoji = "🟡";
+    if (isYardStatus(status)) emoji = "🟢";
+    if (isOutgateStatus(status)) emoji = "🏁";
+    if (status.includes("(OB)")) emoji = "🚨";
+    return `⚠️ *Monitoring Gagal Diaktifkan*
 
 📦 Container : *${container}*
 🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status saat ini
 
-🟡 *${status}*
+${emoji} *${status}*
 
 Namun terjadi kesalahan saat mengaktifkan auto monitoring.
 
 Detail
 
-${error}`,
+${error}`;
+  },
 
   alreadyMonitored: (
     container: string,
     port: string,
     status: string,
-  ) => `ℹ️ *Kontainer Sudah Dipantau*
+  ) => {
+    let emoji = "🟡";
+    if (isYardStatus(status)) emoji = "🟢";
+    if (isOutgateStatus(status)) emoji = "🏁";
+    if (status.includes("(OB)")) emoji = "🚨";
+    return `ℹ️ *Kontainer Sudah Dipantau*
 
 📦 Container : *${container}*
 🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status saat ini
 
-🟡 *${status}*
+${emoji} *${status}*
 
-Kontainer ini sudah masuk dalam daftar auto monitoring aktif.`,
+Kontainer ini sudah masuk dalam daftar auto monitoring aktif.`;
+  },
 
   statusChangedToGNSTK: (
     container: string,
     port: string,
     time: string,
+    status?: string,
   ) => `🎉 *Update Status Kontainer*
 
 📦 Container : *${container}*
@@ -124,13 +145,13 @@ Kontainer ini sudah masuk dalam daftar auto monitoring aktif.`,
 
 Status terbaru
 
-🟢 *GNSTK*
+🟢 *${status || "GNSTK"}*
 
 Waktu
 
 🕒 ${time}
 
-Kontainer telah memperoleh lokasi yard.`,
+Kontainer telah dibongkar / memperoleh lokasi yard.`,
 
   statusChanged: (
     container: string,
@@ -138,16 +159,22 @@ Kontainer telah memperoleh lokasi yard.`,
     oldStatus: string,
     newStatus: string,
     time: string,
-  ) => `🔄 *Update Status Kontainer*
+  ) => {
+    let emoji = "🟡";
+    if (isYardStatus(newStatus)) emoji = "🟢";
+    if (isOutgateStatus(newStatus)) emoji = "🏁";
+    if (newStatus.includes("(OB)")) emoji = "🚨";
+    return `🔄 *Update Status Kontainer*
 
 📦 Container : *${container}*
 🏗️ Terminal   : *${port.toUpperCase()}*
 
 Status berubah dari *${oldStatus}* menjadi:
-🟡 *${newStatus}*
+${emoji} *${newStatus}*
 
 Waktu
-🕒 ${time}`,
+🕒 ${time}`;
+  },
 
   outgate: (
     container: string,
@@ -303,13 +330,8 @@ ${error}`,
   ) => {
     const upper = status.toUpperCase();
     let emoji = "🟡";
-    if (upper.startsWith("GNSTK")) emoji = "🟢";
-    if (
-      ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some((s) =>
-        upper.includes(s),
-      ) &&
-      !upper.includes("PLANNING")
-    ) {
+    if (isYardStatus(status)) emoji = "🟢";
+    if (isOutgateStatus(status)) {
       emoji = "🏁";
     }
     if (upper.includes("(OB)") || upper.includes("OB ")) emoji = "🚨";

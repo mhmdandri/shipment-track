@@ -1,5 +1,6 @@
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
 import { enableTerminalMonitoring } from "@/actions/monitor-action";
+import { isOutgateStatus } from "@/actions/tracking/utils";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
 import { checkWaSubscription } from "@/lib/whatsapp/subscription";
@@ -125,11 +126,7 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
     }
 
     // Check if it's already outgate
-    const upperStatus = result.status?.toUpperCase() || "";
-    const isOutgate =
-      ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some((s) =>
-        upperStatus.includes(s),
-      ) && !upperStatus.includes("PLANNING");
+    const isOutgate = isOutgateStatus(result.status);
 
     if (isOutgate) {
       console.log(

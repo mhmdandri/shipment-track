@@ -26,8 +26,9 @@ export async function submitTracking(
   cookieStr: string,
   csrfToken: string,
 ): Promise<{ ok: boolean; status: number; redirectUrl?: string }> {
-  // NPCT1 requires exactly the last 4 characters of the voyage
-  const finalVoyage = voyageNo.length > 4 ? voyageNo.slice(-4) : voyageNo;
+  // NPCT1 requires clean voyage number (up to last 4 characters if longer)
+  const cleanVoyage = (voyageNo || "").trim();
+  const finalVoyage = cleanVoyage.length > 4 ? cleanVoyage.slice(-4) : cleanVoyage;
 
   const params = new URLSearchParams();
   params.set("vesselTracking", vesselName);
@@ -130,25 +131,16 @@ export function normalizeStatus(
   foundStatus: string,
   foundTime: string,
   foundOutTime: string,
-): { status: string; time: string } {
-  let finalStatus = foundStatus.toUpperCase();
-  let finalTime = foundTime;
+): { status: string; time: string; timeOut?: string } {
+  const finalStatus = foundStatus.trim();
+  let finalTime = foundTime.trim();
+  const timeOut = foundOutTime && foundOutTime.trim() !== "-" ? foundOutTime.trim() : undefined;
 
-  if (finalStatus === "STACKING YARD") {
-    finalStatus = "GNSTK";
-  } else if (
-    (finalStatus.includes("GATEOUT") ||
-      finalStatus.includes("GATE OUT") ||
-      finalStatus.includes("DELIVERED")) &&
-    !finalStatus.includes("PLANNING")
-  ) {
-    finalStatus = "OUTGT";
-    if (foundOutTime) {
-      finalTime = foundOutTime;
-    }
+  if (timeOut && !finalTime) {
+    finalTime = timeOut;
   }
 
-  return { status: finalStatus, time: finalTime };
+  return { status: finalStatus, time: finalTime, timeOut };
 }
 
 export async function trackNpct1(
@@ -224,6 +216,7 @@ export async function trackNpct1(
     containerNo,
     status: normalized.status,
     time: normalized.time,
+    timeOut: normalized.timeOut,
     ob: parsed.foundOb,
     obName: parsed.foundObName,
     customer: parsed.foundCustomer,

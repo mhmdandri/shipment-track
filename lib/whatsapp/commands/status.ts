@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
+import { isOutgateStatus } from "@/actions/tracking/utils";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
 import { checkWaSubscription } from "@/lib/whatsapp/subscription";
@@ -88,11 +89,7 @@ export async function handleStatusCommand(context: WhatsappCommandContext) {
       newStatus = `${newStatus} (OB)`;
     }
 
-    const upperStatus = newStatus.toUpperCase();
-    const isOutgate =
-      ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some((s) =>
-        upperStatus.includes(s)
-      ) && !upperStatus.includes("PLANNING");
+    const isOutgate = isOutgateStatus(newStatus);
 
     let currentIsActive = monitor.isActive;
     if (isOutgate && currentIsActive) {
