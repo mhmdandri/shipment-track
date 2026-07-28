@@ -118,9 +118,9 @@ shipment-track/
 - **Fungsi**: Pendaftaran kontainer aktif ke watchlist `TerminalMonitor` dan kapal aktif ke watchlist `VesselMonitor`. Cron job memeriksa kontainer (`OUTGT`) dan jadwal Open Stacking kapal secara berkala. Kapal yang berstatus `SAILING` atau `COMPLETED` di-deaktivasi otomatis (`isActive: false`).
 - **File Kunci**: `actions/monitor-action.ts`, `actions/vessel-action.ts`, `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
-### 5. WhatsApp Integration Module (WAHA & Gemini AI)
-- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/openstack`, `/vessel`, `/cekport`, `/port`, `/status`, `/list`, `/cekid`, `/help`), pengiriman alert status kontainer/kapal, serta pemrosesan balasan **Gemini AI Assistant (`gemini-3.6-flash`)** saat bot di-tag di grup WhatsApp atau di-chat secara personal (PM).
-- **File Kunci**: `app/api/webhook/waha/route.ts`, `lib/whatsapp/dispatcher.ts`, `lib/whatsapp/commands/*`, `lib/whatsapp.ts`, `lib/whatsapp-message.ts`, `lib/gemini.ts`.
+### 5. WhatsApp Integration Module (WAHA)
+- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/openstack`, `/vessel`, `/cekport`, `/port`, `/status`, `/list`, `/cekid`, `/help`), serta pengiriman alert status kontainer dan Open Stacking kapal multi-port (JICT, NPCT1, KOJA, TMAL, TER3).
+- **File Kunci**: `app/api/webhook/waha/route.ts`, `lib/whatsapp/dispatcher.ts`, `lib/whatsapp/commands/*`, `lib/whatsapp.ts`, `lib/whatsapp-message.ts`.
 
 ### 6. Telegram Notification Module
 - **Fungsi**: Pengiriman alert prioritas tinggi (misalnya penentuan alokasi yard `GNSTK` & ketersediaan Open Stack kapal) ke grup/channel Telegram via Telegram Bot API (HTML format).
