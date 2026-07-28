@@ -39,8 +39,8 @@ export async function askGeminiAI(userPrompt: string): Promise<string> {
     aiClient = new GoogleGenAI({ apiKey });
   }
 
+  // 1. Primary Model: gemini-2.0-flash (Fully supported & stable in Singapore)
   try {
-    // Primary model: gemini-2.0-flash
     const response = await aiClient.models.generateContent({
       model: "gemini-2.0-flash",
       contents: userPrompt,
@@ -56,10 +56,10 @@ export async function askGeminiAI(userPrompt: string): Promise<string> {
     const errMsg = error instanceof Error ? error.message : String(error);
     console.error("Gemini AI Primary Error (gemini-2.0-flash):", error);
 
-    // Fallback model: gemini-3.5-flash-lite
+    // 2. Secondary Fallback Model: gemini-2.0-flash-lite
     try {
       const fallbackRes = await aiClient.models.generateContent({
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-2.0-flash-lite",
         contents: userPrompt,
         config: {
           systemInstruction: systemInstructionText,
@@ -71,15 +71,24 @@ export async function askGeminiAI(userPrompt: string): Promise<string> {
       }
     } catch (fbErr: unknown) {
       const fbMsg = fbErr instanceof Error ? fbErr.message : String(fbErr);
-      console.error("Gemini AI Fallback Error (gemini-3.5-flash-lite):", fbErr);
+      console.error("Gemini AI Fallback Error (gemini-2.0-flash-lite):", fbErr);
 
+      // Check for Rate Limit 429 (Resource Exhausted)
+      if (
+        errMsg.includes("RESOURCE_EXHAUSTED") ||
+        fbMsg.includes("RESOURCE_EXHAUSTED") ||
+        errMsg.includes("429") ||
+        fbMsg.includes("429")
+      ) {
+        return "⏳ *AI Sedang Sibuk*: Batas kuota gratis per menit (15 request/menit) telah tercapai. Silakan coba kirim pesan lagi dalam 15 - 20 detik.";
+      }
+
+      // Check for Location Error
       if (
         errMsg.includes("User location is not supported") ||
-        fbMsg.includes("User location is not supported") ||
-        errMsg.includes("FAILED_PRECONDITION") ||
-        fbMsg.includes("FAILED_PRECONDITION")
+        fbMsg.includes("User location is not supported")
       ) {
-        return "⚠️ *Gemini AI Error*: IP VPS Anda diblokir oleh Google Gemini API (Datacenter IP Block). Silakan jalankan `warp-cli connect` di VPS Anda untuk membuka blokir Cloudflare WARP.";
+        return "⚠️ *Gemini AI Error*: IP VPS Anda diblokir oleh Google. Silakan jalankan `warp-cli connect` di VPS Anda.";
       }
     }
 
