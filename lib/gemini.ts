@@ -39,61 +39,44 @@ export async function askGeminiAI(userPrompt: string): Promise<string> {
     aiClient = new GoogleGenAI({ apiKey });
   }
 
-  // 1. Primary Model: gemini-2.0-flash (Fully supported & stable in Singapore)
-  try {
-    const response = await aiClient.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: userPrompt,
-      config: {
-        systemInstruction: systemInstructionText,
-      },
-    });
+  // List of high-performance & unlimited tier candidate models
+  const candidateModels = [
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-3.5-flash-lite",
+  ];
 
-    if (response.text) {
-      return formatWhatsappMarkdown(response.text);
-    }
-  } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : String(error);
-    console.error("Gemini AI Primary Error (gemini-2.0-flash):", error);
+  let lastErrorMsg = "";
 
-    // 2. Secondary Fallback Model: gemini-2.0-flash-lite
+  for (const modelName of candidateModels) {
     try {
-      const fallbackRes = await aiClient.models.generateContent({
-        model: "gemini-2.0-flash-lite",
+      const response = await aiClient.models.generateContent({
+        model: modelName,
         contents: userPrompt,
         config: {
           systemInstruction: systemInstructionText,
         },
       });
 
-      if (fallbackRes.text) {
-        return formatWhatsappMarkdown(fallbackRes.text);
+      if (response.text) {
+        return formatWhatsappMarkdown(response.text);
       }
-    } catch (fbErr: unknown) {
-      const fbMsg = fbErr instanceof Error ? fbErr.message : String(fbErr);
-      console.error("Gemini AI Fallback Error (gemini-2.0-flash-lite):", fbErr);
-
-      // Check for Rate Limit 429 (Resource Exhausted)
-      if (
-        errMsg.includes("RESOURCE_EXHAUSTED") ||
-        fbMsg.includes("RESOURCE_EXHAUSTED") ||
-        errMsg.includes("429") ||
-        fbMsg.includes("429")
-      ) {
-        return "⏳ *AI Sedang Sibuk*: Batas kuota gratis per menit (15 request/menit) telah tercapai. Silakan coba kirim pesan lagi dalam 15 - 20 detik.";
-      }
-
-      // Check for Location Error
-      if (
-        errMsg.includes("User location is not supported") ||
-        fbMsg.includes("User location is not supported")
-      ) {
-        return "⚠️ *Gemini AI Error*: IP VPS Anda diblokir oleh Google. Silakan jalankan `warp-cli connect` di VPS Anda.";
-      }
+    } catch (error: unknown) {
+      lastErrorMsg = error instanceof Error ? error.message : String(error);
+      console.warn(`Gemini Model (${modelName}) warning:`, lastErrorMsg);
     }
-
-    return "Maaf, terjadi kendala saat menghubungkan pesan ke AI Service.";
   }
 
-  return "Maaf, belum dapat memberikan balasan untuk pertanyaan tersebut.";
+  if (
+    lastErrorMsg.includes("RESOURCE_EXHAUSTED") ||
+    lastErrorMsg.includes("429")
+  ) {
+    return "⏳ *AI Sedang Sibuk*: Batas kuota gratis per menit (15 request/menit) telah tercapai. Silakan coba kembali dalam 15 - 20 detik.";
+  }
+
+  if (lastErrorMsg.includes("User location is not supported")) {
+    return "⚠️ *Gemini AI Error*: IP VPS Anda diblokir oleh Google. Silakan jalankan `warp-cli connect` di VPS Anda.";
+  }
+
+  return "Maaf, terjadi kendala saat menghubungkan pesan ke AI Service.";
 }
