@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { VesselTracker, VesselTrackingResult, VesselScheduleItem } from "../types";
+import { selectSingleBestSchedule } from "../index";
 
 export const tmalVesselTracker: VesselTracker = {
   async trackVessel(
@@ -89,7 +90,7 @@ export const tmalVesselTracker: VesselTracker = {
         port: "tmal",
         vesselName: cleanVessel,
         schedules,
-        selectedSchedule: schedules[0] || null,
+        selectedSchedule: selectSingleBestSchedule(schedules),
       };
     } catch (error) {
       console.error("Error scraping TMAL vessel schedule:", error);

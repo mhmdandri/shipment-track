@@ -5,38 +5,12 @@ import {
   VesselTrackingResult,
   VesselScheduleItem,
 } from "../types";
-
-function parseDateTimestamp(dateStr: string | null): number {
-  if (!dateStr) return 0;
-  const t = new Date(dateStr.replace(/-/g, "/")).getTime();
-  return isNaN(t) ? 0 : t;
-}
+import { selectSingleBestSchedule } from "../index";
 
 export function selectNewestVesselSchedule(
   schedules: VesselScheduleItem[]
 ): VesselScheduleItem | null {
-  if (!schedules || schedules.length === 0) return null;
-
-  const relevantItems = schedules.filter((item) => {
-    const s = item.status.toUpperCase();
-    return s.includes("ACTIVE") || s.includes("REGISTER");
-  });
-
-  const pool = relevantItems.length > 0 ? relevantItems : schedules;
-
-  const sorted = [...pool].sort((a, b) => {
-    const timeA =
-      parseDateTimestamp(a.etb) ||
-      parseDateTimestamp(a.openStacking) ||
-      parseDateTimestamp(a.etd);
-    const timeB =
-      parseDateTimestamp(b.etb) ||
-      parseDateTimestamp(b.openStacking) ||
-      parseDateTimestamp(b.etd);
-    return timeB - timeA;
-  });
-
-  return sorted[0] || null;
+  return selectSingleBestSchedule(schedules);
 }
 
 export const npct1VesselTracker: VesselTracker = {

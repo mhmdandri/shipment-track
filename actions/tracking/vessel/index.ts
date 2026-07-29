@@ -125,7 +125,7 @@ export function filterAndSelectBestSchedules(
 
   // Check if any active/upcoming schedule exists
   const activeUpcoming = schedules.filter(
-    (s) => !isCompleted(s) && getMs(s) >= yesterdayMs
+    (s) => !isCompleted(s) && (getMs(s) === 0 || getMs(s) >= yesterdayMs)
   );
 
   const pool = activeUpcoming.length > 0 ? activeUpcoming : schedules;
@@ -135,9 +135,8 @@ export function filterAndSelectBestSchedules(
 
   pool.forEach((s) => {
     const cleanPort = (s.port || "").toLowerCase().trim();
-    const cleanVoy = (s.voyIn || s.voyOut || s.vessel || "")
-      .toUpperCase()
-      .trim();
+    const rawVoy = (s.voyIn || s.voyOut || "").toUpperCase().trim();
+    const cleanVoy = rawVoy || `${(s.vessel || "").toUpperCase().trim()}:${getMs(s)}`;
     const voyKey = `${cleanPort}:${cleanVoy}`;
 
     if (!voyageMap.has(voyKey)) {
@@ -164,6 +163,17 @@ export function filterAndSelectBestSchedules(
     if (isFutA && isFutB) return msA - msB; // Closest upcoming date first (e.g. 28 July before 15 August)
     return msB - msA; // Newest past date
   });
+}
+
+/**
+ * Returns the single best / earliest upcoming schedule from a list of vessel schedules.
+ */
+export function selectSingleBestSchedule(
+  schedules: VesselScheduleItem[]
+): VesselScheduleItem | null {
+  if (!schedules || schedules.length === 0) return null;
+  const bestList = filterAndSelectBestSchedules(schedules);
+  return bestList[0] || null;
 }
 
 export interface MultiPortVesselResult {

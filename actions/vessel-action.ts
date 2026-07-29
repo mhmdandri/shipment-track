@@ -5,6 +5,7 @@ import { ActionResponse } from "@/lib";
 import {
   trackVesselSchedule,
   searchVesselAllPorts,
+  parseVesselDateMs,
   VesselTrackingResult,
   MultiPortVesselResult,
 } from "./tracking/vessel";
@@ -174,10 +175,9 @@ export async function enableVesselMonitoringAction(
       }
     }
 
-    const parseDate = (dStr: string | null | undefined) => {
-      if (!dStr) return null;
-      const d = new Date(dStr.replace(/-/g, "/"));
-      return isNaN(d.getTime()) ? null : d;
+    const parseDate = (dStr: string | null | undefined): Date | null => {
+      const ms = parseVesselDateMs(dStr);
+      return ms > 0 ? new Date(ms) : null;
     };
 
     const existing = await prisma.vesselMonitor.findUnique({

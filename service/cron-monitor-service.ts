@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
-import { trackVesselSchedule } from "@/actions/tracking/vessel";
-import { isOutgateStatus, isYardStatus } from "@/actions/tracking/utils";
+import { trackVesselSchedule, parseVesselDateMs } from "@/actions/tracking/vessel";
+import { isOutgateStatus, isYardStatus, isObType } from "@/actions/tracking/utils";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
@@ -38,11 +38,7 @@ export async function processContainerMonitors(): Promise<CronProcessingResult[]
             monitor.voyageNo || undefined
           );
 
-          const isOb =
-            (result.ob?.length ?? 0) > 0 &&
-            ((result.ob?.toUpperCase().includes("PLP") ||
-              result.ob?.toUpperCase().includes("OBX")) ??
-              false);
+          const isOb = isObType(result.ob);
           let newStatus = result.status || "UNKNOWN";
 
           if (isOb && !newStatus.includes("(OB)")) {
@@ -94,7 +90,7 @@ export async function processContainerMonitors(): Promise<CronProcessingResult[]
                 await sendWhatsappMessage(monitor.waNumber, waMsg).catch((e) =>
                   console.error("WhatsApp error in cron:", e)
                 );
-              } else if (isOb) {
+              } else if (isOb && !monitor.status.includes("(OB)")) {
                 const waMsg = whatsappMessage.changedToOb(
                   monitor.containerNo,
                   monitor.port,
@@ -170,105 +166,132 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
   });
 
   const results: CronProcessingResult[] = [];
+  const chunkSize = 5;
 
-  for (const vMonitor of activeVesselMonitors) {
-    const result = await trackVesselSchedule(vMonitor.port, vMonitor.vesselName);
-    if (result.success && result.selectedSchedule) {
-      const s = result.selectedSchedule;
-      const oldOpenStackStr = vMonitor.openStacking
-        ? vMonitor.openStacking.toISOString()
-        : null;
+  const parseDate = (dStr: string | null | undefined): Date | null => {
+    const ms = parseVesselDateMs(dStr);
+    return ms > 0 ? new Date(ms) : null;
+  };
 
-      const parseDate = (dStr: string | null | undefined) => {
-        if (!dStr) return null;
-        const d = new Date(dStr.replace(/-/g, "/"));
-        return isNaN(d.getTime()) ? null : d;
-      };
+  for (let i = 0; i < activeVesselMonitors.length; i += chunkSize) {
+    const chunk = activeVesselMonitors.slice(i, i + chunkSize);
+    const chunkResults = await Promise.all(
+      chunk.map(async (vMonitor): Promise<CronProcessingResult> => {
+        try {
+          const result = await trackVesselSchedule(vMonitor.port, vMonitor.vesselName);
+          if (result.success && result.selectedSchedule) {
+            const s = result.selectedSchedule;
+            const oldOpenStackStr = vMonitor.openStacking
+              ? vMonitor.openStacking.toISOString()
+              : null;
 
-      const newOpenStackDate = parseDate(s.openStacking);
-      const newOpenStackStr = newOpenStackDate
-        ? newOpenStackDate.toISOString()
-        : null;
+            const newOpenStackDate = parseDate(s.openStacking);
+            const newOpenStackStr = newOpenStackDate
+              ? newOpenStackDate.toISOString()
+              : null;
 
-      const hasNewOpenStack = Boolean(!oldOpenStackStr && newOpenStackStr);
-      const openStackChanged = Boolean(
-        oldOpenStackStr &&
-          newOpenStackStr &&
-          oldOpenStackStr !== newOpenStackStr
-      );
-
-      const statusUpper = s.status.trim().toUpperCase();
-      const isSailingOrCompleted = [
-        "SAILING",
-        "SAILED",
-        "COMPLETE",
-        "COMPLETED",
-        "FINISH",
-        "FINISHED",
-        "DEPARTED",
-        "DEPARTURE",
-        "LEAVING",
-        "OUTGT",
-      ].some((keyword) => statusUpper.includes(keyword));
-
-      if (
-        hasNewOpenStack ||
-        openStackChanged ||
-        s.status !== vMonitor.status ||
-        isSailingOrCompleted
-      ) {
-        await prisma.vesselMonitor.update({
-          where: { id: vMonitor.id },
-          data: {
-            status: s.status,
-            line: s.line || vMonitor.line,
-            voyageIn: s.voyIn || vMonitor.voyageIn,
-            voyageOut: s.voyOut || vMonitor.voyageOut,
-            service: s.service || vMonitor.service,
-            etb: parseDate(s.etb),
-            ata: parseDate(s.ata),
-            etd: parseDate(s.etd),
-            atd: parseDate(s.atd),
-            openStacking: newOpenStackDate,
-            closingDoc: parseDate(s.closingDoc),
-            closingPhysic: parseDate(s.closingPhysic),
-            isActive: !isSailingOrCompleted,
-            updatedAt: new Date(),
-          },
-        });
-
-        if (hasNewOpenStack || openStackChanged) {
-          const teleMsg = `🚢 <b>OPEN STACK AVAILABLE (${vMonitor.port.toUpperCase()})</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nOpen Stacking: <b>${s.openStacking}</b>\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}`;
-          await sendTelegramMessage(teleMsg);
-
-          if (vMonitor.waNumber) {
-            const waMsg = whatsappMessage.npct1OpenStackAvailableAlert(
-              vMonitor.vesselName,
-              s.openStacking || "TERSEDIA",
-              s.etb || "-",
-              s.etd || "-",
-              s.status,
-              vMonitor.port
+            const hasNewOpenStack = Boolean(!oldOpenStackStr && newOpenStackStr);
+            const openStackChanged = Boolean(
+              oldOpenStackStr &&
+                newOpenStackStr &&
+                oldOpenStackStr !== newOpenStackStr
             );
-            await sendWhatsappMessage(vMonitor.waNumber, waMsg);
-          }
-        }
 
-        results.push({
-          type: "vessel",
-          vesselName: vMonitor.vesselName,
-          port: vMonitor.port,
-          status: `OpenStack updated: ${s.openStacking || "N/A"}`,
-        });
-      } else {
-        results.push({
-          type: "vessel",
-          vesselName: vMonitor.vesselName,
-          port: vMonitor.port,
-          status: "Unchanged",
-        });
-      }
-    }
+            const statusUpper = s.status.trim().toUpperCase();
+            const isSailingOrCompleted = [
+              "SAILING",
+              "SAILED",
+              "COMPLETE",
+              "COMPLETED",
+              "FINISH",
+              "FINISHED",
+              "DEPARTED",
+              "DEPARTURE",
+              "LEAVING",
+              "OUTGT",
+            ].some((keyword) => statusUpper.includes(keyword));
+
+            if (
+              hasNewOpenStack ||
+              openStackChanged ||
+              s.status !== vMonitor.status ||
+              isSailingOrCompleted
+            ) {
+              await prisma.vesselMonitor.update({
+                where: { id: vMonitor.id },
+                data: {
+                  status: s.status,
+                  line: s.line || vMonitor.line,
+                  voyageIn: s.voyIn || vMonitor.voyageIn,
+                  voyageOut: s.voyOut || vMonitor.voyageOut,
+                  service: s.service || vMonitor.service,
+                  etb: parseDate(s.etb),
+                  ata: parseDate(s.ata),
+                  etd: parseDate(s.etd),
+                  atd: parseDate(s.atd),
+                  openStacking: newOpenStackDate,
+                  closingDoc: parseDate(s.closingDoc),
+                  closingPhysic: parseDate(s.closingPhysic),
+                  isActive: !isSailingOrCompleted,
+                  updatedAt: new Date(),
+                },
+              });
+
+              if (hasNewOpenStack || openStackChanged) {
+                const teleMsg = `🚢 <b>OPEN STACK AVAILABLE (${vMonitor.port.toUpperCase()})</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nOpen Stacking: <b>${s.openStacking}</b>\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}`;
+                await sendTelegramMessage(teleMsg).catch((e) =>
+                  console.error("Telegram error in vessel cron:", e)
+                );
+
+                if (vMonitor.waNumber) {
+                  const waMsg = whatsappMessage.npct1OpenStackAvailableAlert(
+                    vMonitor.vesselName,
+                    s.openStacking || "TERSEDIA",
+                    s.etb || "-",
+                    s.etd || "-",
+                    s.status,
+                    vMonitor.port
+                  );
+                  await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
+                    console.error("WhatsApp error in vessel cron:", e)
+                  );
+                }
+              }
+
+              return {
+                type: "vessel",
+                vesselName: vMonitor.vesselName,
+                port: vMonitor.port,
+                status: `OpenStack updated: ${s.openStacking || "N/A"}`,
+              };
+            }
+
+            return {
+              type: "vessel",
+              vesselName: vMonitor.vesselName,
+              port: vMonitor.port,
+              status: "Unchanged",
+            };
+          }
+
+          return {
+            type: "vessel",
+            vesselName: vMonitor.vesselName,
+            port: vMonitor.port,
+            status: "No schedule found",
+          };
+        } catch (error) {
+          console.error(`Error processing vessel monitor ${vMonitor.vesselName}:`, error);
+          return {
+            type: "vessel",
+            vesselName: vMonitor.vesselName,
+            port: vMonitor.port,
+            status: `Error: ${error instanceof Error ? error.message : "Failed"}`,
+          };
+        }
+      })
+    );
+    results.push(...chunkResults);
   }
 
   return results;

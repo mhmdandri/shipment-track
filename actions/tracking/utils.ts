@@ -5,7 +5,7 @@ export async function getCheerio(html: string) {
 
 export function isOutgateStatus(status?: string): boolean {
   if (!status) return false;
-  const upper = status.toUpperCase();
+  const upper = status.toUpperCase().trim();
   return (
     ["OUTGATE", "GATE OUT", "GATEOUT", "OUTGT", "DELIVERED"].some((keyword) =>
       upper.includes(keyword)
@@ -17,19 +17,72 @@ export function isGateOut(status: string): boolean {
   return isOutgateStatus(status);
 }
 
+export function isExplicitYardStatus(status?: string): boolean {
+  if (!status) return false;
+  const upper = status.toUpperCase().trim();
+  if (upper.includes("PLANNING")) return false;
+  const yardKeywords = [
+    "GNSTK",
+    "YARD",
+    "STACK",
+    "LAPANGAN",
+    "BLOCK",
+    "SLOT",
+    "ROW",
+    "TIER",
+    "STORED",
+    "PLACEMENT",
+  ];
+  return yardKeywords.some((keyword) => upper.includes(keyword));
+}
+
+export function isOnVesselStatus(status?: string): boolean {
+  if (!status) return true;
+  if (isExplicitYardStatus(status)) return false;
+  if (isOutgateStatus(status)) return false;
+
+  const upper = status.toUpperCase().trim();
+  if (!upper || upper === "UNKNOWN" || upper === "N/A" || upper === "-") {
+    return true;
+  }
+
+  const vesselKeywords = [
+    "ON VESSEL",
+    "ONVSL",
+    "ON VSL",
+    "ONVESSEL",
+    "ON_VESSEL",
+    "ON BOARD",
+    "ONBOARD",
+    "ON SHIP",
+    "REGISTER",
+    "REGISTERED",
+    "INIT",
+    "INITIAL",
+    "PLANNING",
+    "MOUNTING",
+    "VSDS",
+    "DISCHARG",
+    "UNLOAD",
+    "PIER",
+    "QUAY",
+    "APRON",
+  ];
+
+  return vesselKeywords.some((keyword) => upper.includes(keyword));
+}
+
 export function isYardStatus(status?: string): boolean {
   if (!status) return false;
   if (isOutgateStatus(status)) return false;
+  if (isExplicitYardStatus(status)) return true;
+  if (isOnVesselStatus(status)) return false;
+
   const upper = status.toUpperCase().trim();
-  if (
-    upper === "ON VESSEL" ||
-    upper === "ONVSL" ||
-    upper === "REGISTER" ||
-    upper === "UNKNOWN" ||
-    upper === ""
-  ) {
+  if (!upper || upper === "UNKNOWN" || upper === "N/A" || upper === "-") {
     return false;
   }
+
   return true;
 }
 

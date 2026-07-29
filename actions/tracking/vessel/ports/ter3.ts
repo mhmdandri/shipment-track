@@ -1,4 +1,5 @@
 import { VesselTracker, VesselTrackingResult, VesselScheduleItem } from "../types";
+import { selectSingleBestSchedule } from "../index";
 
 export const ter3VesselTracker: VesselTracker = {
   async trackVessel(
@@ -86,7 +87,7 @@ export const ter3VesselTracker: VesselTracker = {
         port: "ter3",
         vesselName: cleanVessel,
         schedules,
-        selectedSchedule: schedules[0] || null,
+        selectedSchedule: selectSingleBestSchedule(schedules),
       };
     } catch (error) {
       console.error("Error fetching TER3 Pelindo vessel API:", error);

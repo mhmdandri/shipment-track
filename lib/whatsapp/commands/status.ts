@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
-import { isOutgateStatus } from "@/actions/tracking/utils";
+import { isOutgateStatus, isObType } from "@/actions/tracking/utils";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
 import { checkWaSubscription } from "@/lib/whatsapp/subscription";
@@ -78,11 +78,7 @@ export async function handleStatusCommand(context: WhatsappCommandContext) {
       return;
     }
 
-    const isOb =
-      (result.ob?.length ?? 0) > 0 &&
-      ((result.ob?.toUpperCase().includes("PLP") ||
-        result.ob?.toUpperCase().includes("OBX")) ??
-        false);
+    const isOb = isObType(result.ob);
 
     let newStatus = result.status;
     if (isOb && !newStatus.includes("(OB)")) {

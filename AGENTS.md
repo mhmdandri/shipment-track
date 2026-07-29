@@ -417,7 +417,7 @@ erDiagram
 - `lib/whatsapp-message.ts`: Objek formatter pesan balasan WhatsApp standar (`trackingStarted`, `trackingFailed`, `monitoringEnabled`, `statusChangedToGNSTK`, `outgate`, `changedToOb`, `listTrack`, dll).
 - `lib/workflow.ts`: Definisi array konstanta langkah-langkah workflow dan template reminder untuk IMPORT dan EXPORT.
 - `lib/validator.ts`: Zod schema `shipmentSchema` dan `updateShipmentDatesSchema`.
-- `actions/tracking/utils.ts`: Helper `getCheerio(html)` untuk dinamik import Cheerio, `isGateOut(status)` untuk pengecekan status keluar, dan `parseDate(dateStr)`.
+- `actions/tracking/utils.ts`: Helper `getCheerio(html)` untuk dinamik import Cheerio, `isOutgateStatus(status)` untuk pengecekan status keluar pelabuhan, `isOnVesselStatus(status)` untuk identifikasi status kapal/pra-bongkar, `isYardStatus(status)` untuk verifikasi alokasi yard, `isObType(obCode)` untuk verifikasi status gudang OB (PLP/OBX/OB), dan `parseDate(dateStr)`.
 
 ---
 

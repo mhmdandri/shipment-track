@@ -18,40 +18,15 @@ export function parseJictDate(dateStr: string | null | undefined): string | null
   return `${year}-${month}-${day} ${time ? `${time}:00` : "00:00:00"}`;
 }
 
-function parseDateTimestamp(dateStr: string | null): number {
-  if (!dateStr) return 0;
-  const t = new Date(dateStr.replace(/-/g, "/")).getTime();
-  return isNaN(t) ? 0 : t;
-}
+import { selectSingleBestSchedule } from "../index";
 
 /**
- * Picks the newest schedule item relative to check date.
+ * Picks the best / earliest upcoming schedule item relative to check date.
  */
 export function selectNewestJictSchedule(
   schedules: VesselScheduleItem[]
 ): VesselScheduleItem | null {
-  if (!schedules || schedules.length === 0) return null;
-
-  const relevantItems = schedules.filter((item) => {
-    const s = item.status.toUpperCase();
-    return s.includes("PLAN") || s.includes("BERTH") || s.includes("WORKING");
-  });
-
-  const pool = relevantItems.length > 0 ? relevantItems : schedules;
-
-  const sorted = [...pool].sort((a, b) => {
-    const timeA =
-      parseDateTimestamp(a.etb) ||
-      parseDateTimestamp(a.openStacking) ||
-      parseDateTimestamp(a.etd);
-    const timeB =
-      parseDateTimestamp(b.etb) ||
-      parseDateTimestamp(b.openStacking) ||
-      parseDateTimestamp(b.etd);
-    return timeB - timeA;
-  });
-
-  return sorted[0] || null;
+  return selectSingleBestSchedule(schedules);
 }
 
 export const jictVesselTracker: VesselTracker = {

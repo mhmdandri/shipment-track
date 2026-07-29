@@ -394,6 +394,8 @@ npx eslint .
 
 1. **Scraping Real-Time Vessel Schedule (Multi-Port Engine)**:
    - Panggil `trackVesselSchedule(port, vesselName, line)` dari `@/actions/tracking/vessel`.
+   - **Pemilihan Voyage Utama (`selectSingleBestSchedule`)**: Seluruh tracker terminal menggunakan `selectSingleBestSchedule` untuk memilih pelayaran mendatang paling awal (*earliest active upcoming voyage*, e.g. Voyage `0002S` sebelum `0003S`) dan secara otomatis mengesampingkan jadwal pelayaran lama yang sudah selesai (*SAILING/COMPLETE*).
+   - **Multi-Format Date Parsing (`parseVesselDateMs`)**: Seluruh konversi string tanggal jadwal kapal (`DD/MM/YYYY`, `MM/DD/YYYY`, `YYYY-MM-DD`, `DD-MM-YYYY`) menggunakan helper terpusat `parseVesselDateMs` untuk menghindari kegagalan parsing Date di JavaScript.
    - **NPCT1 (`actions/tracking/vessel/ports/npct1.ts`)**:
      Engine mengambil CSRF token & cookie session, melakukan POST request ke `https://www.npct1.co.id/req/vessel`, mendownload HTML redirect, dan memparse `#idTableVesselSchedule`.
    - **JICT (`actions/tracking/vessel/ports/jict.ts`)**:
@@ -406,7 +408,7 @@ npx eslint .
    - Pengguna WhatsApp dapat mengirim perintah `/openstack <Nama Kapal> [Terminal]` (misal `/openstack SKY PRIDE jict`).
    - Bot membalas dengan status Open Stacking terbaru dan mendaftarkan pemantauan otomatis secara bersamaan.
 4. **Cron Job Alerting**:
-   - Endpoint `/api/cron/monitor` memeriksa seluruh kapal di `VesselMonitor` secara berkala (30 menit).
+   - Endpoint `/api/cron/monitor` memeriksa seluruh kapal di `VesselMonitor` secara berkala (30 menit) menggunakan pemrosesan paralel berbasis chunk (`chunkSize = 5`).
    - Saat tanggal `openStacking` pertama kali tersedia atau diperbarui, notifikasi Telegram & WhatsApp dikirimkan secara instan.
 
 
