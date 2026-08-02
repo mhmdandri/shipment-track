@@ -24,16 +24,65 @@ export async function fetchHtml(
   return { ok: true, status: response.status, html };
 }
 
+/**
+ * Parses date string from TMAL into timestamp MS.
+ * Handles YYYY-MM-DD HH:mm:ss, DD-MM-YYYY HH:mm:ss, DD/MM/YYYY HH:mm:ss, MM/DD/YYYY HH:mm:ss.
+ */
+export function parseTmalDateMs(dateStr: string | null | undefined): number {
+  if (!dateStr || dateStr === "-" || dateStr.trim() === "") return 0;
+  const clean = dateStr.trim();
+
+  // 1. YYYY-MM-DD HH:mm:ss or YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(clean)) {
+    const t = new Date(clean.replace(" ", "T")).getTime();
+    if (!isNaN(t)) return t;
+  }
+
+  // 2. DD-MM-YYYY HH:mm:ss or DD-MM-YYYY
+  const dmyDashMatch = clean.match(/^(\d{1,2})-(\d{1,2})-(\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?/);
+  if (dmyDashMatch) {
+    const [, day, month, year, time] = dmyDashMatch;
+    const iso = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${time || "00:00:00"}`;
+    const t = new Date(iso).getTime();
+    if (!isNaN(t)) return t;
+  }
+
+  // 3. DD/MM/YYYY HH:mm:ss or MM/DD/YYYY HH:mm:ss
+  const slashMatch = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?/);
+  if (slashMatch) {
+    const [, p1, p2, year, time] = slashMatch;
+    const n2 = parseInt(p2, 10);
+    if (n2 > 12) {
+      // MM/DD/YYYY
+      const iso = `${year}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}T${time || "00:00:00"}`;
+      const t = new Date(iso).getTime();
+      if (!isNaN(t)) return t;
+    } else {
+      // DD/MM/YYYY
+      const iso = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${time || "00:00:00"}`;
+      const t = new Date(iso).getTime();
+      if (!isNaN(t)) return t;
+    }
+  }
+
+  const fallbackMs = Date.parse(clean);
+  return isNaN(fallbackMs) ? 0 : fallbackMs;
+}
+
+export interface TmalCandidate {
+  foundStatus: string;
+  foundTime: string;
+  detailUrl: string;
+  dateMs: number;
+}
+
 export async function parseTracking(
   html: string,
   containerNo: string
 ): Promise<{ foundStatus: string; foundTime: string; detailUrl: string } | null> {
   const $ = await getCheerio(html);
   const tableRows = $("table tbody tr");
-
-  let foundStatus = "";
-  let foundTime = "";
-  let detailUrl = "";
+  const candidates: TmalCandidate[] = [];
 
   tableRows.each((_, row) => {
     const cols = $(row).find("td");
@@ -41,22 +90,42 @@ export async function parseTracking(
       const colContainer = $(cols[2]).text().trim();
       if (colContainer.includes(containerNo)) {
         // Tanggal Tiba (Arrival)
-        foundTime = $(cols[4]).text().trim();
+        const timeVal = $(cols[4]).text().trim();
         // Tanggal Bongkar (Status)
-        foundStatus = $(cols[5]).text().trim();
-        const href = $(row).find("a").attr("href");
-        if (href) {
-          detailUrl = href;
-        }
+        const statusVal = $(cols[5]).text().trim();
+        const href = $(row).find("a").attr("href") || "";
+
+        const timeMs = parseTmalDateMs(timeVal);
+        const statusMs = parseTmalDateMs(statusVal);
+        const dateMs = Math.max(timeMs, statusMs);
+
+        candidates.push({
+          foundTime: timeVal,
+          foundStatus: statusVal,
+          detailUrl: href,
+          dateMs,
+        });
       }
     }
   });
 
-  if (!foundStatus) {
+  if (candidates.length === 0) {
     return null;
   }
 
-  return { foundStatus, foundTime, detailUrl };
+  // Sort candidates descending by dateMs so the newest transaction is selected first
+  candidates.sort((a, b) => b.dateMs - a.dateMs);
+
+  const best = candidates[0];
+  if (!best.foundStatus && !best.foundTime) {
+    return null;
+  }
+
+  return {
+    foundStatus: best.foundStatus,
+    foundTime: best.foundTime,
+    detailUrl: best.detailUrl,
+  };
 }
 
 export async function fetchDetailHtml(

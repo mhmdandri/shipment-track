@@ -110,8 +110,7 @@ shipment-track/
 - **Fungsi**: Pelacakan posisi kontainer pada shipping lines global (ONE Line & Evergreen EMC) melalui API eksternal dan HTML scraping.
 - **File Kunci**: `actions/track-action.ts`, `app/tracker/page.tsx`, `features/tracker/*`.
 
-### 3. Terminal Tracking Module (Port Terminals & Vessel Schedules)
-- **Fungsi**: Scraping dan query data real-time ke 5 terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB via BC On Demand `bcondemand.jict.co.id` untuk JICT & KOJA, serta `Remarks` KOJA). Khusus TMAL dinormalisasi ke `ONVSL`/`GNSTK`/`OUTGT` karena tidak memiliki string kode status bawaan.
+- **Fungsi**: Scraping dan query data real-time ke 5 terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB via BC On Demand `bcondemand.jict.co.id` untuk JICT & KOJA, serta `Remarks` KOJA). Khusus TMAL, jika ditemukan multiple data impor (lintas tahun/voyage), sistem secara otomatis mem-parse timestamp (`parseTmalDateMs`) dan memilih transaksi terbaru. Pada pencarian jadwal kapal (`/cekport` & multi-port search), jadwal dengan status `SAILED` / `COMPLETED` di-filter tanpa fallback agar tidak menampilkan kapal yang sudah berlayar.
 - **File Kunci**: `actions/tracking/index.ts`, `actions/tracking/vessel/index.ts`, `actions/tracking/vessel/ports/*`, `actions/vessel-action.ts`, `app/terminal-tracker/page.tsx`.
 
 ### 4. Auto-Monitoring Module

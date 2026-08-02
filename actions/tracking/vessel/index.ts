@@ -136,24 +136,17 @@ export function filterAndSelectBestSchedules(
   };
 
   const isCompleted = (s: VesselScheduleItem): boolean => {
-    const st = (s.status || "").toUpperCase();
-    if (
-      ["FINISH", "SAIL", "COMPLETE", "DEPART", "LEAVING", "OUTGT"].some((k) =>
-        st.includes(k)
-      )
-    ) {
+    if (isVesselSailingOrCompleted(s.status)) {
       return true;
     }
-    const ms = getMs(s);
-    return ms > 0 && ms < nowMs - 3 * 24 * 60 * 60 * 1000;
+    // If status is not SAILED/completed, consider it completed only if ETD/ETA is older than 7 days
+    const etdMs = parseVesselDateMs(s.etd) || parseVesselDateMs(s.atd);
+    const dateMs = etdMs || getMs(s);
+    return dateMs > 0 && dateMs < nowMs - 7 * 24 * 60 * 60 * 1000;
   };
 
-  // Check if any active/upcoming schedule exists
-  const activeUpcoming = schedules.filter(
-    (s) => !isCompleted(s) && (getMs(s) === 0 || getMs(s) >= yesterdayMs)
-  );
-
-  const pool = activeUpcoming.length > 0 ? activeUpcoming : schedules;
+  // Filter ONLY active/upcoming schedules, discarding any SAILED or completed entries
+  const pool = schedules.filter((s) => !isCompleted(s));
 
   // Group by (port + ":" + voyage) to deduplicate exact same voyage at the same port
   const voyageMap = new Map<string, VesselScheduleItem>();

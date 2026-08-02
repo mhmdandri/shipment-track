@@ -467,7 +467,7 @@ Silakan persiapkan pengiriman kontainer ke terminal ${cleanPort}.`;
     }>,
   ) => {
     if (vessels.length === 0) {
-      return `🔍 *HASIL CEK KAPAL*\n\nKapal: *${vesselNameQuery.toUpperCase()}*\nStatus: ❌ Tidak ditemukan di JICT, NPCT1, KOJA, TMAL, atau TER3.\n\n_Pastikan ejaan nama kapal sudah benar._`;
+      return `🔍 *HASIL CEK KAPAL*\n\nKapal: *${vesselNameQuery.toUpperCase()}*\nStatus: ❌ Tidak ditemukan jadwal aktif di JICT, NPCT1, KOJA, TMAL, atau TER3.\n\n_Catatan: Kapal dengan status SAILED / sudah berlayar tidak ditampilkan, atau pastikan ejaan nama kapal sudah benar._`;
     }
 
     const portLabels: Record<string, string> = {

@@ -203,7 +203,21 @@ export default function VesselTrackerClient({ onMonitorChanged }: VesselTrackerC
                 </div>
               </CardContent>
             </Card>
-          ) : s ? (
+          ) : !s ? (
+            <Card className="border-blue-500/30 bg-blue-500/5 shadow-sm">
+              <CardContent className="p-6 flex items-start gap-4">
+                <CheckCircle2 className="w-6 h-6 text-blue-500 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-foreground text-base">
+                    Tidak Ada Jadwal Kapal Aktif
+                  </h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Kapal <strong>{result.vesselName}</strong> tidak memiliki jadwal aktif di terminal <strong>{result.port.toUpperCase()}</strong> (kapal mungkin sudah berlayar/SAILED atau belum terjadwal).
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
             <Card className="border-primary/20 shadow-md overflow-hidden bg-card">
               {/* Header banner */}
               <div className="bg-primary/5 p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -412,7 +426,7 @@ export default function VesselTrackerClient({ onMonitorChanged }: VesselTrackerC
                 )}
               </CardContent>
             </Card>
-          ) : null}
+          )}
         </div>
       )}
     </div>

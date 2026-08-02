@@ -28,7 +28,7 @@ export const ter3VesselTracker: VesselTracker = {
         cache: "no-store",
       });
 
-      if (!response.ok) {
+      if (!response.ok && response.status !== 400) {
         return {
           success: false,
           port: "ter3",
@@ -40,6 +40,16 @@ export const ter3VesselTracker: VesselTracker = {
       }
 
       const json = await response.json();
+      if (json?.msg === "Data Not Found" || json?.code === 0) {
+        return {
+          success: true,
+          port: "ter3",
+          vesselName: cleanVessel,
+          schedules: [],
+          selectedSchedule: null,
+        };
+      }
+
       const records = json?.dataRec || json?.data || [];
 
       if (!Array.isArray(records)) {
