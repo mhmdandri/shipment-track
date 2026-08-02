@@ -6,6 +6,7 @@ import {
   trackVesselSchedule,
   searchVesselAllPorts,
   parseVesselDateMs,
+  isVesselSailingOrCompleted,
   VesselTrackingResult,
   MultiPortVesselResult,
 } from "./tracking/vessel";
@@ -29,6 +30,12 @@ const enableVesselMonitorSchema = z.object({
   port: z.string().min(2, "Port/Terminal wajib diisi"),
   waNumber: z.string().optional(),
 });
+
+const disableVesselMonitorSchema = z.object({
+  vesselName: z.string().min(2, "Nama kapal minimal 2 karakter"),
+  port: z.string().min(2, "Port/Terminal wajib diisi"),
+});
+
 
 /**
  * Searches vessel schedule in real-time across supported port terminals.
@@ -109,7 +116,7 @@ export async function enableVesselMonitoringAction(
   }
 
   try {
-    const cleanVessel = vesselName.trim().toUpperCase();
+    const cleanVessel = vesselName.trim().replace(/\s+/g, " ").toUpperCase();
     const cleanPort = port.trim().toLowerCase();
     const rawWaNumber = waNumber?.trim() || "";
     const cleanWaNumber = rawWaNumber ? normalizeWaTargetId(rawWaNumber) : undefined;
@@ -152,28 +159,13 @@ export async function enableVesselMonitoringAction(
     const trackingResult = await trackVesselSchedule(cleanPort, cleanVessel);
     const selected = trackingResult.selectedSchedule;
 
-    if (selected) {
-      const statusUpper = selected.status.trim().toUpperCase();
-      const isSailingOrCompleted = [
-        "SAILING",
-        "SAILED",
-        "COMPLETE",
-        "COMPLETED",
-        "FINISH",
-        "FINISHED",
-        "DEPARTED",
-        "DEPARTURE",
-        "LEAVING",
-        "OUTGT",
-      ].some((keyword) => statusUpper.includes(keyword));
-
-      if (isSailingOrCompleted) {
-        return {
-          success: false,
-          error: `Kapal "${cleanVessel}" di ${cleanPort.toUpperCase()} berstatus ${selected.status} (sudah bertolak/selesai). Auto-monitoring tidak perlu diaktifkan.`,
-        };
-      }
+    if (selected && isVesselSailingOrCompleted(selected.status)) {
+      return {
+        success: false,
+        error: `Kapal "${cleanVessel}" di ${cleanPort.toUpperCase()} berstatus ${selected.status} (sudah bertolak/selesai). Auto-monitoring tidak perlu diaktifkan.`,
+      };
     }
+
 
     const parseDate = (dStr: string | null | undefined): Date | null => {
       const ms = parseVesselDateMs(dStr);
@@ -268,3 +260,57 @@ export async function enableVesselMonitoringAction(
     };
   }
 }
+
+/**
+ * Disables auto-monitoring for a vessel open stack schedule.
+ */
+export async function disableVesselMonitoringAction(
+  vesselName: string,
+  port: string
+): Promise<ActionResponse<{ message: string }>> {
+  const parsed = disableVesselMonitorSchema.safeParse({ vesselName, port });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.errors.map((e) => e.message).join(", "),
+    };
+  }
+
+  try {
+    const cleanVessel = vesselName.trim().replace(/\s+/g, " ").toUpperCase();
+    const cleanPort = port.trim().toLowerCase();
+
+    const existing = await prisma.vesselMonitor.findUnique({
+      where: { vesselName_port: { vesselName: cleanVessel, port: cleanPort } },
+    });
+
+    if (!existing || !existing.isActive) {
+      return {
+        success: false,
+        error: `Kapal "${cleanVessel}" di ${cleanPort.toUpperCase()} tidak ditemukan atau sudah tidak aktif.`,
+      };
+    }
+
+    await prisma.vesselMonitor.update({
+      where: { vesselName_port: { vesselName: cleanVessel, port: cleanPort } },
+      data: { isActive: false },
+    });
+
+    return {
+      success: true,
+      data: {
+        message: `Pemantauan otomatis untuk kapal ${cleanVessel} (${cleanPort.toUpperCase()}) telah dihentikan.`,
+      },
+    };
+  } catch (error) {
+    console.error("disableVesselMonitoringAction Error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Gagal menonaktifkan pemantauan kapal.",
+    };
+  }
+}
+

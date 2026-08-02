@@ -410,6 +410,11 @@ npx eslint .
 4. **Cron Job Alerting**:
    - Endpoint `/api/cron/monitor` memeriksa seluruh kapal di `VesselMonitor` secara berkala (30 menit) menggunakan pemrosesan paralel berbasis chunk (`chunkSize = 5`).
    - Saat tanggal `openStacking` pertama kali tersedia atau diperbarui, notifikasi Telegram & WhatsApp dikirimkan secara instan.
+   - Pengecekan status kapal yang sudah berlayar / bertolak / selesai menggunakan helper terpusat `isVesselSailingOrCompleted(status)` dari `@/actions/tracking/vessel`.
+5. **Deaktivasi Auto-Monitoring Kapal**:
+   - Panggil `disableVesselMonitoringAction(vesselName, port)` dari `@/actions/vessel-action` untuk mematikan pemantauan (`isActive = false`).
+   - Pada Web UI (`VesselTrackerTab.tsx`), sediakan tombol `Stop` dengan penanganan `router.refresh()` agar UI langsung tersinkronisasi tanpa manual reload.
+
 
 
 

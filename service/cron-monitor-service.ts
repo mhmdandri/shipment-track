@@ -1,6 +1,11 @@
 import prisma from "@/lib/prisma";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
-import { trackVesselSchedule, parseVesselDateMs } from "@/actions/tracking/vessel";
+import {
+  trackVesselSchedule,
+  parseVesselDateMs,
+  isVesselSailingOrCompleted,
+} from "@/actions/tracking/vessel";
+
 import { isOutgateStatus, isYardStatus, isObType } from "@/actions/tracking/utils";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
@@ -197,19 +202,7 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
                 oldOpenStackStr !== newOpenStackStr
             );
 
-            const statusUpper = s.status.trim().toUpperCase();
-            const isSailingOrCompleted = [
-              "SAILING",
-              "SAILED",
-              "COMPLETE",
-              "COMPLETED",
-              "FINISH",
-              "FINISHED",
-              "DEPARTED",
-              "DEPARTURE",
-              "LEAVING",
-              "OUTGT",
-            ].some((keyword) => statusUpper.includes(keyword));
+            const isSailingOrCompleted = isVesselSailingOrCompleted(s.status);
 
             if (
               hasNewOpenStack ||

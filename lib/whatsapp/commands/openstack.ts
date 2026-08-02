@@ -18,18 +18,22 @@ export async function handleOpenStackCommand(context: WhatsappCommandContext) {
     return;
   }
 
-  // Check if last argument is a known port
-  const knownPorts = ["npct1", "jict", "koja", "tmal", "ter3"];
-  let port = "npct1";
+  const knownPorts = ["npct1", "jict", "koja", "tmal", "ter3", "parama"];
   let vesselWords = args.slice(1);
 
-  const lastArg = vesselWords[vesselWords.length - 1].toLowerCase();
-  if (knownPorts.includes(lastArg)) {
-    port = lastArg;
-    vesselWords = vesselWords.slice(0, -1);
+  const lastArg = vesselWords[vesselWords.length - 1]?.toLowerCase();
+  if (!lastArg || !knownPorts.includes(lastArg)) {
+    await sendWhatsappMessage(
+      sender,
+      `❌ *Format Perintah Salah*\n\nMohon sertakan nama terminal pelabuhan.\n\nFormat:\n/openstack <Nama Kapal> <Terminal>\n\nTerminal yang didukung:\n• JICT\n• NPCT1\n• KOJA\n• TMAL\n• TER3\n\nContoh:\n/openstack JOSEPHINE MAERSK NPCT1\n/openstack SKY PRIDE JICT`
+    );
+    return;
   }
 
-  const vesselName = vesselWords.join(" ").trim().toUpperCase();
+  const port = lastArg === "parama" ? "ter3" : lastArg;
+  vesselWords = vesselWords.slice(0, -1);
+
+  const vesselName = vesselWords.join(" ").trim().replace(/\s+/g, " ").toUpperCase();
   if (!vesselName) {
     await sendWhatsappMessage(
       sender,

@@ -17,9 +17,10 @@ import {
   searchVesselScheduleAction,
   enableVesselMonitoringAction,
 } from "@/actions/vessel-action";
-import type {
-  VesselTrackingResult,
-  VesselScheduleItem,
+import {
+  isVesselSailingOrCompleted,
+  type VesselTrackingResult,
+  type VesselScheduleItem,
 } from "@/actions/tracking/vessel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +48,11 @@ export const VESSEL_TERMINALS = [
   { id: "ter3", name: "TER3 (Terminal 3)" },
 ];
 
-export default function VesselTrackerClient() {
+interface VesselTrackerClientProps {
+  onMonitorChanged?: () => void;
+}
+
+export default function VesselTrackerClient({ onMonitorChanged }: VesselTrackerClientProps) {
   const [port, setPort] = useState<string>("jict");
   const [vesselName, setVesselName] = useState("");
   const [waNumber, setWaNumber] = useState("");
@@ -109,6 +114,7 @@ export default function VesselTrackerClient() {
       if (res.data.trackingResult) {
         setResult(res.data.trackingResult);
       }
+      onMonitorChanged?.();
     } else {
       setMonitorError(res.error || "Gagal mengaktifkan auto-monitoring.");
     }
@@ -292,19 +298,7 @@ export default function VesselTrackerClient() {
 
                 {/* Auto-Monitoring Registration section */}
                 {(() => {
-                  const statusUpper = s.status.trim().toUpperCase();
-                  const isSailingOrCompleted = [
-                    "SAILING",
-                    "SAILED",
-                    "COMPLETE",
-                    "COMPLETED",
-                    "FINISH",
-                    "FINISHED",
-                    "DEPARTED",
-                    "DEPARTURE",
-                    "LEAVING",
-                    "OUTGT",
-                  ].some((keyword) => statusUpper.includes(keyword));
+                  const isSailingOrCompleted = isVesselSailingOrCompleted(s.status);
 
                   if (isSailingOrCompleted) {
                     return (

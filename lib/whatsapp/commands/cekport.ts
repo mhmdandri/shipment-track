@@ -17,7 +17,7 @@ export async function handleCekPortCommand(context: WhatsappCommandContext) {
     return;
   }
 
-  const vesselName = args.slice(1).join(" ").trim().toUpperCase();
+  const vesselName = args.slice(1).join(" ").trim().replace(/\s+/g, " ").toUpperCase();
   if (!vesselName) {
     await sendWhatsappMessage(
       sender,

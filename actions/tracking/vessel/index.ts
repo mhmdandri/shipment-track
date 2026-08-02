@@ -35,6 +35,31 @@ export async function trackVesselSchedule(
   return tracker.trackVessel(vesselName, line);
 }
 
+const SAILING_COMPLETED_KEYWORDS = [
+  "SAILING",
+  "SAILED",
+  "COMPLETE",
+  "COMPLETED",
+  "FINISH",
+  "FINISHED",
+  "DEPARTED",
+  "DEPARTURE",
+  "LEAVING",
+  "OUTGT",
+  "SAIL",
+  "DEPART",
+];
+
+/**
+ * Helper to check if a vessel's status indicates it has already departed, sailed, or completed its port call.
+ */
+export function isVesselSailingOrCompleted(status: string | null | undefined): boolean {
+  if (!status) return false;
+  const statusUpper = status.trim().toUpperCase();
+  return SAILING_COMPLETED_KEYWORDS.some((keyword) => statusUpper.includes(keyword));
+}
+
+
 /**
  * Parses any date format (YYYY-MM-DD, DD-MM-YYYY, MM/DD/YYYY, DD/MM/YYYY) into timestamp MS.
  */

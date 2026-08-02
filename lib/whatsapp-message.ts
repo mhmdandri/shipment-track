@@ -253,12 +253,15 @@ to see available commands.`,
   invalidStatusCommand: () => `❌ *Format Perintah Salah*
 
 Gunakan format berikut:
-
 /status <no_container>
+atau multi kontainer:
+/status <no_container_1> <no_container_2>
 
-Contoh:
+Contoh Single:
+/status EMCU6137410
 
-/status EMCU6137410`,
+Contoh Multi:
+/status EMCU6137410 TCKU1234567 TEMU9876543`,
 
   subscriptionRequired: (sender: string) => {
     const cleanId = sender.split("@")[0].trim();

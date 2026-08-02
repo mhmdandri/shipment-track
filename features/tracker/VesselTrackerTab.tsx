@@ -1,9 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import VesselTrackerClient from "./VesselTrackerClient";
-import { Ship, Clock, Anchor, Calendar } from "lucide-react";
+import { Ship, Clock, Anchor, Calendar, BellOff } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import type { VesselMonitor } from "@/app/generated/prisma/client";
+import { disableVesselMonitoringAction } from "@/actions/vessel-action";
+import { useRouter } from "next/navigation";
 
 interface VesselTrackerTabProps {
   activeVesselMonitors: VesselMonitor[];
@@ -21,10 +27,20 @@ function formatDateDisplay(d: Date | null): string {
 }
 
 export function VesselTrackerTab({ activeVesselMonitors }: VesselTrackerTabProps) {
+  const router = useRouter();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  const handleStopMonitor = async (vesselName: string, port: string, id: string) => {
+    setLoadingId(id);
+    await disableVesselMonitoringAction(vesselName, port);
+    setLoadingId(null);
+    router.refresh();
+  };
+
   return (
     <div className="space-y-6">
       {/* Top: Search Form & Tracking Result */}
-      <VesselTrackerClient />
+      <VesselTrackerClient onMonitorChanged={() => router.refresh()} />
 
       {/* Bottom: Active Vessel Monitors List */}
       <Card className="border-border shadow-sm flex flex-col">
@@ -126,13 +142,26 @@ export function VesselTrackerTab({ activeVesselMonitors }: VesselTrackerTabProps
                       </div>
                     </div>
 
-                    {/* Footer: Updated Timestamp */}
-                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium pt-1.5 border-t border-border mt-1">
-                      <Clock className="w-3 h-3" />
-                      Updated{" "}
-                      {formatDistanceToNow(new Date(vMonitor.updatedAt), {
-                        addSuffix: true,
-                      })}
+                    {/* Footer: Updated Timestamp & Stop Monitoring Button */}
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium pt-2 border-t border-border mt-1">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3 h-3" />
+                        Updated{" "}
+                        {formatDistanceToNow(new Date(vMonitor.updatedAt), {
+                          addSuffix: true,
+                        })}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleStopMonitor(vMonitor.vesselName, vMonitor.port, vMonitor.id)}
+                        disabled={loadingId === vMonitor.id}
+                        className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 px-2 font-bold"
+                        title="Stop Monitoring"
+                      >
+                        <BellOff className="w-3.5 h-3.5 mr-1" />
+                        {loadingId === vMonitor.id ? "Stopping..." : "Stop"}
+                      </Button>
                     </div>
                   </div>
                 );
@@ -144,3 +173,4 @@ export function VesselTrackerTab({ activeVesselMonitors }: VesselTrackerTabProps
     </div>
   );
 }
+

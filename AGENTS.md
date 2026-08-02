@@ -359,6 +359,7 @@ erDiagram
 | `actions/monitor-action.ts` | `disableTerminalMonitoring` | `containerNo: string` | `ActionResponse<{message: string}>` | Mematikan (deaktivasi) auto-monitoring kontainer (`isActive: false`) secara manual dari Web UI. |
 | `actions/vessel-action.ts` | `searchVesselScheduleAction` | `port, vesselName, line?` | `ActionResponse<VesselTrackingResult>` | Scrape & return real-time vessel schedule & open stacking data untuk terminal terkait. |
 | `actions/vessel-action.ts` | `enableVesselMonitoringAction` | `vesselName, port?, waNumber?` | `ActionResponse<{message: string}>` | Pendaftaran auto-monitoring open stack kapal ke tabel `VesselMonitor`. |
+| `actions/vessel-action.ts` | `disableVesselMonitoringAction` | `vesselName, port` | `ActionResponse<{message: string}>` | Mematikan (deaktivasi) auto-monitoring kapal (`isActive: false`) secara manual dari Web UI. |
 | `actions/terminal-track-action.ts` | `trackTerminalContainer` | `port, containerNo, vesselName?, voyageNo?` | `TerminalTrackingResult` | Wrapper server action untuk memanggil port tracker terpilih. |
 | `actions/track-action.ts` | `trackShipmentAction` | `carrier, searchType, searchText` | `UnifiedTrackingResult` | Track live shipping lines (ONE Line / Evergreen EMC). |
 | `actions/todo-action.ts` | `addTodoAction` | `shipmentId, text` | `{ success: boolean, error?: string }` | Menambahkan todo khusus shipment. |
