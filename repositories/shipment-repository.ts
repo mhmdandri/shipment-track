@@ -16,7 +16,24 @@ export class ShipmentRepository {
     return this.prisma.shipment.create({
       data,
       include: { tasks: true, reminders: true, activityLogs: true, todos: true },
-    }) as unknown as Promise<ShipmentWithRelations>;
+    }) as Promise<ShipmentWithRelations>;
+  }
+
+  async findQuickView(id: string) {
+    return this.prisma.shipment.findUnique({
+      where: { id },
+      include: {
+        activityLogs: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        todos: {
+          where: { isDone: false },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+      },
+    });
   }
 
   async updateShipment(id: string, data: Prisma.ShipmentUpdateInput): Promise<Shipment> {

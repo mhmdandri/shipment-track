@@ -546,7 +546,8 @@ Next.js 16+ menggunakan konvensi `proxy.ts` di root project untuk menggantikan `
 | `DATABASE_URL` | **Ya** | `postgres://postgres:postgres@localhost:15432/shipment_track` | Connection string PostgreSQL database (Prisma adapter) |
 | `TELEGRAM_BOT_TOKEN` | Optional | `8911272453:AAEKatHe...` | Authentication token Telegram Bot API |
 | `TELEGRAM_CHAT_ID` | Optional | `7204464066` | Target Chat/Group ID pengiriman notifikasi Telegram |
-| `CRON_SECRET` | Optional | `KMASLDKMNOINFNK...` | Secret key penjamin otentikasi request `/api/cron/monitor` |
+| `CRON_SECRET` | **Ya** | `<RANDOM_SECRET>` | Secret key penjamin otentikasi request `/api/cron/monitor` |
+| `JWT_SECRET` | **Ya** | `<RANDOM_SECRET>` | Secret key penjamin enkripsi & verifikasi JWT token |
 | `WAHA_URL` | Optional | `https://wa.mohaproject.tech` | Base URL server instance WAHA WhatsApp Gateway |
 | `WAHA_API_KEY` | Optional | `Lollipop5.0qwerty244` | Header `X-Api-Key` untuk otentikasi API WAHA |
 | `WAHA_SESSION` | Optional | `default` | Nama session active pada WAHA WhatsApp instance |

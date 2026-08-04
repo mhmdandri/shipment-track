@@ -370,12 +370,10 @@ npx eslint .
 
 ### Langkah-langkah:
 
-1. **User Credentials Default**:
-   - User default diinisialisasi otomatis saat pertama kali login:
-     - **Username**: `admin`
-     - **Password**: `adminpassword`
-     - **Nama**: `Muhamad Andri`
-     - **Role**: `ADMIN`
+1. **Manajemen User Initial/Seeding**:
+   - Akun admin dibuat/di-seed melalui script `scripts/seed-user.ts` dengan menyuplai variabel lingkungan:
+     - `SEED_USERNAME`, `SEED_PASSWORD`, `SEED_NAME`, `SEED_ROLE`
+   - Tidak ada kredensial default ter-hardcode atau auto-seed otomatis pada runtime login.
 2. **Kredensial Password**:
    - Selalu gunakan helper `hashPassword(password)` dari `@/lib/auth` untuk menyimpan password baru.
    - Gunakan `comparePassword(plain, hashed)` untuk memvalidasi login.

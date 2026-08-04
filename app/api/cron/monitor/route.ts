@@ -7,13 +7,16 @@ import {
 // Forces Next.js not to cache the cron route
 export const dynamic = "force-dynamic";
 
+function isAuthorized(authHeader: string | null): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || secret.trim().length === 0) return false;
+  return authHeader === `Bearer ${secret}`;
+}
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
 
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  if (!isAuthorized(authHeader)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -312,7 +312,7 @@ export default function VesselTrackerClient({ onMonitorChanged }: VesselTrackerC
 
                 {/* Auto-Monitoring Registration section */}
                 {(() => {
-                  const isSailingOrCompleted = isVesselSailingOrCompleted(s.status);
+                  const isSailingOrCompleted = isVesselSailingOrCompleted(s.status, s.etd);
 
                   if (isSailingOrCompleted) {
                     return (

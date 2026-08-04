@@ -13,6 +13,15 @@ interface IncompleteTasksSummaryProps {
   shipments: ShipmentWithTasks[];
 }
 
+function calculateTaskProgress(shipment: ShipmentWithTasks) {
+  const totalTasks = shipment.type === "EXPORT" ? 8 : 18;
+  const incompleteCount = shipment.tasks.length;
+  const completedCount = totalTasks - incompleteCount;
+  const progressPercentage = Math.round((completedCount / totalTasks) * 100);
+  const nextPendingTask = shipment.tasks[0];
+  return { totalTasks, incompleteCount, completedCount, progressPercentage, nextPendingTask };
+}
+
 export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProps) {
   // Filter shipments to only those that have incomplete tasks
   const activeWithIncomplete = shipments.filter(
@@ -49,11 +58,8 @@ export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProp
             {/* Mobile View (Card List) */}
             <div className="md:hidden divide-y divide-border">
               {activeWithIncomplete.map((shipment) => {
-                const totalTasks = shipment.type === "EXPORT" ? 8 : 18;
-                const incompleteCount = shipment.tasks.length;
-                const completedCount = totalTasks - incompleteCount;
-                const progressPercentage = Math.round((completedCount / totalTasks) * 100);
-                const nextPendingTask = shipment.tasks[0];
+                const { totalTasks, incompleteCount, progressPercentage, nextPendingTask } =
+                  calculateTaskProgress(shipment);
 
                 return (
                   <div key={shipment.id} className="p-4 space-y-3">
@@ -110,11 +116,8 @@ export function IncompleteTasksSummary({ shipments }: IncompleteTasksSummaryProp
               </thead>
               <tbody className="divide-y divide-border text-sm text-foreground font-medium">
                 {activeWithIncomplete.map((shipment) => {
-                  const totalTasks = shipment.type === "EXPORT" ? 8 : 18;
-                  const incompleteCount = shipment.tasks.length;
-                  const completedCount = totalTasks - incompleteCount;
-                  const progressPercentage = Math.round((completedCount / totalTasks) * 100);
-                  const nextPendingTask = shipment.tasks[0];
+                  const { totalTasks, incompleteCount, progressPercentage, nextPendingTask } =
+                    calculateTaskProgress(shipment);
 
                   return (
                     <tr key={shipment.id} className="hover:bg-muted/30 transition-colors">

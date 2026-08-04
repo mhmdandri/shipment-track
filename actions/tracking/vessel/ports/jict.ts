@@ -1,4 +1,5 @@
 import { getCheerio } from "../../utils";
+import { fetchWithRetry } from "@/lib/fetch-with-retry";
 import {
   VesselTracker,
   VesselTrackingResult,
@@ -18,7 +19,7 @@ export function parseJictDate(dateStr: string | null | undefined): string | null
   return `${year}-${month}-${day} ${time ? `${time}:00` : "00:00:00"}`;
 }
 
-import { selectSingleBestSchedule } from "../index";
+import { selectSingleBestSchedule } from "../helpers";
 
 /**
  * Picks the best / earliest upcoming schedule item relative to check date.
@@ -49,8 +50,10 @@ export const jictVesselTracker: VesselTracker = {
     }
 
     try {
-      const res = await fetch("https://www.jict.co.id/vessel-schedule", {
-        signal: AbortSignal.timeout(10000),
+      const res = await fetchWithRetry("https://www.jict.co.id/vessel-schedule", {
+        retries: 2,
+        retryDelayMs: 1500,
+        timeoutMs: 12000,
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -143,17 +146,15 @@ export const jictVesselTracker: VesselTracker = {
         selectedSchedule,
       };
     } catch (error) {
-      console.error("JICT Vessel Tracking Scraper Error:", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.warn(`[JICT Scraper] Network/Parse issue for "${cleanSearch}": ${errMsg}`);
       return {
         success: false,
         port,
         vesselName: cleanSearch,
         schedules: [],
         selectedSchedule: null,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Terjadi kesalahan saat memproses jadwal kapal JICT.",
+        error: "Gagal terhubung ke server JICT (Koneksi RTO / Reset). Silakan coba lagi.",
       };
     }
   },

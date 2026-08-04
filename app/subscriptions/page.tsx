@@ -1,8 +1,9 @@
-import prisma from "@/lib/prisma";
 import SubscriptionClient from "@/features/subscriptions/SubscriptionClient";
 import { CreditCard } from "lucide-react";
-import { SubscriptionWithCount } from "@/actions/subscription-action";
-import { countActiveContainersForTarget } from "@/lib/whatsapp/subscription";
+import {
+  SubscriptionWithCount,
+  getAllSubscriptionsWithCount,
+} from "@/actions/subscription-action";
 
 export const dynamic = "force-dynamic";
 
@@ -10,23 +11,7 @@ export default async function SubscriptionsPage() {
   let subscriptionsWithCount: SubscriptionWithCount[] = [];
 
   try {
-    const subs = await prisma.waSubscription.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-
-    subscriptionsWithCount = await Promise.all(
-      subs.map(async (sub) => {
-        const activeCount = await countActiveContainersForTarget(
-          sub.targetId,
-          sub.phoneNumber || undefined
-        );
-
-        return {
-          ...sub,
-          activeContainersCount: activeCount,
-        };
-      })
-    );
+    subscriptionsWithCount = await getAllSubscriptionsWithCount();
   } catch (error) {
     console.error("Error loading SubscriptionsPage data:", error);
   }

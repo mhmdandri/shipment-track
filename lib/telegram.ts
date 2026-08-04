@@ -3,7 +3,7 @@ dotenv.config();
 
 import { fetchWithRetry } from "./fetch-with-retry";
 
-export async function sendTelegramMessage(text: string) {
+export async function sendTelegramMessage(text: string): Promise<boolean> {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 

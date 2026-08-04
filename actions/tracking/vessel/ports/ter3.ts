@@ -1,5 +1,5 @@
 import { VesselTracker, VesselTrackingResult, VesselScheduleItem } from "../types";
-import { selectSingleBestSchedule } from "../index";
+import { selectSingleBestSchedule } from "../helpers";
 
 export const ter3VesselTracker: VesselTracker = {
   async trackVessel(

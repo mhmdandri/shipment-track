@@ -5,7 +5,7 @@ import { ActionResponse } from "@/lib";
 import {
   trackVesselSchedule,
   searchVesselAllPorts,
-  parseVesselDateMs,
+  parseVesselDate,
   isVesselSailingOrCompleted,
   VesselTrackingResult,
   MultiPortVesselResult,
@@ -15,6 +15,7 @@ import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
 import {
   checkWaSubscription,
+  formatSubscriptionErrorMessage,
   normalizeWaTargetId,
 } from "@/lib/whatsapp/subscription";
 import { z } from "zod";
@@ -140,18 +141,10 @@ export async function enableVesselMonitoringAction(
       );
 
       if (!subCheck.allowed) {
-        let errorMsg = `Nomor WhatsApp ${rawWaNumber} belum terdaftar sebagai subscriber aktif.`;
-        if (subCheck.status === "SUSPENDED") {
-          errorMsg = `Langganan WhatsApp untuk nomor ${rawWaNumber} sedang di-suspend.`;
-        } else if (subCheck.status === "EXPIRED") {
-          const expDate = subCheck.subscription?.expiredAt
-            ? new Date(subCheck.subscription.expiredAt).toLocaleDateString("id-ID")
-            : "-";
-          errorMsg = `Langganan WhatsApp untuk nomor ${rawWaNumber} telah kadaluarsa pada ${expDate}.`;
-        } else if (subCheck.status === "QUOTA_EXCEEDED") {
-          errorMsg = `Kuota pemantauan aktif WhatsApp telah penuh (${subCheck.activeContainersCount}/${subCheck.maxContainers}).`;
-        }
-        return { success: false, error: errorMsg };
+        return {
+          success: false,
+          error: formatSubscriptionErrorMessage(subCheck, rawWaNumber),
+        };
       }
     }
 
@@ -159,18 +152,12 @@ export async function enableVesselMonitoringAction(
     const trackingResult = await trackVesselSchedule(cleanPort, cleanVessel);
     const selected = trackingResult.selectedSchedule;
 
-    if (selected && isVesselSailingOrCompleted(selected.status)) {
+    if (selected && isVesselSailingOrCompleted(selected.status, selected.etd)) {
       return {
         success: false,
-        error: `Kapal "${cleanVessel}" di ${cleanPort.toUpperCase()} berstatus ${selected.status} (sudah bertolak/selesai). Auto-monitoring tidak perlu diaktifkan.`,
+        error: `Kapal "${cleanVessel}" di ${cleanPort.toUpperCase()} berstatus ${selected.status} (sudah bertolak/selesai ETD). Auto-monitoring tidak perlu diaktifkan.`,
       };
     }
-
-
-    const parseDate = (dStr: string | null | undefined): Date | null => {
-      const ms = parseVesselDateMs(dStr);
-      return ms > 0 ? new Date(ms) : null;
-    };
 
     const existing = await prisma.vesselMonitor.findUnique({
       where: { vesselName_port: { vesselName: cleanVessel, port: cleanPort } },
@@ -185,13 +172,13 @@ export async function enableVesselMonitoringAction(
         voyageOut: selected?.voyOut || undefined,
         service: selected?.service || undefined,
         status: selected?.status || "REGISTER",
-        etb: parseDate(selected?.etb),
-        ata: parseDate(selected?.ata),
-        etd: parseDate(selected?.etd),
-        atd: parseDate(selected?.atd),
-        openStacking: parseDate(selected?.openStacking),
-        closingDoc: parseDate(selected?.closingDoc),
-        closingPhysic: parseDate(selected?.closingPhysic),
+        etb: parseVesselDate(selected?.etb),
+        ata: parseVesselDate(selected?.ata),
+        etd: parseVesselDate(selected?.etd),
+        atd: parseVesselDate(selected?.atd),
+        openStacking: parseVesselDate(selected?.openStacking),
+        closingDoc: parseVesselDate(selected?.closingDoc),
+        closingPhysic: parseVesselDate(selected?.closingPhysic),
         ...(cleanWaNumber ? { waNumber: cleanWaNumber } : {}),
       },
       create: {
@@ -202,13 +189,13 @@ export async function enableVesselMonitoringAction(
         voyageOut: selected?.voyOut || null,
         service: selected?.service || null,
         status: selected?.status || "REGISTER",
-        etb: parseDate(selected?.etb),
-        ata: parseDate(selected?.ata),
-        etd: parseDate(selected?.etd),
-        atd: parseDate(selected?.atd),
-        openStacking: parseDate(selected?.openStacking),
-        closingDoc: parseDate(selected?.closingDoc),
-        closingPhysic: parseDate(selected?.closingPhysic),
+        etb: parseVesselDate(selected?.etb),
+        ata: parseVesselDate(selected?.ata),
+        etd: parseVesselDate(selected?.etd),
+        atd: parseVesselDate(selected?.atd),
+        openStacking: parseVesselDate(selected?.openStacking),
+        closingDoc: parseVesselDate(selected?.closingDoc),
+        closingPhysic: parseVesselDate(selected?.closingPhysic),
         waNumber: cleanWaNumber || null,
         isActive: true,
       },

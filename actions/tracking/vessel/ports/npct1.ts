@@ -5,7 +5,7 @@ import {
   VesselTrackingResult,
   VesselScheduleItem,
 } from "../types";
-import { selectSingleBestSchedule } from "../index";
+import { selectSingleBestSchedule } from "../helpers";
 
 export function selectNewestVesselSchedule(
   schedules: VesselScheduleItem[]

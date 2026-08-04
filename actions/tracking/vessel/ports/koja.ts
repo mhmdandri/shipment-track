@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import { VesselTracker, VesselTrackingResult, VesselScheduleItem } from "../types";
-import { selectSingleBestSchedule } from "../index";
+import { selectSingleBestSchedule } from "../helpers";
 
 export const kojaVesselTracker: VesselTracker = {
   async trackVessel(

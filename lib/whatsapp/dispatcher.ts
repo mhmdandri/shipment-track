@@ -11,11 +11,9 @@ import {
 import { sendWhatsappMessage } from "../whatsapp";
 import { whatsappMessage } from "../whatsapp-message";
 
-export async function dispatchWhatsappCommand(context: WhatsappCommandContext) {
-  const { text, sender } = context;
-
-  // Split by whitespace
-  const rawArgs = text.trim().split(/\s+/);
+export async function dispatchWhatsappCommand(context: WhatsappCommandContext): Promise<void> {
+  const { sender, args } = context;
+  const rawArgs = args && args.length > 0 ? args : context.text.trim().split(/\s+/);
   if (rawArgs.length === 0 || !rawArgs[0]) return;
 
   // Require commands to start with "/"

@@ -1,5 +1,5 @@
-import { PrismaClient } from "@/app/generated/prisma/client";
-import { ActionBoardData, DashboardStats } from "@/lib";
+import { PrismaClient, ShipmentStatus } from "@/app/generated/prisma/client";
+import { ActionBoardData, DashboardStats, ShipmentWithTasks } from "@/lib";
 import { startOfDay, endOfDay, endOfWeek } from "date-fns";
 
 export class DashboardService {
@@ -13,7 +13,7 @@ export class DashboardService {
 
     const [totalActive, needActionToday, overdueReminders, etaThisWeek] =
       await Promise.all([
-        this.prisma.shipment.count({ where: { status: "ACTIVE" } }),
+        this.prisma.shipment.count({ where: { status: ShipmentStatus.ACTIVE } }),
         this.prisma.reminder.count({
           where: {
             completed: false,
@@ -28,7 +28,7 @@ export class DashboardService {
         }),
         this.prisma.shipment.count({
           where: {
-            status: "ACTIVE",
+            status: ShipmentStatus.ACTIVE,
             eta: { gte: todayStart, lte: weekEnd },
           },
         }),
@@ -69,9 +69,9 @@ export class DashboardService {
     return { overdue, today, upcoming };
   }
 
-  async getActiveShipments() {
+  async getActiveShipments(): Promise<ShipmentWithTasks[]> {
     return this.prisma.shipment.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: ShipmentStatus.ACTIVE },
       include: {
         tasks: {
           where: { completed: false },

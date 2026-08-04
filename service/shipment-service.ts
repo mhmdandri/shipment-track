@@ -3,37 +3,31 @@ import { ShipmentRepository } from "@/repositories/shipment-repository";
 import { ShipmentFormValues, UpdateShipmentDatesValues } from "@/lib/validator";
 import { IMPORT_REMINDER_TEMPLATES, EXPORT_REMINDER_TEMPLATES, IMPORT_WORKFLOW_STEPS, EXPORT_WORKFLOW_STEPS } from "@/lib/workflow";
 import { ShipmentStatus, Prisma } from "@/app/generated/prisma/client";
+import { NotFoundError } from "@/lib/errors";
+
+const REMINDER_TO_TASK_MAP: Record<string, string> = {
+  "Check Draft PIB": "Draft PIB",
+  "Request Invoice DO": "Request Invoice DO",
+  "Payment Finance": "Payment Finance",
+  "Confirm Draft PIB": "Confirm Draft PIB",
+  "Monitor BC 1.1": "BC 1.1 Available",
+  "Monitor Cargo Readiness": "Check Cargo Readiness for Stuffing",
+  "Request Trucking & Stuffing": "Request Trucking",
+  "Customs Clearance (PEB)": "Customs Clearance (PEB)",
+  "Monitor Container Gate In": "Container Gate In (CY)",
+  "Vessel Departure (ETD)": "Vessel Departure (ETD)",
+};
+
+const TASK_TO_REMINDER_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(REMINDER_TO_TASK_MAP).map(([rem, task]) => [task, rem])
+);
 
 function getMatchingTaskTitle(reminderTitle: string): string | null {
-  const map: Record<string, string> = {
-    "Check Draft PIB": "Draft PIB",
-    "Request Invoice DO": "Request Invoice DO",
-    "Payment Finance": "Payment Finance",
-    "Confirm Draft PIB": "Confirm Draft PIB",
-    "Monitor BC 1.1": "BC 1.1 Available",
-    "Monitor Cargo Readiness": "Check Cargo Readiness for Stuffing",
-    "Request Trucking & Stuffing": "Request Trucking",
-    "Customs Clearance (PEB)": "Customs Clearance (PEB)",
-    "Monitor Container Gate In": "Container Gate In (CY)",
-    "Vessel Departure (ETD)": "Vessel Departure (ETD)",
-  };
-  return map[reminderTitle] || null;
+  return REMINDER_TO_TASK_MAP[reminderTitle] || null;
 }
 
 function getMatchingReminderTitle(taskTitle: string): string | null {
-  const map: Record<string, string> = {
-    "Draft PIB": "Check Draft PIB",
-    "Request Invoice DO": "Request Invoice DO",
-    "Payment Finance": "Payment Finance",
-    "Confirm Draft PIB": "Confirm Draft PIB",
-    "BC 1.1 Available": "Monitor BC 1.1",
-    "Check Cargo Readiness for Stuffing": "Monitor Cargo Readiness",
-    "Request Trucking": "Request Trucking & Stuffing",
-    "Customs Clearance (PEB)": "Customs Clearance (PEB)",
-    "Container Gate In (CY)": "Monitor Container Gate In",
-    "Vessel Departure (ETD)": "Vessel Departure (ETD)",
-  };
-  return map[taskTitle] || null;
+  return TASK_TO_REMINDER_MAP[taskTitle] || null;
 }
 
 export class ShipmentService {
@@ -114,7 +108,7 @@ export class ShipmentService {
     await this.repo.updateTask(taskId, completed, completedAt, notes);
 
     const shipment = await this.repo.findById(shipmentId);
-    if (!shipment) throw new Error("Shipment parameters not matched.");
+    if (!shipment) throw new NotFoundError("Shipment parameters not matched.");
 
     const task = shipment.tasks.find((t) => t.id === taskId);
     if (task) {
@@ -122,7 +116,7 @@ export class ShipmentService {
       await this.repo.createActivityLog(shipmentId, logMessage);
     }
 
-    const sortedTasks = shipment.tasks.sort(
+    const sortedTasks = [...shipment.tasks].sort(
       (a, b) => a.stepOrder - b.stepOrder,
     );
     let lastCompletedIndex = -1;
@@ -183,10 +177,10 @@ export class ShipmentService {
 
   async updateTaskNote(taskId: string, shipmentId: string, notes: string) {
     const shipment = await this.repo.findById(shipmentId);
-    if (!shipment) throw new Error("Shipment not found");
+    if (!shipment) throw new NotFoundError("Shipment not found");
 
     const task = shipment.tasks.find((t) => t.id === taskId);
-    if (!task) throw new Error("Task not found");
+    if (!task) throw new NotFoundError("Task not found");
 
     await this.repo.updateTask(taskId, task.completed, task.completedAt, notes);
 

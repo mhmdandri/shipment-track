@@ -2,7 +2,7 @@ import { trackVesselSchedule } from "@/actions/tracking/vessel";
 import { enableVesselMonitoringAction } from "@/actions/vessel-action";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
-import { checkWaSubscription } from "@/lib/whatsapp/subscription";
+import { verifyAndReplyWaSubscription } from "@/lib/whatsapp/subscription";
 import { WhatsappCommandContext } from "../types";
 
 export async function handleOpenStackCommand(context: WhatsappCommandContext) {
@@ -43,35 +43,8 @@ export async function handleOpenStackCommand(context: WhatsappCommandContext) {
   }
 
   // Strict Subscription Check
-  const subCheck = await checkWaSubscription(sender, 1, alternateSender);
-  if (!subCheck.allowed) {
-    if (subCheck.status === "NOT_FOUND") {
-      await sendWhatsappMessage(
-        sender,
-        whatsappMessage.subscriptionRequired(sender)
-      );
-    } else if (subCheck.status === "EXPIRED" && subCheck.subscription) {
-      await sendWhatsappMessage(
-        sender,
-        whatsappMessage.subscriptionExpired(subCheck.subscription.expiredAt)
-      );
-    } else if (subCheck.status === "SUSPENDED") {
-      await sendWhatsappMessage(sender, whatsappMessage.subscriptionSuspended());
-    } else if (
-      subCheck.status === "QUOTA_EXCEEDED" &&
-      subCheck.activeContainersCount !== undefined &&
-      subCheck.maxContainers !== undefined
-    ) {
-      await sendWhatsappMessage(
-        sender,
-        whatsappMessage.quotaExceeded(
-          subCheck.activeContainersCount,
-          subCheck.maxContainers
-        )
-      );
-    }
-    return;
-  }
+  const isAllowed = await verifyAndReplyWaSubscription(sender, 1, alternateSender);
+  if (!isAllowed) return;
 
   await sendWhatsappMessage(
     sender,

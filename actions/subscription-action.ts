@@ -33,28 +33,66 @@ export interface SubscriptionWithCount {
   activeContainersCount: number;
 }
 
+export async function getAllSubscriptionsWithCount(): Promise<SubscriptionWithCount[]> {
+  const subs = await prisma.waSubscription.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+  return Promise.all(
+    subs.map(async (sub) => {
+      const activeCount = await countActiveContainersForTarget(
+        sub.targetId,
+        sub.phoneNumber || undefined
+      );
+
+      return {
+        ...sub,
+        activeContainersCount: activeCount,
+      };
+    })
+  );
+}
+
+function parseSubscriptionInput(data: unknown): {
+  normalizedTarget: string;
+  normalizedPhone: string | null;
+  name: string;
+  plan: string;
+  maxContainers: number;
+  expiredDate: Date;
+  isActive: boolean;
+} {
+  const parsed = subscriptionSchema.parse(data);
+  const normalizedTarget = normalizeWaTargetId(parsed.targetId);
+  const normalizedPhone = parsed.phoneNumber
+    ? normalizeWaTargetId(parsed.phoneNumber)
+    : null;
+
+  if (!normalizedTarget) {
+    throw new Error("Invalid WhatsApp target ID format");
+  }
+
+  const expiredDate = new Date(parsed.expiredAt);
+  if (isNaN(expiredDate.getTime())) {
+    throw new Error("Invalid expiration date");
+  }
+
+  return {
+    normalizedTarget,
+    normalizedPhone,
+    name: parsed.name.trim(),
+    plan: parsed.plan,
+    maxContainers: parsed.maxContainers,
+    expiredDate,
+    isActive: parsed.isActive ?? true,
+  };
+}
+
 export async function getSubscriptionsAction(): Promise<
   ActionResponse<SubscriptionWithCount[]>
 > {
   try {
-    const subs = await prisma.waSubscription.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-
-    const results: SubscriptionWithCount[] = await Promise.all(
-      subs.map(async (sub) => {
-        const activeCount = await countActiveContainersForTarget(
-          sub.targetId,
-          sub.phoneNumber || undefined
-        );
-
-        return {
-          ...sub,
-          activeContainersCount: activeCount,
-        };
-      })
-    );
-
+    const results = await getAllSubscriptionsWithCount();
     return { success: true, data: results };
   } catch (error) {
     console.error("Error fetching subscriptions:", error);
@@ -72,30 +110,17 @@ export async function createSubscriptionAction(
   data: unknown
 ): Promise<ActionResponse<SubscriptionWithCount>> {
   try {
-    const parsed = subscriptionSchema.parse(data);
-    const normalizedTarget = normalizeWaTargetId(parsed.targetId);
-    const normalizedPhone = parsed.phoneNumber
-      ? normalizeWaTargetId(parsed.phoneNumber)
-      : null;
-
-    if (!normalizedTarget) {
-      return { success: false, error: "Invalid WhatsApp target ID format" };
-    }
-
-    const expiredDate = new Date(parsed.expiredAt);
-    if (isNaN(expiredDate.getTime())) {
-      return { success: false, error: "Invalid expiration date" };
-    }
+    const input = parseSubscriptionInput(data);
 
     const created = await prisma.waSubscription.create({
       data: {
-        targetId: normalizedTarget,
-        phoneNumber: normalizedPhone,
-        name: parsed.name.trim(),
-        plan: parsed.plan,
-        maxContainers: parsed.maxContainers,
-        expiredAt: expiredDate,
-        isActive: parsed.isActive ?? true,
+        targetId: input.normalizedTarget,
+        phoneNumber: input.normalizedPhone,
+        name: input.name,
+        plan: input.plan,
+        maxContainers: input.maxContainers,
+        expiredAt: input.expiredDate,
+        isActive: input.isActive,
       },
     });
 
@@ -140,31 +165,18 @@ export async function updateSubscriptionAction(
   data: unknown
 ): Promise<ActionResponse<SubscriptionWithCount>> {
   try {
-    const parsed = subscriptionSchema.parse(data);
-    const normalizedTarget = normalizeWaTargetId(parsed.targetId);
-    const normalizedPhone = parsed.phoneNumber
-      ? normalizeWaTargetId(parsed.phoneNumber)
-      : null;
-
-    if (!normalizedTarget) {
-      return { success: false, error: "Invalid WhatsApp target ID format" };
-    }
-
-    const expiredDate = new Date(parsed.expiredAt);
-    if (isNaN(expiredDate.getTime())) {
-      return { success: false, error: "Invalid expiration date" };
-    }
+    const input = parseSubscriptionInput(data);
 
     const updated = await prisma.waSubscription.update({
       where: { id },
       data: {
-        targetId: normalizedTarget,
-        phoneNumber: normalizedPhone,
-        name: parsed.name.trim(),
-        plan: parsed.plan,
-        maxContainers: parsed.maxContainers,
-        expiredAt: expiredDate,
-        isActive: parsed.isActive ?? true,
+        targetId: input.normalizedTarget,
+        phoneNumber: input.normalizedPhone,
+        name: input.name,
+        plan: input.plan,
+        maxContainers: input.maxContainers,
+        expiredAt: input.expiredDate,
+        isActive: input.isActive,
       },
     });
 

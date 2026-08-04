@@ -36,8 +36,8 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
 
   return (
     <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-      {cards.map((c, i) => (
-        <Card key={i} className="shadow-sm border border-border bg-card">
+      {cards.map((c) => (
+        <Card key={c.title} className="shadow-sm border border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {c.title}

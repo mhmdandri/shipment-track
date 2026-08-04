@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 const AUTH_COOKIE_NAME = "auth_token";
-const JWT_SECRET = process.env.JWT_SECRET || "shipment_track_jwt_secret_key_2026_super_secret";
-const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET_KEY = JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null;
 
 // Public paths that do not require authentication
 const PUBLIC_PATHS = [
@@ -42,7 +42,7 @@ export async function proxy(request: NextRequest) {
   }
 
   let isAuthenticated = false;
-  if (token) {
+  if (token && JWT_SECRET_KEY) {
     try {
       await jwtVerify(token, JWT_SECRET_KEY);
       isAuthenticated = true;

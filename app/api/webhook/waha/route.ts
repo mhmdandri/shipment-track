@@ -4,6 +4,27 @@ import { dispatchWhatsappCommand } from "@/lib/whatsapp/dispatcher";
 
 export async function POST(request: Request) {
   try {
+    // 0. Verify WAHA Webhook Secret if configured
+    const webhookSecret = process.env.WAHA_WEBHOOK_SECRET;
+    if (webhookSecret && webhookSecret.trim().length > 0) {
+      const apiKeyHeader = request.headers.get("x-api-key");
+      const wahaSecretHeader = request.headers.get("x-waha-secret");
+      const authHeader = request.headers.get("authorization");
+
+      const isValid =
+        apiKeyHeader === webhookSecret ||
+        wahaSecretHeader === webhookSecret ||
+        authHeader === webhookSecret ||
+        authHeader === `Bearer ${webhookSecret}`;
+
+      if (!isValid) {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized: Webhook secret mismatch" },
+          { status: 401 },
+        );
+      }
+    }
+
     const body = await request.json();
     
     // 1. Ensure the event is a message event

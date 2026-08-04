@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
 import {
   trackVesselSchedule,
-  parseVesselDateMs,
+  parseVesselDate,
   isVesselSailingOrCompleted,
 } from "@/actions/tracking/vessel";
 
@@ -173,11 +173,6 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
   const results: CronProcessingResult[] = [];
   const chunkSize = 5;
 
-  const parseDate = (dStr: string | null | undefined): Date | null => {
-    const ms = parseVesselDateMs(dStr);
-    return ms > 0 ? new Date(ms) : null;
-  };
-
   for (let i = 0; i < activeVesselMonitors.length; i += chunkSize) {
     const chunk = activeVesselMonitors.slice(i, i + chunkSize);
     const chunkResults = await Promise.all(
@@ -190,7 +185,7 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               ? vMonitor.openStacking.toISOString()
               : null;
 
-            const newOpenStackDate = parseDate(s.openStacking);
+            const newOpenStackDate = parseVesselDate(s.openStacking);
             const newOpenStackStr = newOpenStackDate
               ? newOpenStackDate.toISOString()
               : null;
@@ -202,7 +197,7 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
                 oldOpenStackStr !== newOpenStackStr
             );
 
-            const isSailingOrCompleted = isVesselSailingOrCompleted(s.status);
+            const isSailingOrCompleted = isVesselSailingOrCompleted(s.status, s.etd);
 
             if (
               hasNewOpenStack ||
@@ -218,13 +213,13 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
                   voyageIn: s.voyIn || vMonitor.voyageIn,
                   voyageOut: s.voyOut || vMonitor.voyageOut,
                   service: s.service || vMonitor.service,
-                  etb: parseDate(s.etb),
-                  ata: parseDate(s.ata),
-                  etd: parseDate(s.etd),
-                  atd: parseDate(s.atd),
+                  etb: parseVesselDate(s.etb),
+                  ata: parseVesselDate(s.ata),
+                  etd: parseVesselDate(s.etd),
+                  atd: parseVesselDate(s.atd),
                   openStacking: newOpenStackDate,
-                  closingDoc: parseDate(s.closingDoc),
-                  closingPhysic: parseDate(s.closingPhysic),
+                  closingDoc: parseVesselDate(s.closingDoc),
+                  closingPhysic: parseVesselDate(s.closingPhysic),
                   isActive: !isSailingOrCompleted,
                   updatedAt: new Date(),
                 },

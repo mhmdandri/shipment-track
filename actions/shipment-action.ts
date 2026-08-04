@@ -6,6 +6,7 @@ import { ShipmentService } from "@/service/shipment-service";
 import { shipmentSchema, updateShipmentDatesSchema } from "@/lib/validator";
 import prisma from "@/lib/prisma";
 import { ActionResponse, ShipmentWithRelations } from "@/lib";
+import { AppError } from "@/lib/errors";
 import { z } from "zod";
 
 const repo = new ShipmentRepository(prisma);
@@ -14,6 +15,9 @@ const service = new ShipmentService(repo);
 function handleError(error: unknown): { success: false; error: string; code?: string } {
   if (error instanceof z.ZodError) {
     return { success: false, error: error.errors.map(e => e.message).join(", "), code: "VALIDATION_ERROR" };
+  }
+  if (error instanceof AppError) {
+    return { success: false, error: error.message, code: error.code };
   }
   return {
     success: false,
@@ -94,20 +98,7 @@ export async function toggleReminderAction(
 // We'll use unknown here for quick view return type or define a specific interface
 export async function getShipmentQuickViewAction(id: string): Promise<ActionResponse<unknown>> {
   try {
-    const shipment = await prisma.shipment.findUnique({
-      where: { id },
-      include: {
-        activityLogs: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
-        todos: {
-          where: { isDone: false },
-          orderBy: { createdAt: "desc" },
-          take: 5, // Show up to 5 pending todos in quick view
-        }
-      }
-    });
+    const shipment = await repo.findQuickView(id);
     if (!shipment) return { success: false, error: "Shipment not found", code: "NOT_FOUND" };
     return { success: true, data: shipment };
   } catch (error: unknown) {

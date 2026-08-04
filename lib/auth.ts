@@ -91,45 +91,34 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
   }
 }
 
+export interface AuthenticationResult {
+  user: JWTPayload;
+  token: string;
+}
+
 /**
- * Auto-seed default users (mohaproject & admin) if they do not exist in database
+ * Authenticate user by credentials (username & password), return payload & JWT token if valid
  */
-export async function ensureDefaultUser() {
-  try {
-    const mohaUser = await prisma.user.findUnique({
-      where: { username: "mohaproject" },
-    });
+export async function authenticateCredentials(
+  username: string,
+  password: string,
+): Promise<AuthenticationResult | null> {
+  const user = await prisma.user.findUnique({
+    where: { username },
+  });
 
-    if (!mohaUser) {
-      const hashedPassword = await hashPassword("andri244");
-      await prisma.user.create({
-        data: {
-          username: "mohaproject",
-          password: hashedPassword,
-          name: "Muhamad Andriyansyah",
-          role: "OWNER",
-        },
-      });
-      console.log("✅ User created: mohaproject / andri244 (Muhamad Andriyansyah - OWNER)");
-    }
+  if (!user) return null;
 
-    const adminUser = await prisma.user.findUnique({
-      where: { username: "admin" },
-    });
+  const isPasswordValid = await comparePassword(password, user.password);
+  if (!isPasswordValid) return null;
 
-    if (!adminUser) {
-      const defaultPassword = await hashPassword("adminpassword");
-      await prisma.user.create({
-        data: {
-          username: "admin",
-          password: defaultPassword,
-          name: "Muhamad Andri",
-          role: "ADMIN",
-        },
-      });
-      console.log("✅ Default user created: admin / adminpassword (Muhamad Andri - ADMIN)");
-    }
-  } catch (error) {
-    console.error("Error ensuring default users:", error);
-  }
+  const payload: JWTPayload = {
+    id: user.id,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+  };
+
+  const token = await signJWT(payload);
+  return { user: payload, token };
 }

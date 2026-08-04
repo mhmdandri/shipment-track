@@ -15,6 +15,18 @@ export const trackers: Record<string, PortTracker> = {
   parama: ter3Tracker,
 };
 
+export async function checkIsMonitored(containerNo: string): Promise<boolean> {
+  try {
+    const existing = await prisma.terminalMonitor.findUnique({
+      where: { containerNo },
+    });
+    return Boolean(existing && existing.isActive);
+  } catch (error) {
+    console.error("Error checking monitor status:", error);
+    return false;
+  }
+}
+
 export async function trackTerminalContainer(
   port: string,
   containerNo: string,
@@ -38,18 +50,7 @@ export async function trackTerminalContainer(
   }
 
   const normalizedPort = port.toLowerCase();
-
-  let isMonitored = false;
-  try {
-    const existing = await prisma.terminalMonitor.findUnique({
-      where: { containerNo },
-    });
-    if (existing && existing.isActive) {
-      isMonitored = true;
-    }
-  } catch (error) {
-    console.error("Error checking monitor status:", error);
-  }
+  const isMonitored = await checkIsMonitored(parsed.data.containerNo);
 
   try {
     const tracker = trackers[normalizedPort];
@@ -57,7 +58,7 @@ export async function trackTerminalContainer(
       return {
         success: false,
         port,
-        containerNo,
+        containerNo: parsed.data.containerNo,
         error: `Tracking for port ${port.toUpperCase()} is not implemented yet.`,
         isMonitored,
       };
@@ -74,7 +75,7 @@ export async function trackTerminalContainer(
     return {
       success: false,
       port,
-      containerNo,
+      containerNo: parsed.data.containerNo,
       error:
         error instanceof Error
           ? error.message

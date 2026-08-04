@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { fetchWithRetry } from "./fetch-with-retry";
-export async function sendWhatsappMessage(phone: string, text: string) {
+export async function sendWhatsappMessage(phone: string, text: string): Promise<boolean> {
   const WAHA_URL = process.env.WAHA_URL;
   const WAHA_API_KEY = process.env.WAHA_API_KEY;
   const WAHA_SESSION = process.env.WAHA_SESSION || "default";

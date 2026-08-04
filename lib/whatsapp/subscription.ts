@@ -1,4 +1,6 @@
 import prisma from "@/lib/prisma";
+import { sendWhatsappMessage } from "../whatsapp";
+import { whatsappMessage } from "../whatsapp-message";
 
 export type SubscriptionCheckStatus =
   | "ALLOWED"
@@ -271,4 +273,53 @@ export async function checkWaSubscription(
       status: "NOT_FOUND",
     };
   }
+}
+
+export function formatSubscriptionErrorMessage(
+  subCheck: SubscriptionCheckResult,
+  rawWaNumber: string
+): string {
+  if (subCheck.status === "SUSPENDED") {
+    return `Langganan WhatsApp untuk nomor ${rawWaNumber} sedang di-suspend.`;
+  }
+  if (subCheck.status === "EXPIRED") {
+    const expDate = subCheck.subscription?.expiredAt
+      ? new Date(subCheck.subscription.expiredAt).toLocaleDateString("id-ID")
+      : "-";
+    return `Langganan WhatsApp untuk nomor ${rawWaNumber} telah kadaluarsa pada ${expDate}.`;
+  }
+  if (subCheck.status === "QUOTA_EXCEEDED") {
+    return `Kuota pemantauan aktif WhatsApp telah penuh (${subCheck.activeContainersCount}/${subCheck.maxContainers}).`;
+  }
+  return `Nomor WhatsApp ${rawWaNumber} belum terdaftar sebagai subscriber aktif.`;
+}
+
+export async function verifyAndReplyWaSubscription(
+  sender: string,
+  newContainersCount: number = 0,
+  alternateSender?: string
+): Promise<boolean> {
+  const subCheck = await checkWaSubscription(sender, newContainersCount, alternateSender);
+  if (subCheck.allowed) return true;
+
+  if (subCheck.status === "NOT_FOUND") {
+    await sendWhatsappMessage(sender, whatsappMessage.subscriptionRequired(sender));
+  } else if (subCheck.status === "EXPIRED" && subCheck.subscription) {
+    await sendWhatsappMessage(
+      sender,
+      whatsappMessage.subscriptionExpired(subCheck.subscription.expiredAt)
+    );
+  } else if (subCheck.status === "SUSPENDED") {
+    await sendWhatsappMessage(sender, whatsappMessage.subscriptionSuspended());
+  } else if (
+    subCheck.status === "QUOTA_EXCEEDED" &&
+    subCheck.activeContainersCount !== undefined &&
+    subCheck.maxContainers !== undefined
+  ) {
+    await sendWhatsappMessage(
+      sender,
+      whatsappMessage.quotaExceeded(subCheck.activeContainersCount, subCheck.maxContainers)
+    );
+  }
+  return false;
 }

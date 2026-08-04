@@ -7,16 +7,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // Forces Next.js not to cache the page (real-time data)
 export const dynamic = "force-dynamic";
 
+async function getActiveTerminalMonitors() {
+  return prisma.terminalMonitor.findMany({
+    where: { isActive: true },
+    orderBy: { updatedAt: "desc" },
+  });
+}
+
+async function getActiveVesselMonitors() {
+  return prisma.vesselMonitor.findMany({
+    where: { isActive: true },
+    orderBy: { updatedAt: "desc" },
+  });
+}
+
 export default async function TerminalTrackerPage() {
   const [activeMonitors, activeVesselMonitors] = await Promise.all([
-    prisma.terminalMonitor.findMany({
-      where: { isActive: true },
-      orderBy: { updatedAt: "desc" },
-    }),
-    prisma.vesselMonitor.findMany({
-      where: { isActive: true },
-      orderBy: { updatedAt: "desc" },
-    }),
+    getActiveTerminalMonitors(),
+    getActiveVesselMonitors(),
   ]);
 
   return (

@@ -2,14 +2,11 @@
 
 import { cookies } from "next/headers";
 import { z } from "zod";
-import prisma from "@/lib/prisma";
 import {
   AUTH_COOKIE_NAME,
-  comparePassword,
-  ensureDefaultUser,
+  authenticateCredentials,
   getCurrentUser,
   JWTPayload,
-  signJWT,
 } from "@/lib/auth";
 import { ActionResponse } from "@/lib";
 
@@ -34,36 +31,19 @@ export async function loginAction(
   try {
     const validated = loginSchema.parse(input);
 
-    // Ensure default user exists if table is empty
-    await ensureDefaultUser();
+    const authResult = await authenticateCredentials(
+      validated.username,
+      validated.password,
+    );
 
-    const user = await prisma.user.findUnique({
-      where: { username: validated.username },
-    });
-
-    if (!user) {
+    if (!authResult) {
       return {
         success: false,
         error: "Username atau password salah",
       };
     }
 
-    const isPasswordValid = await comparePassword(validated.password, user.password);
-    if (!isPasswordValid) {
-      return {
-        success: false,
-        error: "Username atau password salah",
-      };
-    }
-
-    const payload: JWTPayload = {
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      role: user.role,
-    };
-
-    const token = await signJWT(payload);
+    const { user, token } = authResult;
 
     // Set HttpOnly auth cookie
     const cookieStore = await cookies();
@@ -80,7 +60,7 @@ export async function loginAction(
     return {
       success: true,
       data: {
-        user: payload,
+        user,
         token,
       },
     };

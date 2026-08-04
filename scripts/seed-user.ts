@@ -11,24 +11,39 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const hashedPassword = await bcrypt.hash("andri244", 10);
+  const username = process.env.SEED_USERNAME;
+  const rawPassword = process.env.SEED_PASSWORD;
+  const name = process.env.SEED_NAME || "Administrator";
+  const role = process.env.SEED_ROLE || "OWNER";
+
+  if (!username || !rawPassword) {
+    console.error(
+      "❌ Error: SEED_USERNAME and SEED_PASSWORD environment variables are required."
+    );
+    console.error(
+      "Usage: SEED_USERNAME=myadmin SEED_PASSWORD=SuperSecretPassword123! npx tsx scripts/seed-user.ts"
+    );
+    process.exit(1);
+  }
+
+  const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
   const user = await prisma.user.upsert({
-    where: { username: "mohaproject" },
+    where: { username },
     update: {
       password: hashedPassword,
-      name: "Muhamad Andriyansyah",
-      role: "OWNER",
+      name,
+      role,
     },
     create: {
-      username: "mohaproject",
+      username,
       password: hashedPassword,
-      name: "Muhamad Andriyansyah",
-      role: "OWNER",
+      name,
+      role,
     },
   });
 
-  console.log("✅ User created/updated successfully:");
+  console.log("✅ Seed user created/updated successfully:");
   console.log({
     id: user.id,
     username: user.username,

@@ -1,5 +1,13 @@
 import { isOutgateStatus, isYardStatus } from "@/actions/tracking/utils";
 
+function getStatusEmoji(status: string): string {
+  const upper = status.toUpperCase();
+  if (upper.includes("(OB)") || upper.includes("OB ")) return "🚨";
+  if (isOutgateStatus(status)) return "🏁";
+  if (isYardStatus(status)) return "🟢";
+  return "🟡";
+}
+
 export const whatsappMessage = {
   trackingStarted: (container: string, port: string) => `🔍 *Pengecekan Dimulai*
 
@@ -70,10 +78,7 @@ ${error}`,
     port: string,
     status: string,
   ) => {
-    let emoji = "🟡";
-    if (isYardStatus(status)) emoji = "🟢";
-    if (isOutgateStatus(status)) emoji = "🏁";
-    if (status.includes("(OB)")) emoji = "🚨";
+    const emoji = getStatusEmoji(status);
     return `✅ *Auto Monitoring Aktif*
 
 📦 Container : *${container}*
@@ -92,10 +97,7 @@ Sistem akan melakukan pengecekan otomatis secara berkala.`;
     status: string,
     error: string,
   ) => {
-    let emoji = "🟡";
-    if (isYardStatus(status)) emoji = "🟢";
-    if (isOutgateStatus(status)) emoji = "🏁";
-    if (status.includes("(OB)")) emoji = "🚨";
+    const emoji = getStatusEmoji(status);
     return `⚠️ *Monitoring Gagal Diaktifkan*
 
 📦 Container : *${container}*
@@ -117,10 +119,7 @@ ${error}`;
     port: string,
     status: string,
   ) => {
-    let emoji = "🟡";
-    if (isYardStatus(status)) emoji = "🟢";
-    if (isOutgateStatus(status)) emoji = "🏁";
-    if (status.includes("(OB)")) emoji = "🚨";
+    const emoji = getStatusEmoji(status);
     return `ℹ️ *Kontainer Sudah Dipantau*
 
 📦 Container : *${container}*
@@ -160,10 +159,7 @@ Kontainer telah dibongkar / memperoleh lokasi yard.`,
     newStatus: string,
     time: string,
   ) => {
-    let emoji = "🟡";
-    if (isYardStatus(newStatus)) emoji = "🟢";
-    if (isOutgateStatus(newStatus)) emoji = "🏁";
-    if (newStatus.includes("(OB)")) emoji = "🚨";
+    const emoji = getStatusEmoji(newStatus);
     return `🔄 *Update Status Kontainer*
 
 📦 Container : *${container}*
@@ -331,13 +327,7 @@ ${error}`,
     voyage?: string,
     obName?: string,
   ) => {
-    const upper = status.toUpperCase();
-    let emoji = "🟡";
-    if (isYardStatus(status)) emoji = "🟢";
-    if (isOutgateStatus(status)) {
-      emoji = "🏁";
-    }
-    if (upper.includes("(OB)") || upper.includes("OB ")) emoji = "🚨";
+    const emoji = getStatusEmoji(status);
 
     let msg = `📊 *Status Kontainer*\n\n`;
     msg += `📦 Container : *${container}*\n`;

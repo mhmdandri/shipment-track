@@ -6,6 +6,7 @@ import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
 import {
   checkWaSubscription,
+  formatSubscriptionErrorMessage,
   normalizeWaTargetId,
 } from "@/lib/whatsapp/subscription";
 
@@ -69,18 +70,10 @@ export async function enableTerminalMonitoring(
       );
 
       if (!subCheck.allowed) {
-        let errorMsg = `Nomor WhatsApp ${rawWaNumber} belum terdaftar sebagai subscriber aktif.`;
-        if (subCheck.status === "SUSPENDED") {
-          errorMsg = `Langganan WhatsApp untuk nomor ${rawWaNumber} sedang di-suspend.`;
-        } else if (subCheck.status === "EXPIRED") {
-          const expDate = subCheck.subscription?.expiredAt
-            ? new Date(subCheck.subscription.expiredAt).toLocaleDateString("id-ID")
-            : "-";
-          errorMsg = `Langganan WhatsApp untuk nomor ${rawWaNumber} telah kadaluarsa pada ${expDate}.`;
-        } else if (subCheck.status === "QUOTA_EXCEEDED") {
-          errorMsg = `Kuota kontainer aktif WhatsApp telah penuh (${subCheck.activeContainersCount}/${subCheck.maxContainers}).`;
-        }
-        return { success: false, error: errorMsg };
+        return {
+          success: false,
+          error: formatSubscriptionErrorMessage(subCheck, rawWaNumber),
+        };
       }
     }
 

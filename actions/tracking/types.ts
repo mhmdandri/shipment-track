@@ -26,7 +26,8 @@ export const trackInputSchema = z.object({
   port: z.string().min(2),
   containerNo: z
     .string()
-    .min(5, "Container number must be at least 5 characters"),
+    .min(5, "Container number must be at least 5 characters")
+    .transform((val) => val.trim().toUpperCase()),
   vesselName: z.string().optional(),
   voyageNo: z.string().optional(),
 });

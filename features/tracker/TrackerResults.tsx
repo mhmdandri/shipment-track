@@ -260,7 +260,7 @@ export function TrackerResults({ result }: TrackerResultsProps) {
 
         {result.containers.map((container, idx) => (
           <ContainerRow 
-            key={container.containerNo || idx} 
+            key={container.containerNo || `container-${idx}`} 
             container={container} 
             resultEta={result.eta}
             resultPodName={result.podName}

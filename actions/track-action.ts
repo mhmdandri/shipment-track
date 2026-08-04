@@ -180,12 +180,39 @@ function parseEvergreenDate(str: string): string | null {
   return cleaned;
 }
 
+const EVERGREEN_ROOT_URL = "https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do";
+
+const EVERGREEN_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Content-Type": "application/x-www-form-urlencoded",
+  Referer: EVERGREEN_ROOT_URL,
+};
+
+function parseEvergreenLocation(loc: string): {
+  locationName: string;
+  countryName: string;
+  countryCode: string;
+} {
+  let locationName = loc;
+  let countryName = "";
+  let countryCode = "";
+
+  const locParts = loc.match(/^([^,]+),\s*([^\(]+)\(([^)]+)\)/i);
+  if (locParts) {
+    locationName = locParts[1].trim();
+    countryName = locParts[2].trim();
+    countryCode = locParts[3].trim();
+  }
+
+  return { locationName, countryName, countryCode };
+}
+
 async function trackEvergreenShipment(
   searchType: string,
   searchText: string
 ): Promise<UnifiedTrackingResult> {
   try {
-    const rootUrl = "https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do";
     const bodyParams = new URLSearchParams();
     
     if (searchType === "BKG_NO") {
@@ -202,13 +229,9 @@ async function trackEvergreenShipment(
       bodyParams.set("SEL", "s_bl");
     }
 
-    const response = await fetch(rootUrl, {
+    const response = await fetch(EVERGREEN_ROOT_URL, {
       method: "POST",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Referer": rootUrl
-      },
+      headers: EVERGREEN_HEADERS,
       body: bodyParams.toString()
     });
 
@@ -311,16 +334,7 @@ async function trackEvergreenShipment(
         const weight = decodeHtml(trMatch[8]);
 
         if (eventDate) {
-          let locationName = loc;
-          let countryName = "";
-          let countryCode = "";
-          
-          const locParts = loc.match(/^([^,]+),\s*([^\(]+)\(([^)]+)\)/i);
-          if (locParts) {
-            locationName = locParts[1].trim();
-            countryName = locParts[2].trim();
-            countryCode = locParts[3].trim();
-          }
+          const { locationName, countryName, countryCode } = parseEvergreenLocation(loc);
 
           const newEvent: TrackingEvent = {
             eventName: evVesselVoy ? `${eventName} (${evVesselVoy})` : eventName,
@@ -404,13 +418,9 @@ async function trackEvergreenShipment(
         movesParams.set("podctry", formPodctry);
         movesParams.set("TYPE", "CntrMove");
 
-        const detailRes = await fetch(rootUrl, {
+        const detailRes = await fetch(EVERGREEN_ROOT_URL, {
           method: "POST",
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Referer": rootUrl
-          },
+          headers: EVERGREEN_HEADERS,
           body: movesParams.toString()
         });
 
@@ -429,16 +439,7 @@ async function trackEvergreenShipment(
           const evVesselVoy = decodeHtml(trMatch[4]);
           
           if (eventDate) {
-            let locationName = loc;
-            let countryName = "";
-            let countryCode = "";
-            
-            const locParts = loc.match(/^([^,]+),\s*([^\(]+)\(([^)]+)\)/i);
-            if (locParts) {
-              locationName = locParts[1].trim();
-              countryName = locParts[2].trim();
-              countryCode = locParts[3].trim();
-            }
+            const { locationName, countryName, countryCode } = parseEvergreenLocation(loc);
             
             mappedEvents.push({
               eventName: evVesselVoy ? `${eventName} (${evVesselVoy})` : eventName,
