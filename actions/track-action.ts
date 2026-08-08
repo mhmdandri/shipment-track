@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAuth } from "@/lib/auth";
+
 export interface TrackingEvent {
   eventName: string;
   locationName: string;
@@ -500,6 +502,8 @@ export async function trackShipmentAction(
   searchType: string,
   searchText: string
 ): Promise<UnifiedTrackingResult> {
+  await requireAuth();
+
   if (!searchText || searchText.trim() === "") {
     return {
       success: false,

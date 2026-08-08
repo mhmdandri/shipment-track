@@ -19,6 +19,7 @@ import {
   normalizeWaTargetId,
 } from "@/lib/whatsapp/subscription";
 import { z } from "zod";
+import { requireAuth } from "@/lib/auth";
 
 const searchVesselSchema = z.object({
   port: z.string().min(2, "Port/Terminal wajib diisi"),
@@ -117,6 +118,7 @@ export async function enableVesselMonitoringAction(
   }
 
   try {
+    await requireAuth();
     const cleanVessel = vesselName.trim().replace(/\s+/g, " ").toUpperCase();
     const cleanPort = port.trim().toLowerCase();
     const rawWaNumber = waNumber?.trim() || "";
@@ -264,6 +266,7 @@ export async function disableVesselMonitoringAction(
   }
 
   try {
+    await requireAuth();
     const cleanVessel = vesselName.trim().replace(/\s+/g, " ").toUpperCase();
     const cleanPort = port.trim().toLowerCase();
 

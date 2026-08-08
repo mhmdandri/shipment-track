@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, Suspense } from "react";
+import { useProgress } from "@bprogress/next";
 import { useSearchParams } from "next/navigation";
 import { loginAction } from "@/actions/auth-action";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 
 function LoginFormContent() {
+  const { start: startProgress, stop: stopProgress } = useProgress();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/";
 
@@ -40,12 +42,17 @@ function LoginFormContent() {
       return;
     }
 
+    startProgress();
     startTransition(async () => {
-      const res = await loginAction({ username, password });
-      if (res.success) {
-        window.location.href = redirectPath;
-      } else {
-        setError(res.error || "Gagal melakukan verifikasi kredensial");
+      try {
+        const res = await loginAction({ username, password });
+        if (res.success) {
+          window.location.href = redirectPath;
+        } else {
+          setError(res.error || "Gagal melakukan verifikasi kredensial");
+        }
+      } finally {
+        stopProgress();
       }
     });
   };

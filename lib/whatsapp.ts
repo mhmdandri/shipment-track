@@ -2,6 +2,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { fetchWithRetry } from "./fetch-with-retry";
+import { normalizeWaTargetId } from "./whatsapp/subscription";
+
 export async function sendWhatsappMessage(phone: string, text: string): Promise<boolean> {
   const WAHA_URL = process.env.WAHA_URL;
   const WAHA_API_KEY = process.env.WAHA_API_KEY;
@@ -12,10 +14,11 @@ export async function sendWhatsappMessage(phone: string, text: string): Promise<
     return false;
   }
 
-  // Ensure phone number has a valid WhatsApp suffix (@c.us or @s.whatsapp.net for groups/individuals)
-  let chatId = phone;
-  if (!chatId.includes("@")) {
-    chatId = `${phone}@c.us`;
+  // Ensure target ID is normalized with proper suffix (@c.us, @g.us, or @lid)
+  const chatId = normalizeWaTargetId(phone);
+  if (!chatId) {
+    console.error("Invalid or empty WhatsApp target ID:", phone);
+    return false;
   }
 
   try {
@@ -32,24 +35,28 @@ export async function sendWhatsappMessage(phone: string, text: string): Promise<
       method: "POST",
       headers,
       body: JSON.stringify({
-        chatId: chatId,
+        chatId,
         text,
         session: WAHA_SESSION,
       }),
-      retries: 2,
-      timeoutMs: 10000,
+      retries: 1,
+      timeoutMs: 4000,
     });
 
     if (!response.ok) {
+      const errText = await response.text().catch(() => "Unknown response body");
       console.error(
-        `WhatsApp API error: ${response.status} - ${await response.text()}`,
+        `WhatsApp API error for chatId ${chatId}: HTTP ${response.status} - ${errText}`
       );
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error("Failed to send WhatsApp message:", error);
+    console.error(
+      `Failed to send WhatsApp message to ${chatId}:`,
+      error instanceof Error ? error.message : error
+    );
     return false;
   }
 }

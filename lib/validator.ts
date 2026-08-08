@@ -37,3 +37,15 @@ export const updateShipmentDatesSchema = z.object({
 });
 
 export type UpdateShipmentDatesValues = z.infer<typeof updateShipmentDatesSchema>;
+
+export const dailyTodoSchema = z.object({
+  text: z.string().trim().min(1, "Catatan tugas harian tidak boleh kosong").max(500, "Catatan maksimal 500 karakter"),
+});
+
+export const todoSchema = z.object({
+  shipmentId: z.string().min(1, "ID shipment wajib diisi"),
+  text: z.string().trim().min(1, "Catatan tugas wajib diisi").max(500, "Catatan maksimal 500 karakter"),
+});
+
+export const idParamSchema = z.string().min(1, "ID parameter wajib diisi");
+

@@ -8,8 +8,6 @@ const JWT_SECRET_KEY = JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null;
 // Public paths that do not require authentication
 const PUBLIC_PATHS = [
   "/auth/login",
-  "/terminal-tracker",
-  "/tracker",
 ];
 
 // Public API paths that do not require JWT authentication

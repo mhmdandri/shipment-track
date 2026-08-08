@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useProgress } from "@bprogress/next";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ interface ProfileModalProps {
 }
 
 export function ProfileModal({ user, open, onOpenChange }: ProfileModalProps) {
+  const { start: startProgress, stop: stopProgress } = useProgress();
   const [loading, setLoading] = useState(false);
 
   if (!user) return null;
@@ -34,12 +36,14 @@ export function ProfileModal({ user, open, onOpenChange }: ProfileModalProps) {
   const handleLogout = async () => {
     try {
       setLoading(true);
+      startProgress();
       await logoutAction();
       window.location.href = "/auth/login";
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
       setLoading(false);
+      stopProgress();
     }
   };
 

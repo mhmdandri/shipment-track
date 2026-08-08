@@ -32,33 +32,66 @@ export interface SubscriptionCheckResult {
  * - "+628123456789" -> "628123456789@c.us"
  * - "08123456789"   -> "628123456789@c.us"
  * - "628123456789"  -> "628123456789@c.us"
- * - "1203630123@g.us" -> "1203630123@g.us"
+ * - "120363012345678901@g.us" -> "120363012345678901@g.us"
+ * - "120363012345678901" -> "120363012345678901@g.us"
+ * - "628123456789-1612345678@g.us" -> "628123456789-1612345678@g.us"
  * - "145844254802166@lid" -> "145844254802166@lid"
  */
 export function normalizeWaTargetId(input: string): string {
-  let cleaned = input.trim();
+  const cleaned = input.trim();
   if (!cleaned) return "";
 
-  if (cleaned.includes("@")) {
-    return cleaned.toLowerCase();
+  const parts = cleaned.split("@");
+  const rawNum = parts[0].trim();
+  const domain = parts[1] ? parts[1].toLowerCase().trim() : "";
+
+  // 1. Explicit domain handling takes absolute priority
+  if (domain === "g.us") {
+    const numPart = rawNum.replace(/[\s\(\)]/g, "");
+    return `${numPart}@g.us`;
+  }
+  if (domain === "lid") {
+    const numPart = rawNum.replace(/[\s\-\(\)\.]/g, "");
+    return `${numPart}@lid`;
   }
 
-  cleaned = cleaned.replace(/[\s-]/g, "");
-  if (cleaned.startsWith("+")) {
-    cleaned = cleaned.slice(1);
-  }
-  if (cleaned.startsWith("0")) {
-    cleaned = `62${cleaned.slice(1)}`;
+  // 2. Legacy Group format with hyphen (e.g. 628123456789-1612345678)
+  if (rawNum.includes("-")) {
+    const numPart = rawNum.replace(/[\s\(\)]/g, "");
+    return `${numPart}@g.us`;
   }
 
-  if (/^\d+$/.test(cleaned)) {
-    return `${cleaned}@c.us`;
+  let numPart = rawNum.replace(/[\s\-\(\)\.]/g, "");
+  if (numPart.startsWith("+")) numPart = numPart.slice(1);
+  if (numPart.startsWith("0")) numPart = `62${numPart.slice(1)}`;
+
+  if (domain === "c.us") {
+    // If numPart starts with 120363, it's actually a Group JID despite domain being c.us
+    if (numPart.startsWith("120363")) {
+      return `${numPart}@g.us`;
+    }
+    return `${numPart}@c.us`;
+  }
+
+  if (/^\d+$/.test(numPart)) {
+    // Check for WhatsApp Group JID prefix (120363...)
+    if (numPart.startsWith("120363")) {
+      return `${numPart}@g.us`;
+    }
+    // Meta LID format detection (LIDs are 14+ digits not starting with 62 or 120363)
+    if (numPart.length >= 14 && !numPart.startsWith("62")) {
+      return `${numPart}@lid`;
+    }
+    // Standard phone number
+    return `${numPart}@c.us`;
   }
 
   return cleaned.toLowerCase();
 }
 
-function buildWaMatchConditions(rawId: string): Array<{ waNumber: string }> {
+export function buildWaMatchConditions(
+  rawId: string,
+): Array<{ waNumber: string }> {
   const raw = rawId.trim();
   if (!raw) return [];
 
@@ -88,7 +121,7 @@ function buildWaMatchConditions(rawId: string): Array<{ waNumber: string }> {
       `${zeroLocal}@g.us`,
       `${intlLocal}@g.us`,
       `${clean}@lid`,
-    ])
+    ]),
   );
 
   return values.map((val) => ({ waNumber: val }));
@@ -100,7 +133,7 @@ function buildWaMatchConditions(rawId: string): Array<{ waNumber: string }> {
  */
 export async function countActiveContainersForTarget(
   targetId: string,
-  alternateId?: string
+  alternateId?: string,
 ): Promise<number> {
   try {
     const raw = targetId.trim();
@@ -136,11 +169,11 @@ export async function countActiveContainersForTarget(
 export async function checkWaSubscription(
   sender: string,
   newContainersCount: number = 0,
-  alternateSender?: string
+  alternateSender?: string,
 ): Promise<SubscriptionCheckResult> {
   try {
-    const rawSenders = [sender, alternateSender].filter(
-      (s): s is string => Boolean(s && s.trim())
+    const rawSenders = [sender, alternateSender].filter((s): s is string =>
+      Boolean(s && s.trim()),
     );
 
     if (rawSenders.length === 0) {
@@ -191,7 +224,11 @@ export async function checkWaSubscription(
       const isSenderLid = normSender.endsWith("@lid");
       const isAltLid = normAlt.endsWith("@lid");
 
-      const phoneCandidate = !isSenderLid ? normSender : !isAltLid ? normAlt : null;
+      const phoneCandidate = !isSenderLid
+        ? normSender
+        : !isAltLid
+          ? normAlt
+          : null;
       const lidCandidate = isSenderLid ? normSender : isAltLid ? normAlt : null;
 
       const updateData: { phoneNumber?: string } = {};
@@ -239,7 +276,7 @@ export async function checkWaSubscription(
     if (subscription.maxContainers > 0) {
       const activeCount = await countActiveContainersForTarget(
         subscription.targetId,
-        subscription.phoneNumber || alternateSender
+        subscription.phoneNumber || alternateSender,
       );
 
       if (activeCount + newContainersCount > subscription.maxContainers) {
@@ -277,7 +314,7 @@ export async function checkWaSubscription(
 
 export function formatSubscriptionErrorMessage(
   subCheck: SubscriptionCheckResult,
-  rawWaNumber: string
+  rawWaNumber: string,
 ): string {
   if (subCheck.status === "SUSPENDED") {
     return `Langganan WhatsApp untuk nomor ${rawWaNumber} sedang di-suspend.`;
@@ -297,17 +334,24 @@ export function formatSubscriptionErrorMessage(
 export async function verifyAndReplyWaSubscription(
   sender: string,
   newContainersCount: number = 0,
-  alternateSender?: string
+  alternateSender?: string,
 ): Promise<boolean> {
-  const subCheck = await checkWaSubscription(sender, newContainersCount, alternateSender);
+  const subCheck = await checkWaSubscription(
+    sender,
+    newContainersCount,
+    alternateSender,
+  );
   if (subCheck.allowed) return true;
 
   if (subCheck.status === "NOT_FOUND") {
-    await sendWhatsappMessage(sender, whatsappMessage.subscriptionRequired(sender));
+    await sendWhatsappMessage(
+      sender,
+      whatsappMessage.subscriptionRequired(sender),
+    );
   } else if (subCheck.status === "EXPIRED" && subCheck.subscription) {
     await sendWhatsappMessage(
       sender,
-      whatsappMessage.subscriptionExpired(subCheck.subscription.expiredAt)
+      whatsappMessage.subscriptionExpired(subCheck.subscription.expiredAt),
     );
   } else if (subCheck.status === "SUSPENDED") {
     await sendWhatsappMessage(sender, whatsappMessage.subscriptionSuspended());
@@ -318,7 +362,10 @@ export async function verifyAndReplyWaSubscription(
   ) {
     await sendWhatsappMessage(
       sender,
-      whatsappMessage.quotaExceeded(subCheck.activeContainersCount, subCheck.maxContainers)
+      whatsappMessage.quotaExceeded(
+        subCheck.activeContainersCount,
+        subCheck.maxContainers,
+      ),
     );
   }
   return false;

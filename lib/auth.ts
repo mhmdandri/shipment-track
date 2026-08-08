@@ -9,6 +9,9 @@ export interface JWTPayload {
   username: string;
   name: string;
   role: string;
+  subscriptionId?: string | null;
+  subscriptionTargetId?: string | null;
+  subscriptionName?: string | null;
 }
 
 const JWT_SECRET_KEY = new TextEncoder().encode(env.JWT_SECRET);
@@ -54,6 +57,9 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
       username: payload.username as string,
       name: payload.name as string,
       role: payload.role as string,
+      subscriptionId: (payload.subscriptionId as string) || null,
+      subscriptionTargetId: (payload.subscriptionTargetId as string) || null,
+      subscriptionName: (payload.subscriptionName as string) || null,
     };
   } catch {
     return null;
@@ -85,10 +91,55 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
 
     if (!token) return null;
 
-    return await verifyJWT(token);
+    const payload = await verifyJWT(token);
+    if (!payload) return null;
+
+    // Fetch fresh user & subscription info from DB to handle realtime subscription updates
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        role: true,
+        subscriptionId: true,
+        subscription: {
+          select: {
+            targetId: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!user) return payload;
+
+    return {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      subscriptionId: user.subscriptionId,
+      subscriptionTargetId: user.subscription?.targetId || null,
+      subscriptionName: user.subscription?.name || null,
+    };
   } catch {
     return null;
   }
+}
+
+import { UnauthorizedError } from "@/lib/errors";
+
+/**
+ * Requires an authenticated user session for Server Actions.
+ * Throws UnauthorizedError if token is missing or invalid.
+ */
+export async function requireAuth(): Promise<JWTPayload> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthorizedError("Unauthorized: Membutuhkan sesi login yang valid.");
+  }
+  return user;
 }
 
 export interface AuthenticationResult {
@@ -105,6 +156,14 @@ export async function authenticateCredentials(
 ): Promise<AuthenticationResult | null> {
   const user = await prisma.user.findUnique({
     where: { username },
+    include: {
+      subscription: {
+        select: {
+          targetId: true,
+          name: true,
+        },
+      },
+    },
   });
 
   if (!user) return null;
@@ -117,8 +176,12 @@ export async function authenticateCredentials(
     username: user.username,
     name: user.name,
     role: user.role,
+    subscriptionId: user.subscriptionId,
+    subscriptionTargetId: user.subscription?.targetId || null,
+    subscriptionName: user.subscription?.name || null,
   };
 
   const token = await signJWT(payload);
   return { user: payload, token };
 }
+

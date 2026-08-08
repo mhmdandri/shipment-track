@@ -2,9 +2,12 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth";
+import { dailyTodoSchema, idParamSchema } from "@/lib/validator";
 
 export async function getDailyTodosAction() {
   try {
+    await requireAuth();
     const todos = await prisma.dailyTodo.findMany({
       orderBy: { createdAt: "desc" },
     });
@@ -16,8 +19,10 @@ export async function getDailyTodosAction() {
 
 export async function createDailyTodoAction(text: string) {
   try {
+    await requireAuth();
+    const validated = dailyTodoSchema.parse({ text });
     const todo = await prisma.dailyTodo.create({
-      data: { text },
+      data: { text: validated.text },
     });
     revalidatePath("/todos");
     return { success: true, data: todo };
@@ -28,8 +33,10 @@ export async function createDailyTodoAction(text: string) {
 
 export async function toggleDailyTodoAction(id: string, isDone: boolean) {
   try {
+    await requireAuth();
+    const cleanId = idParamSchema.parse(id);
     const todo = await prisma.dailyTodo.update({
-      where: { id },
+      where: { id: cleanId },
       data: { isDone },
     });
     revalidatePath("/todos");
@@ -41,8 +48,10 @@ export async function toggleDailyTodoAction(id: string, isDone: boolean) {
 
 export async function deleteDailyTodoAction(id: string) {
   try {
+    await requireAuth();
+    const cleanId = idParamSchema.parse(id);
     await prisma.dailyTodo.delete({
-      where: { id },
+      where: { id: cleanId },
     });
     revalidatePath("/todos");
     return { success: true };
@@ -50,3 +59,4 @@ export async function deleteDailyTodoAction(id: string) {
     return { success: false, error: error instanceof Error ? error.message : "Failed to delete todo" };
   }
 }
+

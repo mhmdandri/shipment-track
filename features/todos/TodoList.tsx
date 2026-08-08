@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useProgress } from "@bprogress/next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Trash2, CheckCircle2, Circle, Plus, Loader2 } from "lucide-react";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 export function TodoList({ initialTodos }: { initialTodos: DailyTodo[] }) {
+  const { start: startProgress, stop: stopProgress } = useProgress();
   const [todos, setTodos] = useState<DailyTodo[]>(initialTodos);
   const [newTodo, setNewTodo] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -26,10 +28,15 @@ export function TodoList({ initialTodos }: { initialTodos: DailyTodo[] }) {
     const text = newTodo.trim();
     setNewTodo("");
 
+    startProgress();
     startTransition(async () => {
-      const res = await createDailyTodoAction(text);
-      if (res.success && res.data) {
-        setTodos((prev) => [res.data, ...prev]);
+      try {
+        const res = await createDailyTodoAction(text);
+        if (res.success && res.data) {
+          setTodos((prev) => [res.data, ...prev]);
+        }
+      } finally {
+        stopProgress();
       }
     });
   };
@@ -40,8 +47,13 @@ export function TodoList({ initialTodos }: { initialTodos: DailyTodo[] }) {
       prev.map((t) => (t.id === id ? { ...t, isDone: !currentStatus } : t)),
     );
 
+    startProgress();
     startTransition(async () => {
-      await toggleDailyTodoAction(id, !currentStatus);
+      try {
+        await toggleDailyTodoAction(id, !currentStatus);
+      } finally {
+        stopProgress();
+      }
     });
   };
 
@@ -49,8 +61,13 @@ export function TodoList({ initialTodos }: { initialTodos: DailyTodo[] }) {
     // Optimistic update
     setTodos((prev) => prev.filter((t) => t.id !== id));
 
+    startProgress();
     startTransition(async () => {
-      await deleteDailyTodoAction(id);
+      try {
+        await deleteDailyTodoAction(id);
+      } finally {
+        stopProgress();
+      }
     });
   };
 

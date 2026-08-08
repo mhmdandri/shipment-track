@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useProgress } from "@bprogress/next";
 import {
   SubscriptionWithCount,
   createSubscriptionAction,
@@ -8,6 +9,10 @@ import {
   toggleSubscriptionAction,
   deleteSubscriptionAction,
 } from "@/actions/subscription-action";
+import {
+  getUsersAction,
+  UserWithSubscription,
+} from "@/actions/user-action";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,17 +36,25 @@ import {
   Users,
   AlertCircle,
   CheckCircle2,
+  UserPlus,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import DialogDelete from "./components/DialogDelete";
+import AddMemberModal from "./components/AddMemberModal";
+import MemberUsersList from "./components/MemberUsersList";
 
 interface Props {
   initialSubscriptions: SubscriptionWithCount[];
 }
 
 export default function SubscriptionClient({ initialSubscriptions }: Props) {
+  const { start: startProgress, stop: stopProgress } = useProgress();
+  const [activeTab, setActiveTab] = useState<"subscribers" | "members">("subscribers");
   const [subscriptions, setSubscriptions] =
     useState<SubscriptionWithCount[]>(initialSubscriptions);
+  const [users, setUsers] = useState<UserWithSubscription[]>([]);
+  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogDeleteOpen, setDialogDeleteOpen] = useState(false);
@@ -54,6 +67,17 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
   );
 
   const [now] = useState(() => new Date());
+
+  // Load Member Users list
+  useEffect(() => {
+    async function loadUsers() {
+      const res = await getUsersAction();
+      if (res.success && res.data) {
+        setUsers(res.data);
+      }
+    }
+    loadUsers();
+  }, []);
 
   // Form Fields State
   const [targetId, setTargetId] = useState("");
@@ -107,6 +131,7 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    startProgress();
 
     const payload = {
       targetId: targetId.trim(),
@@ -118,36 +143,46 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
       isActive,
     };
 
-    if (editingSub) {
-      const res = await updateSubscriptionAction(editingSub.id, payload);
-      setLoading(false);
-      if (res.success) {
-        setSubscriptions((prev) =>
-          prev.map((s) => (s.id === editingSub.id ? res.data : s)),
-        );
-        setDialogOpen(false);
+    try {
+      if (editingSub) {
+        const res = await updateSubscriptionAction(editingSub.id, payload);
+        setLoading(false);
+        if (res.success) {
+          setSubscriptions((prev) =>
+            prev.map((s) => (s.id === editingSub.id ? res.data : s)),
+          );
+          setDialogOpen(false);
+        } else {
+          setError(res.error);
+        }
       } else {
-        setError(res.error);
+        const res = await createSubscriptionAction(payload);
+        setLoading(false);
+        if (res.success) {
+          setSubscriptions((prev) => [res.data, ...prev]);
+          setDialogOpen(false);
+        } else {
+          setError(res.error);
+        }
       }
-    } else {
-      const res = await createSubscriptionAction(payload);
+    } finally {
       setLoading(false);
-      if (res.success) {
-        setSubscriptions((prev) => [res.data, ...prev]);
-        setDialogOpen(false);
-      } else {
-        setError(res.error);
-      }
+      stopProgress();
     }
   };
 
   const handleToggleActive = async (sub: SubscriptionWithCount) => {
     const nextStatus = !sub.isActive;
-    const res = await toggleSubscriptionAction(sub.id, nextStatus);
-    if (res.success) {
-      setSubscriptions((prev) =>
-        prev.map((s) => (s.id === sub.id ? { ...s, isActive: nextStatus } : s)),
-      );
+    startProgress();
+    try {
+      const res = await toggleSubscriptionAction(sub.id, nextStatus);
+      if (res.success) {
+        setSubscriptions((prev) =>
+          prev.map((s) => (s.id === sub.id ? { ...s, isActive: nextStatus } : s)),
+        );
+      }
+    } finally {
+      stopProgress();
     }
   };
 
@@ -181,11 +216,16 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    const res = await deleteSubscriptionAction(id);
-    if (res.success) {
-      setSubscriptions((prev) => prev.filter((s) => s.id !== id));
+    startProgress();
+    try {
+      const res = await deleteSubscriptionAction(id);
+      if (res.success) {
+        setSubscriptions((prev) => prev.filter((s) => s.id !== id));
+      }
+      setDialogDeleteOpen(false);
+    } finally {
+      stopProgress();
     }
-    setDialogDeleteOpen(false);
   };
 
   const handleDeleteDialogOpen = (id: string) => {
@@ -196,20 +236,56 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
   return (
     <div className="space-y-6">
       {/* Header & Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" /> Active Subscribers
+            <Users className="w-5 h-5 text-primary" /> Subscriptions & Member Accounts
           </h2>
           <p className="text-sm text-muted-foreground">
-            Manage WhatsApp client access, subscription plans, and container
-            quotas.
+            Kelola akses klien WhatsApp, paket subscription, serta akun Member & CS.
           </p>
         </div>
-        <Button onClick={openCreateDialog} className="font-semibold shadow-sm">
-          <Plus className="w-4 h-4 mr-2" /> Add Subscriber
-        </Button>
+
+        {/* Tab Switcher */}
+        <div className="flex items-center bg-muted p-1 rounded-xl border border-border shrink-0">
+          <Button
+            type="button"
+            variant={activeTab === "subscribers" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("subscribers")}
+            className="text-xs font-bold gap-1.5 h-8 rounded-lg"
+          >
+            <CreditCard className="w-3.5 h-3.5" /> WhatsApp Subscribers ({subscriptions.length})
+          </Button>
+          <Button
+            type="button"
+            variant={activeTab === "members" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveTab("members")}
+            className="text-xs font-bold gap-1.5 h-8 rounded-lg"
+          >
+            <UserPlus className="w-3.5 h-3.5" /> Member Accounts ({users.length})
+          </Button>
+        </div>
       </div>
+
+      {activeTab === "members" ? (
+        <MemberUsersList
+          users={users}
+          subscriptions={subscriptions}
+          onDeleteUser={(id) => setUsers((prev) => prev.filter((u) => u.id !== id))}
+          onOpenAddModal={() => setAddMemberModalOpen(true)}
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground font-semibold">
+              Daftar target WhatsApp yang berhak menggunakan bot & automonitoring.
+            </p>
+            <Button onClick={openCreateDialog} className="font-semibold shadow-sm">
+              <Plus className="w-4 h-4 mr-2" /> Add Subscriber
+            </Button>
+          </div>
 
       {/* Grid of Subscriptions */}
       {subscriptions.length === 0 ? (
@@ -403,6 +479,33 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
           })}
         </div>
       )}
+      </>
+    )}
+
+      <AddMemberModal
+        open={addMemberModalOpen}
+        onOpenChange={setAddMemberModalOpen}
+        existingSubscriptions={subscriptions}
+        onUserCreated={(newUser) => {
+          setUsers((prev) => [newUser, ...prev]);
+          if (newUser.subscription) {
+            const sub = newUser.subscription;
+            setSubscriptions((prev) => {
+              if (prev.some((s) => s.id === sub.id)) return prev;
+              return [
+                {
+                  ...sub,
+                  activeContainersCount: 0,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                },
+                ...prev,
+              ];
+            });
+          }
+        }}
+      />
+
       <DialogDelete
         open={dialogDeleteOpen}
         id={deleteTargetId}

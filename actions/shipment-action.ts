@@ -7,6 +7,7 @@ import { shipmentSchema, updateShipmentDatesSchema } from "@/lib/validator";
 import prisma from "@/lib/prisma";
 import { ActionResponse, ShipmentWithRelations } from "@/lib";
 import { AppError } from "@/lib/errors";
+import { requireAuth } from "@/lib/auth";
 import { z } from "zod";
 
 const repo = new ShipmentRepository(prisma);
@@ -27,6 +28,7 @@ function handleError(error: unknown): { success: false; error: string; code?: st
 
 export async function createShipmentAction(formData: unknown): Promise<ActionResponse<ShipmentWithRelations>> {
   try {
+    await requireAuth();
     const validated = shipmentSchema.parse(formData);
     const result = await service.createShipment(validated);
     revalidatePath("/shipments");
@@ -39,6 +41,7 @@ export async function createShipmentAction(formData: unknown): Promise<ActionRes
 
 export async function updateShipmentDatesAction(id: string, formData: unknown): Promise<ActionResponse> {
   try {
+    await requireAuth();
     const validated = updateShipmentDatesSchema.parse(formData);
     await service.updateShipmentDates(id, validated);
     revalidatePath(`/shipments/${id}`);
@@ -56,6 +59,7 @@ export async function toggleTaskAction(
   notes?: string,
 ): Promise<ActionResponse> {
   try {
+    await requireAuth();
     await service.toggleTaskProgress(taskId, shipmentId, completed, notes);
     revalidatePath(`/shipments/${shipmentId}`);
     revalidatePath("/");
@@ -71,6 +75,7 @@ export async function updateTaskNoteAction(
   notes: string,
 ): Promise<ActionResponse> {
   try {
+    await requireAuth();
     await service.updateTaskNote(taskId, shipmentId, notes);
     revalidatePath(`/shipments/${shipmentId}`);
     revalidatePath("/");
@@ -86,6 +91,7 @@ export async function toggleReminderAction(
   shipmentId?: string,
 ): Promise<ActionResponse> {
   try {
+    await requireAuth();
     await service.toggleReminderProgress(id, completed);
     revalidatePath("/");
     if (shipmentId) revalidatePath(`/shipments/${shipmentId}`);
@@ -98,6 +104,7 @@ export async function toggleReminderAction(
 // We'll use unknown here for quick view return type or define a specific interface
 export async function getShipmentQuickViewAction(id: string): Promise<ActionResponse<unknown>> {
   try {
+    await requireAuth();
     const shipment = await repo.findQuickView(id);
     if (!shipment) return { success: false, error: "Shipment not found", code: "NOT_FOUND" };
     return { success: true, data: shipment };
@@ -105,3 +112,4 @@ export async function getShipmentQuickViewAction(id: string): Promise<ActionResp
     return handleError(error);
   }
 }
+

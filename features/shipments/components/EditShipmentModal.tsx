@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useProgress } from "@bprogress/next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -31,6 +32,7 @@ function formatDateForInput(dateVal: Date | string | null | undefined, includeTi
 }
 
 export function EditShipmentModal({ shipment }: { shipment: ShipmentWithRelations }) {
+  const { start: startProgress, stop: stopProgress } = useProgress();
   const [open, setOpen] = useState(false);
   const isExport = shipment.type === "EXPORT";
 
@@ -46,11 +48,16 @@ export function EditShipmentModal({ shipment }: { shipment: ShipmentWithRelation
   });
 
   const onSubmit = async (data: UpdateShipmentDatesValues) => {
-    const res = await updateShipmentDatesAction(shipment.id, data);
-    if (res.success) {
-      setOpen(false);
-    } else {
-      alert("Failed to update: " + res.error);
+    startProgress();
+    try {
+      const res = await updateShipmentDatesAction(shipment.id, data);
+      if (res.success) {
+        setOpen(false);
+      } else {
+        alert("Failed to update: " + res.error);
+      }
+    } finally {
+      stopProgress();
     }
   };
 

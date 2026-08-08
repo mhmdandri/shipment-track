@@ -3,9 +3,11 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { ActionResponse } from "@/lib";
+import { requireAuth } from "@/lib/auth";
 import {
   normalizeWaTargetId,
   countActiveContainersForTarget,
+  buildWaMatchConditions,
 } from "@/lib/whatsapp/subscription";
 import { z } from "zod";
 
@@ -34,23 +36,45 @@ export interface SubscriptionWithCount {
 }
 
 export async function getAllSubscriptionsWithCount(): Promise<SubscriptionWithCount[]> {
-  const subs = await prisma.waSubscription.findMany({
-    orderBy: { createdAt: "desc" },
+  const [subs, activeContainers, activeVessels] = await Promise.all([
+    prisma.waSubscription.findMany({
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.terminalMonitor.findMany({
+      where: { isActive: true },
+      select: { waNumber: true },
+    }),
+    prisma.vesselMonitor.findMany({
+      where: { isActive: true },
+      select: { waNumber: true },
+    }),
+  ]);
+
+  const activeMonitorNumbers = [
+    ...activeContainers.map((c) => c.waNumber).filter((w): w is string => Boolean(w)),
+    ...activeVessels.map((v) => v.waNumber).filter((w): w is string => Boolean(w)),
+  ];
+
+  return subs.map((sub) => {
+    const rawTarget = sub.targetId.trim();
+    const rawPhone = sub.phoneNumber?.trim() || "";
+
+    const targetConditions = buildWaMatchConditions(rawTarget);
+    const phoneConditions = rawPhone ? buildWaMatchConditions(rawPhone) : [];
+    const validWaValues = new Set([
+      ...targetConditions.map((c) => c.waNumber.toLowerCase()),
+      ...phoneConditions.map((c) => c.waNumber.toLowerCase()),
+    ]);
+
+    const activeCount = activeMonitorNumbers.filter((wa) =>
+      validWaValues.has(wa.toLowerCase())
+    ).length;
+
+    return {
+      ...sub,
+      activeContainersCount: activeCount,
+    };
   });
-
-  return Promise.all(
-    subs.map(async (sub) => {
-      const activeCount = await countActiveContainersForTarget(
-        sub.targetId,
-        sub.phoneNumber || undefined
-      );
-
-      return {
-        ...sub,
-        activeContainersCount: activeCount,
-      };
-    })
-  );
 }
 
 function parseSubscriptionInput(data: unknown): {
@@ -92,6 +116,7 @@ export async function getSubscriptionsAction(): Promise<
   ActionResponse<SubscriptionWithCount[]>
 > {
   try {
+    await requireAuth();
     const results = await getAllSubscriptionsWithCount();
     return { success: true, data: results };
   } catch (error) {
@@ -106,10 +131,48 @@ export async function getSubscriptionsAction(): Promise<
   }
 }
 
+export async function getActiveSubscriptionsAction(): Promise<
+  ActionResponse<Array<{ id: string; targetId: string; name: string; isGroup: boolean }>>
+> {
+  try {
+    const subs = await prisma.waSubscription.findMany({
+      where: {
+        isActive: true,
+        expiredAt: { gt: new Date() },
+      },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        targetId: true,
+        name: true,
+      },
+    });
+
+    const formatted = subs.map((s) => ({
+      id: s.id,
+      targetId: s.targetId,
+      name: s.name,
+      isGroup: s.targetId.endsWith("@g.us"),
+    }));
+
+    return { success: true, data: formatted };
+  } catch (error) {
+    console.error("Error fetching active subscriptions:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch active subscriptions.",
+    };
+  }
+}
+
 export async function createSubscriptionAction(
   data: unknown
 ): Promise<ActionResponse<SubscriptionWithCount>> {
   try {
+    await requireAuth();
     const input = parseSubscriptionInput(data);
 
     const created = await prisma.waSubscription.create({
@@ -165,6 +228,7 @@ export async function updateSubscriptionAction(
   data: unknown
 ): Promise<ActionResponse<SubscriptionWithCount>> {
   try {
+    await requireAuth();
     const input = parseSubscriptionInput(data);
 
     const updated = await prisma.waSubscription.update({
@@ -220,6 +284,7 @@ export async function toggleSubscriptionAction(
   isActive: boolean
 ): Promise<ActionResponse<SubscriptionWithCount>> {
   try {
+    await requireAuth();
     const updated = await prisma.waSubscription.update({
       where: { id },
       data: { isActive },
@@ -251,6 +316,7 @@ export async function deleteSubscriptionAction(
   id: string
 ): Promise<ActionResponse<null>> {
   try {
+    await requireAuth();
     await prisma.waSubscription.delete({
       where: { id },
     });
@@ -268,3 +334,4 @@ export async function deleteSubscriptionAction(
     };
   }
 }
+

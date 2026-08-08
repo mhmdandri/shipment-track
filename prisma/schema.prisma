@@ -141,6 +141,7 @@ model TerminalMonitor {
   updatedAt   DateTime @updatedAt
 
   @@index([isActive])
+  @@index([isActive, port])
 }
 
 model SystemConfig {
@@ -161,21 +162,26 @@ model WaSubscription {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  users User[]
+
   @@index([targetId])
   @@index([phoneNumber])
   @@index([isActive, expiredAt])
 }
 
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String   // Hashed with bcrypt
-  name      String   // Full Name (e.g. "Muhamad Andri")
-  role      String   @default("ADMIN") // ADMIN, CS
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String          @id @default(uuid())
+  username       String          @unique
+  password       String          // Hashed with bcrypt
+  name           String          // Full Name (e.g. "Muhamad Andri")
+  role           String          @default("ADMIN") // ADMIN, MEMBER, CS
+  subscriptionId String?
+  subscription   WaSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([username])
+  @@index([subscriptionId])
 }
 
 model VesselMonitor {
@@ -201,6 +207,7 @@ model VesselMonitor {
 
   @@unique([vesselName, port])
   @@index([isActive])
+  @@index([isActive, port])
   @@index([port, vesselName])
 }
 

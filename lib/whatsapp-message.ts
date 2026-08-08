@@ -437,6 +437,37 @@ Sistem akan memberikan notifikasi otomatis saat jadwal Open Stacking tersedia / 
 Silakan persiapkan pengiriman kontainer ke terminal ${cleanPort}.`;
   },
 
+  vesselScheduleUpdatedAlert: (
+    vessel: string,
+    port: string,
+    oldStatus: string,
+    newStatus: string,
+    changesSummary: string[],
+    openStacking: string,
+    etb: string,
+    etd: string,
+  ) => {
+    const cleanPort = port.toUpperCase();
+    const statusLine =
+      oldStatus !== newStatus
+        ? `📊 Status        : *${oldStatus}* ➔ *${newStatus}*`
+        : `📊 Status        : *${newStatus}*`;
+    const changesText =
+      changesSummary.length > 0
+        ? `📌 *Perubahan*: ${changesSummary.join(", ")}\n\n`
+        : "";
+    return `🔔 *UPDATE JADWAL/STATUS KAPAL (${cleanPort})*
+
+🚢 Vessel        : *${vessel}*
+${statusLine}
+
+${changesText}📅 *OPEN STACKING*: *${openStacking || "BELUM TERSEDIA"}*
+🕒 ETB / Sandar  : *${etb || "-"}*
+🕒 ETD / Tiba    : *${etd || "-"}*
+
+Sistem akan terus memantau pembaruan jadwal kapal ini secara otomatis.`;
+  },
+
   vesselMultiPortResult: (
     vesselNameQuery: string,
     vessels: Array<{

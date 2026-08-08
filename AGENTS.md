@@ -36,7 +36,7 @@ CS Eksim Tracker (`shipment-track`) adalah sistem dashboard operasional freight 
 - `cheerio`: HTML parsing untuk terminal scraper (KOJA, NPCT1, TMAL, JICT OB)
 - `node-cron`: Cron scheduler di standalone script
 - `date-fns`: Manipulasi tanggal & kalkulasi SLA
-- `@bprogress/next`: NProgress indicator pada App Router transitions
+- `@bprogress/next`: Indicator progress bar bagian atas (top loading bar) untuk semua navigasi halaman (`ProgressProvider`) serta eksekusi async form submit & server actions (`useProgress()`).
 
 ---
 
@@ -110,19 +110,27 @@ shipment-track/
 - **Fungsi**: Pelacakan posisi kontainer pada shipping lines global (ONE Line & Evergreen EMC) melalui API eksternal dan HTML scraping.
 - **File Kunci**: `actions/track-action.ts`, `app/tracker/page.tsx`, `features/tracker/*`.
 
-- **Fungsi**: Scraping dan query data real-time ke 5 terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB via BC On Demand `bcondemand.jict.co.id` untuk JICT & KOJA, serta `Remarks` KOJA). Khusus TMAL, jika ditemukan multiple data impor (lintas tahun/voyage), sistem secara otomatis mem-parse timestamp (`parseTmalDateMs`) dan memilih transaksi terbaru. Pada pencarian jadwal kapal (`/cekport` & multi-port search), jadwal dengan status `SAILED` / `COMPLETED` di-filter tanpa fallback agar tidak menampilkan kapal yang sudah berlayar.
-- **File Kunci**: `actions/tracking/index.ts`, `actions/tracking/vessel/index.ts`, `actions/tracking/vessel/ports/*`, `actions/vessel-action.ts`, `app/terminal-tracker/page.tsx`.
+### 3. Terminal & Vessel Tracking Module
+- **Fungsi**: Scraping dan query data real-time ke 5 terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB via BC On Demand `bcondemand.jict.co.id` untuk JICT & KOJA, serta `Remarks` KOJA). Khusus TMAL, jika ditemukan multiple data impor (lintas tahun/voyage), sistem secara otomatis mem-parse timestamp (`parseTmalDateMs`).
+- **Antarmuka UI & User Experience (UX)**:
+  - Layout antarmuka tracker (`/terminal-tracker`) menggunakan **Grid 2-Kolom Berdampingan Sejajar (Side-by-Side Kiri-Kanan, Equal Height `items-stretch`)**:
+    - **Kolom Kiri**: Form Input Nomor Kontainer, Pemilihan Terminal, dan Target Notifikasi WhatsApp.
+    - **Kolom Kanan**: Tampilan Hasil Tracking Real-Time dengan **Scroll Area Internal (`max-h-[460px] overflow-y-auto`)** agar kontainer berstatus panjang tetap rapi tanpa scroll halaman.
+  - Menyembunyikan ID / Kode Grup mentah WhatsApp (`120363...@g.us` / `@c.us`) dan **hanya menampilkan Nama Subscription (`sub.name` / `subscriptionName`)** pada dropdown target, badge auto-linked member, dan ringkasan target.
+  - Dilengkapi **Batch Summary Metric Cards** (Total, Stacking Yard, Outgate, Fail) serta tabel batch dengan scroll area internal yang **langsung tampil secara otomatis pada mode Multi-Container** (sebelum pencarian menampilkan indikator 0 & placeholder row, dan setelah pencarian langsung terisi secara real-time).
+- **Fungsi**: Pendaftaran kontainer aktif ke watchlist `TerminalMonitor` dan kapal aktif ke watchlist `VesselMonitor`. Cron job memeriksa kontainer (`OUTGT`) dan jadwal Open Stacking / Status / Sandar (ETB/ATA/ETD/ATD/Closing Doc/Closing Physic) kapal secara berkala. Setiap ada perubahan status atau tanggal jadwal kapal, DB diperbarui dan notifikasi instan WhatsApp & Telegram dikirimkan. Kapal yang berstatus `SAILING` atau `COMPLETED` di-deaktivasi otomatis (`isActive: false`).
+- **File Kunci**: `actions/monitor-action.ts`, `actions/vessel-action.ts`, `features/tracker/TerminalTrackerClient.tsx`, `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
 ### 4. Auto-Monitoring Module
-- **Fungsi**: Pendaftaran kontainer aktif ke watchlist `TerminalMonitor` dan kapal aktif ke watchlist `VesselMonitor`. Cron job memeriksa kontainer (`OUTGT`) dan jadwal Open Stacking kapal secara berkala. Kapal yang berstatus `SAILING` atau `COMPLETED` di-deaktivasi otomatis (`isActive: false`).
-- **File Kunci**: `actions/monitor-action.ts`, `actions/vessel-action.ts`, `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
+- **Fungsi**: Pendaftaran kontainer aktif ke watchlist `TerminalMonitor` dan kapal aktif ke watchlist `VesselMonitor`. Cron job memeriksa kontainer (`OUTGT`) dan jadwal Open Stacking / Status / Sandar (ETB/ATA/ETD/ATD/Closing Doc/Closing Physic) kapal secara berkala. Setiap ada perubahan status atau tanggal jadwal kapal, DB diperbarui dan notifikasi instan WhatsApp & Telegram dikirimkan. Kapal yang berstatus `SAILING`, `COMPLETED`, atau tidak lagi terdaftar pada jadwal sandar pelabuhan (schedule cleared) di-deaktivasi otomatis (`isActive: false`, `status: SAILED`).
+- **File Kunci**: `actions/monitor-action.ts`, `actions/vessel-action.ts`, `features/tracker/TerminalTrackerClient.tsx`, `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
 ### 5. WhatsApp Integration Module (WAHA)
-- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/openstack`, `/vessel`, `/cekport`, `/port`, `/status`, `/list`, `/cekid`, `/help`), serta pengiriman alert status kontainer dan Open Stacking kapal multi-port (JICT, NPCT1, KOJA, TMAL, TER3).
+- **Fungsi**: Penerimaan webhook dari WAHA HTTP API (`/api/webhook/waha`), dispatching command (`/track`, `/openstack`, `/vessel`, `/cekport`, `/port`, `/status`, `/list`, `/cekid`, `/help`), serta pengiriman alert status kontainer dan Open Stacking / Schedule Update kapal multi-port (JICT, NPCT1, KOJA, TMAL, TER3).
 - **File Kunci**: `app/api/webhook/waha/route.ts`, `lib/whatsapp/dispatcher.ts`, `lib/whatsapp/commands/*`, `lib/whatsapp.ts`, `lib/whatsapp-message.ts`.
 
 ### 6. Telegram Notification Module
-- **Fungsi**: Pengiriman alert prioritas tinggi (misalnya penentuan alokasi yard `GNSTK` & ketersediaan Open Stack kapal) ke grup/channel Telegram via Telegram Bot API (HTML format).
+- **Fungsi**: Pengiriman alert prioritas tinggi (misalnya penentuan alokasi yard `GNSTK`, ketersediaan Open Stack kapal, dan perubahan jadwal/status kapal) ke grup/channel Telegram via Telegram Bot API (HTML format).
 - **File Kunci**: `lib/telegram.ts`.
 
 ### 7. Cron & Scheduler Module
@@ -132,8 +140,10 @@ shipment-track/
 ### 8. Authentication Module
 - **Fungsi**:
   - Validasi Cron request via `CRON_SECRET` Bearer Token.
+  - Strict Global Route Protection via `proxy.ts`: Menutup semua akses publik pada aplikasi web kecuali `/auth/login`. Jika pengguna belum login (*unauthenticated*), sistem secara otomatis mengarahkan ke form login `/auth/login?redirect=...`.
+  - Enforce Server Action Auth: Pengecekan `requireAuth()` pada seluruh Server Actions publik (`actions/terminal-track-action.ts` & `actions/track-action.ts`). Service cron Latar Belakang (`service/cron-monitor-service.ts`) mengimpor langsung engine tracking internal dari `@/actions/tracking` tanpa kebergantungan sesi cookie user.
   - Sesi otomatis & login token management ke PARAMA Pelindo (TER3) yang disimpan di tabel `SystemConfig`.
-- **File Kunci**: `actions/tracking/ports/ter3.ts`, `app/api/cron/monitor/route.ts`.
+- **File Kunci**: `proxy.ts`, `actions/terminal-track-action.ts`, `actions/track-action.ts`, `actions/tracking/ports/ter3.ts`, `app/api/cron/monitor/route.ts`.
 
 ### 9. Dashboard Module
 - **Fungsi**: Perhitungan real-time metric KPI (Total Active, Need Action Today, Overdue, ETA This Week), penyusunan Action Board (Overdue, Today, Upcoming 15), dan quick action resolve.
@@ -144,8 +154,11 @@ shipment-track/
 - **File Kunci**: `actions/daily-todo-action.ts`, `actions/todo-action.ts`, `app/todos/page.tsx`, `features/todos/*`.
 
 ### 11. Subscription & Access Control Module
-- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`) dengan prinsip **Strict 100% Zero-Trust Access Control**, pembatasan kuota monitor aktif bersama (Shared Quota Pool: Kontainer + Kapal; STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, serta **Dua Identitas WhatsApp (Phone Number & Meta LID `@lid`)** dengan fitur **Dual-Identity Matching & Auto-Linking (`checkWaSubscription`)** yang secara otomatis menautkan ID LID dan Nomor HP saat user berinteraksi dari WhatsApp Bot maupun Web UI.
-- **File Kunci**: `prisma/schema.prisma`, `lib/whatsapp/subscription.ts`, `actions/subscription-action.ts`, `app/subscriptions/page.tsx`, `features/subscriptions/*`.
+- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`) dengan prinsip **Strict 100% Zero-Trust Access Control**, pembatasan kuota monitor aktif bersama (Shared Quota Pool: Kontainer + Kapal; STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, **Dual-Identity Matching & Auto-Linking (`checkWaSubscription`)**, serta **Pengait Otomatis Akun Member (`User.subscriptionId`)**:
+  - Akun user dengan role `MEMBER` atau `CS` secara otomatis terhubung ke paket `WaSubscription` yang ditentukan Admin/Owner.
+  - Saat akun `MEMBER` mentracking via Web UI (`/terminal-tracker`), target notifikasi WhatsApp otomatis terkunci & terarah ke `subscriptionTargetId` akun member tersebut tanpa perlu memilih dropdown.
+  - Admin/Owner dapat membuat akun member baru sekaligus memprovisi/membuat paket `WaSubscription` baru dalam 1 langkah (*Simultaneous Provisioning*).
+- **File Kunci**: `prisma/schema.prisma`, `lib/whatsapp/subscription.ts`, `actions/subscription-action.ts`, `actions/user-action.ts`, `app/subscriptions/page.tsx`, `features/subscriptions/*`.
 
 ---
 
@@ -296,9 +309,9 @@ erDiagram
 - `ShipmentTask`: `@@unique([shipmentId, stepOrder])`, `@@index([shipmentId])`
 - `Reminder`: `@@index([shipmentId])`, `@@index([completed, dueDate])`
 - `Todo`: `@@index([shipmentId])`
-- `TerminalMonitor`: `@unique([containerNo])`, `@@index([isActive])`
-- `VesselMonitor`: `@@unique([vesselName, port])`, `@@index([isActive])`
-- `WaSubscription`: `@unique([targetId])`, `@@index([isActive, expiredAt])`
+- `TerminalMonitor`: `@unique([containerNo])`, `@@index([isActive])`, `@@index([isActive, port])`
+- `VesselMonitor`: `@@unique([vesselName, port])`, `@@index([isActive])`, `@@index([isActive, port])`, `@@index([port, vesselName])`
+- `WaSubscription`: `@unique([targetId])`, `@@index([isActive, expiredAt])`, `@@index([targetId])`, `@@index([phoneNumber])`
 
 ---
 
@@ -355,7 +368,9 @@ erDiagram
 | `actions/shipment-action.ts` | `toggleReminderAction` | `id, completed, shipmentId?` | `ActionResponse` | Update status reminder & sync otomatis ke matching task title jika ada. |
 | `actions/shipment-action.ts` | `getShipmentQuickViewAction` | `id: string` | `ActionResponse<unknown>` | Ambil detail singkat shipment untuk modal quick view (log terbaru & pending todos). |
 | `actions/monitor-action.ts` | `enableTerminalMonitoring` | `containerNo, port, status, waNumber?, vesselName?, voyageNo?` | `ActionResponse<{message: string}>` | Pendaftaran kontainer ke tabel `TerminalMonitor` (upsert) & notifikasi awal. |
+| `actions/monitor-action.ts` | `enableBatchTerminalMonitoring` | `items, waNumber?` | `ActionResponse<{total, registered, results}>` | Pendaftaran batch kontainer ke `TerminalMonitor` sekaligus dengan validasi kuota langganan. |
 | `actions/monitor-action.ts` | `disableTerminalMonitoring` | `containerNo: string` | `ActionResponse<{message: string}>` | Mematikan (deaktivasi) auto-monitoring kontainer (`isActive: false`) secara manual dari Web UI. |
+| `actions/subscription-action.ts` | `getActiveSubscriptionsAction` | - | `ActionResponse<Array<{id, targetId, name, isGroup}>>` | Ambil daftar target WhatsApp terdaftar (Personal & Grup WA) yang aktif untuk selector Web UI. |
 | `actions/vessel-action.ts` | `searchVesselScheduleAction` | `port, vesselName, line?` | `ActionResponse<VesselTrackingResult>` | Scrape & return real-time vessel schedule & open stacking data untuk terminal terkait. |
 | `actions/vessel-action.ts` | `enableVesselMonitoringAction` | `vesselName, port?, waNumber?` | `ActionResponse<{message: string}>` | Pendaftaran auto-monitoring open stack kapal ke tabel `VesselMonitor`. |
 | `actions/vessel-action.ts` | `disableVesselMonitoringAction` | `vesselName, port` | `ActionResponse<{message: string}>` | Mematikan (deaktivasi) auto-monitoring kapal (`isActive: false`) secara manual dari Web UI. |

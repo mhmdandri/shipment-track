@@ -7,9 +7,10 @@ export const SAILING_COMPLETED_KEYWORDS = [
   "COMPLETE",
   "FINISH",
   "FINISHED",
-  "BERTHED",
   "DEPARTED",
   "DEPART",
+  "LEFT",
+  "LEAVING",
 ];
 
 /**

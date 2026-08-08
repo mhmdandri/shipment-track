@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import {
   processContainerMonitors,
   processVesselMonitors,
@@ -9,8 +10,14 @@ export const dynamic = "force-dynamic";
 
 function isAuthorized(authHeader: string | null): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret || secret.trim().length === 0) return false;
-  return authHeader === `Bearer ${secret}`;
+  if (!secret || secret.trim().length === 0 || !authHeader) return false;
+
+  const expected = `Bearer ${secret}`;
+  const authBuffer = Buffer.from(authHeader);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (authBuffer.length !== expectedBuffer.length) return false;
+  return crypto.timingSafeEqual(authBuffer, expectedBuffer);
 }
 
 export async function GET(request: Request) {
