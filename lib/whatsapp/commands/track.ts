@@ -1,5 +1,5 @@
-import { trackTerminalContainer } from "@/actions/terminal-track-action";
-import { enableTerminalMonitoring } from "@/actions/monitor-action";
+import { trackTerminalContainer } from "@/actions/tracking";
+import { enableTerminalMonitoringInternal } from "@/actions/monitor-action";
 import { isOutgateStatus } from "@/actions/tracking/utils";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
@@ -132,7 +132,7 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
 
     // Enable Monitoring
     console.log(`-> Enabling monitor for ${containerNo} via ${sender}`);
-    const monitorRes = await enableTerminalMonitoring(
+    const monitorRes = await enableTerminalMonitoringInternal(
       result.containerNo,
       result.port,
       result.status,

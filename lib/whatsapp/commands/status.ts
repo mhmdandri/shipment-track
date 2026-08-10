@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { trackTerminalContainer } from "@/actions/terminal-track-action";
+import { trackTerminalContainer } from "@/actions/tracking";
 import { isOutgateStatus, isYardStatus, isObType } from "@/actions/tracking/utils";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";

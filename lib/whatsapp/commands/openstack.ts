@@ -1,5 +1,5 @@
 import { trackVesselSchedule } from "@/actions/tracking/vessel";
-import { enableVesselMonitoringAction } from "@/actions/vessel-action";
+import { enableVesselMonitoringInternal } from "@/actions/vessel-action";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
 import { verifyAndReplyWaSubscription } from "@/lib/whatsapp/subscription";
@@ -80,5 +80,5 @@ export async function handleOpenStackCommand(context: WhatsappCommandContext) {
   await sendWhatsappMessage(sender, replyMsg);
 
   // Auto-enable monitoring for this vessel
-  await enableVesselMonitoringAction(vesselName, port, sender);
+  await enableVesselMonitoringInternal(vesselName, port, sender);
 }

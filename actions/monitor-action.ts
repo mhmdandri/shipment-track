@@ -23,7 +23,7 @@ const enableMonitorSchema = z.object({
   voyageNo: z.string().optional(),
 });
 
-export async function enableTerminalMonitoring(
+export async function enableTerminalMonitoringInternal(
   containerNo: string,
   port: string,
   status: string,
@@ -47,7 +47,6 @@ export async function enableTerminalMonitoring(
   }
 
   try {
-    await requireAuth();
     const cleanContainerNo = containerNo.trim().toUpperCase();
     const cleanPort = port.trim().toLowerCase();
     const rawWaNumber = waNumber?.trim() || "";
@@ -145,6 +144,18 @@ export async function enableTerminalMonitoring(
   }
 }
 
+export async function enableTerminalMonitoring(
+  containerNo: string,
+  port: string,
+  status: string,
+  waNumber?: string,
+  vesselName?: string,
+  voyageNo?: string
+): Promise<ActionResponse<{ message: string }>> {
+  await requireAuth();
+  return enableTerminalMonitoringInternal(containerNo, port, status, waNumber, vesselName, voyageNo);
+}
+
 export async function disableTerminalMonitoring(
   containerNo: string
 ): Promise<ActionResponse<{ message: string }>> {
@@ -230,7 +241,7 @@ export async function enableBatchTerminalMonitoring(
     let registeredCount = 0;
 
     for (const item of items) {
-      const res = await enableTerminalMonitoring(
+      const res = await enableTerminalMonitoringInternal(
         item.containerNo,
         item.port,
         item.status,
@@ -272,5 +283,3 @@ export async function enableBatchTerminalMonitoring(
     };
   }
 }
-
-

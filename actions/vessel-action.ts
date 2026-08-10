@@ -104,7 +104,7 @@ export async function searchVesselAllPortsAction(
 /**
  * Enables auto-monitoring for a vessel open stack schedule across any supported port.
  */
-export async function enableVesselMonitoringAction(
+export async function enableVesselMonitoringInternal(
   vesselName: string,
   port: string = "npct1",
   waNumber?: string
@@ -118,7 +118,6 @@ export async function enableVesselMonitoringAction(
   }
 
   try {
-    await requireAuth();
     const cleanVessel = vesselName.trim().replace(/\s+/g, " ").toUpperCase();
     const cleanPort = port.trim().toLowerCase();
     const rawWaNumber = waNumber?.trim() || "";
@@ -239,7 +238,7 @@ export async function enableVesselMonitoringAction(
       data: { message: returnMsg, trackingResult },
     };
   } catch (error) {
-    console.error("enableVesselMonitoringAction Error:", error);
+    console.error("enableVesselMonitoringInternal Error:", error);
     return {
       success: false,
       error:
@@ -248,6 +247,15 @@ export async function enableVesselMonitoringAction(
           : "Gagal mengaktifkan auto-monitoring kapal.",
     };
   }
+}
+
+export async function enableVesselMonitoringAction(
+  vesselName: string,
+  port: string = "npct1",
+  waNumber?: string
+): Promise<ActionResponse<{ message: string; trackingResult?: VesselTrackingResult }>> {
+  await requireAuth();
+  return enableVesselMonitoringInternal(vesselName, port, waNumber);
 }
 
 /**
