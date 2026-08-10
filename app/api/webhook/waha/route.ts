@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    
+
     // 1. Ensure the event is a message event
     const isMessageEvent = body?.event && String(body.event).startsWith("message");
     if (!isMessageEvent || !body?.payload) {
@@ -36,7 +36,13 @@ export async function POST(request: Request) {
     const payload = body.payload;
 
     // 2. Ignore messages sent by the bot itself to prevent infinite loops
-    if (payload.fromMe === true) {
+    const isFromMe =
+      payload.fromMe === true ||
+      payload.fromMe === "true" ||
+      Boolean(payload.id?.fromMe) ||
+      Boolean(payload._data?.id?.fromMe);
+
+    if (isFromMe) {
       return NextResponse.json({ success: true, message: "Ignored self message" });
     }
 
@@ -59,7 +65,7 @@ export async function POST(request: Request) {
       alternateSender = candidate;
     }
 
-    // 4. Construct context and dispatch
+    // 4. Construct context and dispatch command safely
     const context: WhatsappCommandContext = {
       sender,
       alternateSender,
@@ -68,11 +74,20 @@ export async function POST(request: Request) {
       args: text.trim().split(/\s+/),
     };
 
-    await dispatchWhatsappCommand(context);
+    try {
+      await dispatchWhatsappCommand(context);
+    } catch (cmdError) {
+      console.error("WAHA Command Dispatch Error:", cmdError);
+    }
 
-    return NextResponse.json({ success: true, message: "Command dispatched successfully" });
+    // Always respond with 200 OK to WAHA so WAHA acknowledges receipt and does not retry delivery
+    return NextResponse.json({ success: true, message: "Command processed" });
   } catch (error) {
     console.error("WAHA Webhook Error:", error);
-    return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
+    // Return status 200 to prevent WAHA from indefinitely retrying failed webhooks in loops
+    return NextResponse.json(
+      { success: false, error: "Internal Server Error handled" },
+      { status: 200 }
+    );
   }
 }
