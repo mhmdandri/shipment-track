@@ -141,7 +141,7 @@ shipment-track/
 - **Fungsi**:
   - Validasi Cron request via `CRON_SECRET` Bearer Token.
   - Strict Global Route Protection via `proxy.ts`: Menutup semua akses publik pada aplikasi web kecuali `/auth/login`. Jika pengguna belum login (*unauthenticated*), sistem secara otomatis mengarahkan ke form login `/auth/login?redirect=...`.
-  - Enforce Server Action Auth: Pengecekan `requireAuth()` pada seluruh Server Actions publik (`actions/terminal-track-action.ts` & `actions/track-action.ts`). Service cron Latar Belakang (`service/cron-monitor-service.ts`) mengimpor langsung engine tracking internal dari `@/actions/tracking` tanpa kebergantungan sesi cookie user.
+  - Enforce Server Action Auth: Pengecekan `requireAuth()` pada seluruh Server Actions publik (`actions/terminal-track-action.ts` & `actions/track-action.ts`). Service cron Latar Belakang (`service/cron-monitor-service.ts`) dan WAHA WhatsApp Bot Command Handlers (`lib/whatsapp/commands/*`) mengimpor langsung engine tracking & monitoring internal (`@/actions/tracking`, `enableTerminalMonitoringInternal`, `enableVesselMonitoringInternal`) tanpa kebergantungan sesi cookie user. Otorisasi pengguna WhatsApp divalidasi secara khusus berbasis langganan via `checkWaSubscription`.
   - Sesi otomatis & login token management ke PARAMA Pelindo (TER3) yang disimpan di tabel `SystemConfig`.
 - **File Kunci**: `proxy.ts`, `actions/terminal-track-action.ts`, `actions/track-action.ts`, `actions/tracking/ports/ter3.ts`, `app/api/cron/monitor/route.ts`.
 
