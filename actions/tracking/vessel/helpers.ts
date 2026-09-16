@@ -13,10 +13,28 @@ export const SAILING_COMPLETED_KEYWORDS = [
   "LEAVING",
 ];
 
+export const ACTIVE_VESSEL_KEYWORDS = [
+  "BERTH",
+  "BERTHING",
+  "WORKING",
+  "SCHEDULED",
+  "OPEN STACK",
+  "OPENSTACK",
+  "ANCHORAGE",
+  "PORT",
+  "ARRIVED",
+  "STACKING",
+  "YARD",
+  "PLAN",
+  "REGISTER",
+  "ACTIVE",
+  "DISCHARGE",
+  "LOADING",
+];
+
 /**
  * Helper to check if a vessel's status indicates it has already departed, sailed, or completed its port call.
- * Supports an optional ETD parameter (string, Date, or null) so ports without native SAILED status strings
- * (e.g. TER3, TPK KOJA, TMAL) are automatically classified as sailed/completed if ETD is > 12 hours in the past.
+ * Respects active vessel status keywords so ships with past ETDs but active berthing/working status are NOT marked as sailed.
  */
 export function isVesselSailingOrCompleted(
   status: string | null | undefined,
@@ -24,11 +42,19 @@ export function isVesselSailingOrCompleted(
 ): boolean {
   if (status) {
     const statusUpper = status.trim().toUpperCase();
+
+    // 1. Explicit active status keywords take precedence — ship is NOT sailing if status is active
+    if (ACTIVE_VESSEL_KEYWORDS.some((keyword) => statusUpper.includes(keyword))) {
+      return false;
+    }
+
+    // 2. Explicit sailing/completed keywords
     if (SAILING_COMPLETED_KEYWORDS.some((keyword) => statusUpper.includes(keyword))) {
       return true;
     }
   }
 
+  // 3. Fallback to ETD check only when status is absent or ambiguous, with a 48h safety window
   if (etd) {
     let etdMs = 0;
     if (etd instanceof Date) {
@@ -38,8 +64,8 @@ export function isVesselSailingOrCompleted(
     }
 
     if (etdMs > 0) {
-      const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
-      if (Date.now() - etdMs > TWENTY_FOUR_HOURS_MS) {
+      const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
+      if (Date.now() - etdMs > FORTY_EIGHT_HOURS_MS) {
         return true;
       }
     }
@@ -50,6 +76,7 @@ export function isVesselSailingOrCompleted(
 
 /**
  * Parses any date format (YYYY-MM-DD, DD-MM-YYYY, MM/DD/YYYY, DD/MM/YYYY) into timestamp MS.
+ * Prefers DD/MM/YYYY format for slash dates in Indonesian terminal context.
  */
 export function parseVesselDateMs(dateStr: string | null | undefined): number {
   if (!dateStr || dateStr === "-" || dateStr.trim() === "") return 0;
@@ -73,7 +100,7 @@ export function parseVesselDateMs(dateStr: string | null | undefined): number {
     if (!isNaN(t)) return t;
   }
 
-  // 3. Slashing format MM/DD/YYYY (TER3) or DD/MM/YYYY
+  // 3. Slashing format DD/MM/YYYY (Indonesian standard) or MM/DD/YYYY
   const slashMatch = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?/);
   if (slashMatch) {
     const [, p1, p2, year, time] = slashMatch;
@@ -92,9 +119,9 @@ export function parseVesselDateMs(dateStr: string | null | undefined): number {
       const t = new Date(iso).getTime();
       if (!isNaN(t)) return t;
     }
-    // Default MM/DD/YYYY
+    // Default to DD/MM/YYYY (Day = p1, Month = p2) for Indonesian domestic port standards
     else {
-      const iso1 = `${year}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}T${time || "00:00:00"}`;
+      const iso1 = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${time || "00:00:00"}`;
       const t1 = new Date(iso1).getTime();
       if (!isNaN(t1)) return t1;
     }
@@ -141,8 +168,13 @@ export function filterAndSelectBestSchedules(
     return dateMs > 0 && dateMs < nowMs - 7 * 24 * 60 * 60 * 1000;
   };
 
-  // Filter ONLY active/upcoming schedules, discarding any SAILED or completed entries
-  const pool = schedules.filter((s) => !isCompleted(s));
+  // Filter active/upcoming schedules
+  let pool = schedules.filter((s) => !isCompleted(s));
+
+  // Fallback: if all schedules were filtered out, keep the schedule with the latest date
+  if (pool.length === 0) {
+    pool = [...schedules].sort((a, b) => getMs(b) - getMs(a)).slice(0, 1);
+  }
 
   // Group by (port + ":" + voyage) to deduplicate exact same voyage at the same port
   const voyageMap = new Map<string, VesselScheduleItem>();

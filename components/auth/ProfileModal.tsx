@@ -12,13 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { logoutAction } from "@/actions/auth-action";
-import { User, LogOut, ShieldCheck, KeyRound, Mail } from "lucide-react";
+import { User, LogOut, ShieldCheck, KeyRound, Mail, MessageSquare, CreditCard } from "lucide-react";
 
 export interface UserProfileProps {
   id: string;
   username: string;
   name: string;
   role: string;
+  subscriptionId?: string | null;
+  subscriptionTargetId?: string | null;
+  subscriptionName?: string | null;
 }
 
 interface ProfileModalProps {
@@ -114,10 +117,35 @@ export function ProfileModal({ user, open, onOpenChange }: ProfileModalProps) {
                 JWT Token Valid
               </span>
             </div>
+
+            {user.subscriptionName && (
+              <div className="flex justify-between items-center py-2 border-b border-border/40">
+                <span className="text-muted-foreground flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-primary" /> WA Subscription
+                </span>
+                <span className="text-xs font-bold text-primary truncate max-w-45">
+                  {user.subscriptionName}
+                </span>
+              </div>
+            )}
           </div>
 
+          {/* Owner / Admin Management Quick Link */}
+          {(user.role === "ADMIN" || user.role === "OWNER") && (
+            <Button
+              asChild
+              variant="outline"
+              className="w-full text-xs font-bold gap-2"
+              onClick={() => onOpenChange(false)}
+            >
+              <a href="/subscriptions">
+                <CreditCard className="w-4 h-4 text-primary" /> Kelola Subscriptions & Akun User
+              </a>
+            </Button>
+          )}
+
           {/* Logout Action */}
-          <div className="pt-2">
+          <div className="pt-1">
             <Button
               variant="destructive"
               className="w-full flex items-center justify-center gap-2 font-medium shadow-sm hover:opacity-90 transition-opacity"

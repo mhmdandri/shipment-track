@@ -274,6 +274,11 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
           users={users}
           subscriptions={subscriptions}
           onDeleteUser={(id) => setUsers((prev) => prev.filter((u) => u.id !== id))}
+          onUserUpdated={(updatedUser) =>
+            setUsers((prev) =>
+              prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+            )
+          }
           onOpenAddModal={() => setAddMemberModalOpen(true)}
         />
       ) : (

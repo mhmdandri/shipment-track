@@ -278,13 +278,119 @@ export async function createMemberUserAction(
   }
 }
 
+const updateUserSchema = z.object({
+  userId: z.string().min(1, "User ID wajib diisi"),
+  name: z.string().min(2, "Nama lengkap minimal 2 karakter"),
+  username: z.string().min(3, "Username minimal 3 karakter"),
+  password: z.string().optional().nullable(),
+  role: z.string().optional(),
+  subscriptionId: z.string().optional().nullable(),
+});
+
+export async function updateUserAction(
+  data: unknown
+): Promise<ActionResponse<UserWithSubscription>> {
+  try {
+    const authUser = await requireAuth();
+    const parsed = updateUserSchema.parse(data);
+
+    const isSelf = authUser.id === parsed.userId;
+    const isOwnerOrAdmin = authUser.role === "ADMIN" || authUser.role === "OWNER";
+
+    if (!isSelf && !isOwnerOrAdmin) {
+      return {
+        success: false,
+        error: "Akses ditolak: Hanya Admin/Owner atau pemilik akun yang dapat memperbarui data ini.",
+      };
+    }
+
+    // Check if username changed and is already taken by another user
+    const existingUser = await prisma.user.findUnique({
+      where: { username: parsed.username.trim().toLowerCase() },
+    });
+
+    if (existingUser && existingUser.id !== parsed.userId) {
+      return {
+        success: false,
+        error: `Username "${parsed.username}" sudah digunakan oleh akun lain.`,
+      };
+    }
+
+    const updateData: Record<string, unknown> = {
+      name: parsed.name.trim(),
+      username: parsed.username.trim().toLowerCase(),
+    };
+
+    if (parsed.subscriptionId !== undefined) {
+      updateData.subscriptionId = parsed.subscriptionId || null;
+    }
+
+    // Role can only be changed by Admin/Owner
+    if (isOwnerOrAdmin && parsed.role) {
+      updateData.role = parsed.role;
+    }
+
+    // Password change if provided
+    if (parsed.password && parsed.password.trim().length >= 4) {
+      updateData.password = await hashPassword(parsed.password.trim());
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: parsed.userId },
+      data: updateData,
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        role: true,
+        subscriptionId: true,
+        createdAt: true,
+        updatedAt: true,
+        subscription: {
+          select: {
+            id: true,
+            targetId: true,
+            phoneNumber: true,
+            name: true,
+            plan: true,
+            maxContainers: true,
+            expiredAt: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    revalidatePath("/subscriptions");
+    return { success: true, data: updatedUser };
+  } catch (error: unknown) {
+    console.error("Error updating user:", error);
+
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.errors.map((e) => e.message).join(", "),
+      };
+    }
+
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Gagal memperbarui akun user.",
+    };
+  }
+}
+
 export async function updateUserSubscriptionAction(
   userId: string,
   subscriptionId: string | null
 ): Promise<ActionResponse<UserWithSubscription>> {
   try {
     const authUser = await requireAuth();
-    if (authUser.role !== "ADMIN" && authUser.role !== "OWNER") {
+    const isSelf = authUser.id === userId;
+    const isOwnerOrAdmin = authUser.role === "ADMIN" || authUser.role === "OWNER";
+
+    if (!isSelf && !isOwnerOrAdmin) {
       return {
         success: false,
         error: "Akses ditolak.",

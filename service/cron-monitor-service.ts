@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { trackTerminalContainer } from "@/actions/tracking";
 import {
   trackVesselSchedule,
+  searchVesselAllPorts,
   parseVesselDate,
   isVesselSailingOrCompleted,
 } from "@/actions/tracking/vessel";
@@ -10,6 +11,7 @@ import { isOutgateStatus, isYardStatus, isObType } from "@/actions/tracking/util
 import { sendTelegramMessage } from "@/lib/telegram";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
+import { checkWaSubscription } from "@/lib/whatsapp/subscription";
 
 export interface CronProcessingResult {
   type: "container" | "vessel";
@@ -22,6 +24,7 @@ export interface CronProcessingResult {
 /**
  * Processes active container terminal monitors (JICT, NPCT1, KOJA, TMAL, TER3, PARAMA).
  * Checks yard allocation and Outgate status, updates DB & dispatches alerts.
+ * Retains DB status if WhatsApp notification delivery fails so transient network issues can be retried on next cron run.
  */
 export async function processContainerMonitors(): Promise<CronProcessingResult[]> {
   const activeMonitors = await prisma.terminalMonitor.findMany({
@@ -50,36 +53,34 @@ export async function processContainerMonitors(): Promise<CronProcessingResult[]
             newStatus = `${newStatus} (OB)`;
           }
 
-          if (
+          const cleanNewStatus = newStatus.trim().toUpperCase();
+          const cleanOldStatus = (monitor.status || "").trim().toUpperCase();
+
+          const hasStatusChanged =
             result.success &&
-            newStatus !== monitor.status &&
-            newStatus !== "UNKNOWN"
-          ) {
+            cleanNewStatus !== cleanOldStatus &&
+            cleanNewStatus !== "UNKNOWN";
+
+          if (hasStatusChanged) {
             const isOutgate = isOutgateStatus(newStatus);
             const isYard = isYardStatus(newStatus);
             const wasYard = isYardStatus(monitor.status);
 
-            await prisma.terminalMonitor.update({
-              where: { id: monitor.id },
-              data: {
-                status: newStatus,
-                isActive: !isOutgate,
-                updatedAt: new Date(),
-              },
-            });
-
-            if (isYard && !wasYard) {
-              const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${newStatus}</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
-              await sendTelegramMessage(telegramMsg).catch((e) =>
-                console.error("Telegram error in cron:", e)
-              );
+            // Verify WhatsApp subscription if waNumber is provided
+            let isWaAllowed = true;
+            if (monitor.waNumber) {
+              const subCheck = await checkWaSubscription(monitor.waNumber, 0);
+              isWaAllowed = subCheck.allowed;
             }
 
+            let waSent = true;
             const hasil = isOutgate ? result.timeOut || result.time || "-" : result.time || "-";
-            if (monitor.waNumber) {
+
+            if (monitor.waNumber && isWaAllowed) {
+              let waMsg = "";
               if (isOutgate) {
                 const wasOb = isOb || monitor.status.includes("(OB)");
-                const waMsg = wasOb
+                waMsg = wasOb
                   ? whatsappMessage.pulledToOb(
                       monitor.containerNo,
                       monitor.port,
@@ -92,50 +93,74 @@ export async function processContainerMonitors(): Promise<CronProcessingResult[]
                       hasil,
                       result.customer || "-"
                     );
-                await sendWhatsappMessage(monitor.waNumber, waMsg).catch((e) =>
-                  console.error("WhatsApp error in cron:", e)
-                );
               } else if (isOb && !monitor.status.includes("(OB)")) {
-                const waMsg = whatsappMessage.changedToOb(
+                waMsg = whatsappMessage.changedToOb(
                   monitor.containerNo,
                   monitor.port,
                   result.status || "UNKNOWN",
                   result.ob,
                   result.obName
                 );
-                await sendWhatsappMessage(monitor.waNumber, waMsg).catch((e) =>
-                  console.error("WhatsApp error in cron:", e)
-                );
               } else if (isYard && !wasYard) {
-                const waMsg = whatsappMessage.statusChangedToGNSTK(
+                waMsg = whatsappMessage.statusChangedToGNSTK(
                   monitor.containerNo,
                   monitor.port,
                   result.time || "-",
                   newStatus
                 );
-                await sendWhatsappMessage(monitor.waNumber, waMsg).catch((e) =>
-                  console.error("WhatsApp error in cron:", e)
-                );
               } else {
-                const waMsg = whatsappMessage.statusChanged(
+                waMsg = whatsappMessage.statusChanged(
                   monitor.containerNo,
                   monitor.port,
                   monitor.status,
                   newStatus,
                   result.time || "-"
                 );
-                await sendWhatsappMessage(monitor.waNumber, waMsg).catch((e) =>
-                  console.error("WhatsApp error in cron:", e)
-                );
+              }
+
+              try {
+                waSent = await sendWhatsappMessage(monitor.waNumber, waMsg);
+              } catch (e) {
+                console.error(`WhatsApp dispatch failed for container ${monitor.containerNo}:`, e);
+                waSent = false;
               }
             }
 
-            return {
-              type: "container",
-              containerNo: monitor.containerNo,
-              port: monitor.port,
-              status: `Updated to ${newStatus} (isActive: ${!isOutgate})`,
-            };
+            if (isYard && !wasYard) {
+              const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${newStatus}</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
+              await sendTelegramMessage(telegramMsg).catch((e) =>
+                console.error("Telegram error in cron:", e)
+              );
+            }
+
+            // Update database status ONLY if notification sending succeeded (or if no WA number is set / subscription not allowed)
+            if (waSent || !monitor.waNumber || !isWaAllowed) {
+              await prisma.terminalMonitor.update({
+                where: { id: monitor.id },
+                data: {
+                  status: newStatus,
+                  isActive: !isOutgate,
+                  updatedAt: new Date(),
+                },
+              });
+
+              return {
+                type: "container",
+                containerNo: monitor.containerNo,
+                port: monitor.port,
+                status: `Updated to ${newStatus} (isActive: ${!isOutgate})`,
+              };
+            } else {
+              console.warn(
+                `[Container Cron] Notification failed for ${monitor.containerNo}. Retaining status in DB to retry on next cron cycle.`
+              );
+              return {
+                type: "container",
+                containerNo: monitor.containerNo,
+                port: monitor.port,
+                status: `Pending notification retry for ${newStatus}`,
+              };
+            }
           }
 
           return {
@@ -160,8 +185,6 @@ export async function processContainerMonitors(): Promise<CronProcessingResult[]
 
   return results;
 }
-
-import { checkWaSubscription } from "@/lib/whatsapp/subscription";
 
 /**
  * Helper to check if a Date field has changed relative to a new date string from port tracking.
@@ -200,9 +223,125 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
     const chunkResults = await Promise.all(
       chunk.map(async (vMonitor): Promise<CronProcessingResult> => {
         try {
+          // Handle unscheduled vessel monitoring across all 5 ports
+          if (vMonitor.port === "all") {
+            const multiRes = await searchVesselAllPorts(vMonitor.vesselName);
+            let bestSchedule = multiRes?.vessels?.[0];
+            const targetVoyage = vMonitor.voyageIn || vMonitor.voyageOut;
+
+            if (targetVoyage && multiRes?.vessels && multiRes.vessels.length > 0) {
+              const rawVq = targetVoyage.trim().toLowerCase();
+              const cleanVq = rawVq.replace(/[^a-z0-9]/g, "");
+              const matched = multiRes.vessels.find((item) => {
+                const vIn = (item.voyIn || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+                const vOut = (item.voyOut || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+                return (
+                  (vIn.length > 0 && (vIn === cleanVq || vIn.includes(cleanVq) || cleanVq.includes(vIn))) ||
+                  (vOut.length > 0 && (vOut === cleanVq || vOut.includes(cleanVq) || cleanVq.includes(vOut)))
+                );
+              });
+              if (matched) {
+                bestSchedule = matched;
+              }
+            }
+
+            if (bestSchedule) {
+              const s = bestSchedule;
+              const foundPort = (s.port || "npct1").toLowerCase().trim();
+
+              const newOpenStackDate = parseVesselDate(s.openStacking);
+              const newEtbDate = parseVesselDate(s.etb);
+              const newAtaDate = parseVesselDate(s.ata);
+              const newEtdDate = parseVesselDate(s.etd);
+              const newAtdDate = parseVesselDate(s.atd);
+              const newClosingDocDate = parseVesselDate(s.closingDoc);
+              const newClosingPhysicDate = parseVesselDate(s.closingPhysic);
+
+              const isSailingOrCompleted = isVesselSailingOrCompleted(s.status, s.etd);
+
+              await prisma.vesselMonitor.update({
+                where: { id: vMonitor.id },
+                data: {
+                  port: foundPort,
+                  status: s.status,
+                  line: s.line || vMonitor.line,
+                  voyageIn: s.voyIn || vMonitor.voyageIn,
+                  voyageOut: s.voyOut || vMonitor.voyageOut,
+                  service: s.service || vMonitor.service,
+                  etb: newEtbDate,
+                  ata: newAtaDate,
+                  etd: newEtdDate,
+                  atd: newAtdDate,
+                  openStacking: newOpenStackDate,
+                  closingDoc: newClosingDocDate,
+                  closingPhysic: newClosingPhysicDate,
+                  isActive: !isSailingOrCompleted,
+                  updatedAt: new Date(),
+                },
+              });
+
+              // Dispatch Telegram Alert
+              const teleMsg = `🚢 <b>KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nVoyage: <b>${s.voyIn || s.voyOut || "N/A"}</b>\nPort: <b>${foundPort.toUpperCase()}</b>\nStatus: <b>${s.status}</b>\nOpen Stacking: <b>${s.openStacking || "Belum Tersedia"}</b>\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}\n\nJadwal kapal yang sebelumnya belum terdaftar kini telah ditemukan dan otomatis aktif dipantau!`;
+              await sendTelegramMessage(teleMsg).catch((e) =>
+                console.error("Telegram error in multi-port vessel cron:", e)
+              );
+
+              // Dispatch WhatsApp Alert
+              if (vMonitor.waNumber) {
+                const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
+                if (subCheck.allowed) {
+                  const waMsg = `🚢 *KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!* 🚢\n\nKapal: *${vMonitor.vesselName}*\nVoyage: *${s.voyIn || s.voyOut || "-"}*\nPelabuhan: *${foundPort.toUpperCase()}*\nStatus: *${s.status}*\nOpen Stacking: *${s.openStacking || "Belum Tersedia"}*\nETB: *${s.etb || "-"}*\nETD: *${s.etd || "-"}*\n\nJadwal kapal yang Anda pantau kini telah terdaftar di ${foundPort.toUpperCase()} dan otomatis aktif dipantau oleh sistem CS Eksim Tracker!`;
+                  await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
+                    console.error("WhatsApp error in multi-port vessel cron:", e)
+                  );
+                }
+              }
+
+              return {
+                type: "vessel",
+                vesselName: vMonitor.vesselName,
+                port: foundPort,
+                status: `Discovered schedule at ${foundPort.toUpperCase()} (${s.status})`,
+              };
+            }
+
+            return {
+              type: "vessel",
+              vesselName: vMonitor.vesselName,
+              port: "all",
+              status: "Searching 5 ports (schedule unconfirmed)",
+            };
+          }
+
           const result = await fetchScheduleCached(vMonitor.port, vMonitor.vesselName);
-          if (result.success && result.selectedSchedule) {
-            const s = result.selectedSchedule;
+          if (result.success && result.schedules && result.schedules.length > 0) {
+            let s = result.selectedSchedule;
+            const targetVoyage = vMonitor.voyageIn || vMonitor.voyageOut;
+
+            if (targetVoyage) {
+              const rawVq = targetVoyage.trim().toLowerCase();
+              const cleanVq = rawVq.replace(/[^a-z0-9]/g, "");
+              const matched = result.schedules.find((item) => {
+                const vIn = (item.voyIn || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+                const vOut = (item.voyOut || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+                return (
+                  (vIn.length > 0 && (vIn === cleanVq || vIn.includes(cleanVq) || cleanVq.includes(vIn))) ||
+                  (vOut.length > 0 && (vOut === cleanVq || vOut.includes(cleanVq) || cleanVq.includes(vOut)))
+                );
+              });
+              if (matched) {
+                s = matched;
+              }
+            }
+
+            if (!s) {
+              return {
+                type: "vessel",
+                vesselName: vMonitor.vesselName,
+                port: vMonitor.port,
+                status: "Schedule details unavailable",
+              };
+            }
 
             const newOpenStackDate = parseVesselDate(s.openStacking);
             const newEtbDate = parseVesselDate(s.etb);
@@ -223,7 +362,7 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
             );
 
             const statusChanged = Boolean(
-              s.status && s.status.trim().toUpperCase() !== vMonitor.status.trim().toUpperCase()
+              s.status && (vMonitor.status || "").trim().toUpperCase() !== s.status.trim().toUpperCase()
             );
             const etbChanged = isDateChanged(vMonitor.etb, s.etb);
             const ataChanged = isDateChanged(vMonitor.ata, s.ata);
@@ -297,6 +436,8 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               if (vMonitor.waNumber) {
                 const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
                 if (subCheck.allowed) {
+                  const currentVoyIn = vMonitor.voyageIn || s.voyIn || "-";
+                  const currentVoyOut = vMonitor.voyageOut || s.voyOut || "-";
                   const waMsg = hasNewOpenStack
                     ? whatsappMessage.npct1OpenStackAvailableAlert(
                         vMonitor.vesselName,
@@ -304,7 +445,9 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
                         s.etb || "-",
                         s.etd || "-",
                         s.status,
-                        vMonitor.port
+                        vMonitor.port,
+                        currentVoyIn,
+                        currentVoyOut,
                       )
                     : whatsappMessage.vesselScheduleUpdatedAlert(
                         vMonitor.vesselName,
@@ -314,7 +457,9 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
                         changesSummary,
                         s.openStacking || "BELUM TERSEDIA",
                         s.etb || "-",
-                        s.etd || "-"
+                        s.etd || "-",
+                        currentVoyIn,
+                        currentVoyOut,
                       );
 
                   await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
@@ -341,56 +486,59 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
             };
           }
 
-          // Handles case where selectedSchedule is null or schedule cleared (vessel departed)
-          const errLower = (result.error || "").toLowerCase();
-          const isScheduleClearedOrNotFound =
-            result.success ||
-            errLower.includes("tidak ditemukan") ||
-            errLower.includes("not found") ||
-            errLower.includes("tidak ada") ||
-            errLower.includes("kosong");
+          // Handles case where selectedSchedule is null or schedule unconfirmed
+          if (result.success && !result.selectedSchedule) {
+            const isEtdPast = isVesselSailingOrCompleted(vMonitor.status, vMonitor.etd);
 
-          if (isScheduleClearedOrNotFound) {
-            await prisma.vesselMonitor.update({
-              where: { id: vMonitor.id },
-              data: {
-                status: "SAILED",
-                isActive: false,
-                updatedAt: new Date(),
-              },
-            });
+            if (isEtdPast) {
+              await prisma.vesselMonitor.update({
+                where: { id: vMonitor.id },
+                data: {
+                  status: "SAILED",
+                  isActive: false,
+                  updatedAt: new Date(),
+                },
+              });
 
-            // Dispatch Telegram completion alert
-            const teleMsg = `🚢 <b>VESSEL DEPARTED / MONITORING CLOSED (${vMonitor.port.toUpperCase()})</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nStatus: <b>SAILED / DEPARTED</b>\nJadwal kapal telah selesai dan bertolak dari terminal. Auto-monitoring otomatis dinonaktifkan.`;
-            await sendTelegramMessage(teleMsg).catch((e) =>
-              console.error("Telegram error in vessel cron:", e)
-            );
+              // Dispatch Telegram completion alert
+              const teleMsg = `🚢 <b>VESSEL DEPARTED / MONITORING CLOSED (${vMonitor.port.toUpperCase()})</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nStatus: <b>SAILED / DEPARTED</b>\nJadwal kapal telah selesai dan bertolak dari terminal. Auto-monitoring otomatis dinonaktifkan.`;
+              await sendTelegramMessage(teleMsg).catch((e) =>
+                console.error("Telegram error in vessel cron:", e)
+              );
 
-            // Dispatch WhatsApp completion alert
-            if (vMonitor.waNumber) {
-              const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
-              if (subCheck.allowed) {
-                const waMsg = whatsappMessage.vesselScheduleUpdatedAlert(
-                  vMonitor.vesselName,
-                  vMonitor.port,
-                  vMonitor.status,
-                  "SAILED / DEPARTED",
-                  ["Jadwal kapal telah selesai dan bertolak dari terminal."],
-                  "SELESAI",
-                  "-",
-                  "-"
-                );
-                await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
-                  console.error("WhatsApp error in vessel cron:", e)
-                );
+              // Dispatch WhatsApp completion alert
+              if (vMonitor.waNumber) {
+                const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
+                if (subCheck.allowed) {
+                  const waMsg = whatsappMessage.vesselScheduleUpdatedAlert(
+                    vMonitor.vesselName,
+                    vMonitor.port,
+                    vMonitor.status,
+                    "SAILED / DEPARTED",
+                    ["Jadwal kapal telah selesai dan bertolak dari terminal."],
+                    "SELESAI",
+                    "-",
+                    "-"
+                  );
+                  await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
+                    console.error("WhatsApp error in vessel cron:", e)
+                  );
+                }
               }
+
+              return {
+                type: "vessel",
+                vesselName: vMonitor.vesselName,
+                port: vMonitor.port,
+                status: "Deactivated (SAILED / Schedule completed)",
+              };
             }
 
             return {
               type: "vessel",
               vesselName: vMonitor.vesselName,
               port: vMonitor.port,
-              status: "Deactivated (SAILED / Schedule cleared)",
+              status: "Unchanged (Schedule unconfirmed, retaining active monitoring)",
             };
           }
 

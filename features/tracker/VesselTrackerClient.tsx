@@ -1,27 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useProgress } from "@bprogress/next";
 import {
   Ship,
   Search,
-  Calendar,
-  Clock,
   BellRing,
   CheckCircle2,
   AlertCircle,
-  Anchor,
-  FileCheck,
-  PackageCheck,
+  Users,
+  Compass,
+  RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import {
-  searchVesselScheduleAction,
+  searchVesselAllPortsAction,
   enableVesselMonitoringAction,
+  enableMultiPortVesselMonitoringAction,
 } from "@/actions/vessel-action";
 import {
-  isVesselSailingOrCompleted,
-  type VesselTrackingResult,
-  type VesselScheduleItem,
+  MultiPortVesselResult,
+  VesselScheduleItem,
 } from "@/actions/tracking/vessel";
+import { getActiveSubscriptionsAction } from "@/actions/subscription-action";
+import { getCurrentUserAction } from "@/actions/user-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,395 +42,654 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-export const VESSEL_TERMINALS = [
-  { id: "jict", name: "JICT (Jakarta International Container Terminal)" },
-  { id: "npct1", name: "NPCT1 (New Priok Container Terminal 1)" },
-  { id: "koja", name: "KOJA (TPK Koja)" },
-  { id: "tmal", name: "TMAL (Terminal Mustika Alam Lestari)" },
-  { id: "ter3", name: "TER3 (Terminal 3)" },
-];
-
-interface VesselTrackerClientProps {
+export interface VesselTrackerClientProps {
   onMonitorChanged?: () => void;
 }
 
-export default function VesselTrackerClient({ onMonitorChanged }: VesselTrackerClientProps) {
-  const [port, setPort] = useState<string>("jict");
+interface SubscriptionItem {
+  id: string;
+  targetId: string;
+  name: string;
+  isGroup: boolean;
+}
+
+interface CurrentUser {
+  id: string;
+  username: string;
+  role: string;
+  subscriptionId?: string | null;
+  subscriptionTargetId?: string | null;
+  subscriptionName?: string | null;
+}
+
+export default function VesselTrackerClient({
+  onMonitorChanged,
+}: VesselTrackerClientProps = {}) {
+  const { start: startProgress, stop: stopProgress } = useProgress();
+
+  // Search Form State
   const [vesselName, setVesselName] = useState("");
-  const [waNumber, setWaNumber] = useState("");
+  const [voyageNo, setVoyageNo] = useState("");
+
+  // Subscriptions & User Auth State
+  const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
+  const [selectedTargetId, setSelectedTargetId] = useState<string>("custom");
+  const [customWaNumber, setCustomWaNumber] = useState("");
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+
+  // Results State
   const [loading, setLoading] = useState(false);
+  const [searchResult, setSearchResult] =
+    useState<MultiPortVesselResult | null>(null);
+  const [searchedKeyword, setSearchedKeyword] = useState("");
+  const [searchedVoyage, setSearchedVoyage] = useState("");
+
+  // Monitor Submit Feedback
   const [monitorLoading, setMonitorLoading] = useState(false);
   const [monitorMessage, setMonitorMessage] = useState("");
   const [monitorError, setMonitorError] = useState("");
-  const [result, setResult] = useState<VesselTrackingResult | null>(null);
+
+  useEffect(() => {
+    async function loadInitialData() {
+      try {
+        const [subRes, userRes] = await Promise.all([
+          getActiveSubscriptionsAction(),
+          getCurrentUserAction(),
+        ]);
+
+        if (subRes.success && subRes.data) {
+          setSubscriptions(subRes.data);
+        }
+
+        if (userRes.success && userRes.data) {
+          const usr = userRes.data;
+          setCurrentUser(usr);
+          if (usr.subscriptionTargetId) {
+            setSelectedTargetId(usr.subscriptionTargetId);
+          }
+        }
+      } catch (err) {
+        console.error("Failed loading initial vessel tracker data:", err);
+      }
+    }
+    loadInitialData();
+  }, []);
+
+  const refreshMonitors = () => {
+    if (onMonitorChanged) {
+      onMonitorChanged();
+    }
+  };
+
+  const getEffectiveWaNumber = (): string | undefined => {
+    if (currentUser?.role === "MEMBER" && currentUser.subscriptionTargetId) {
+      return currentUser.subscriptionTargetId;
+    }
+    if (selectedTargetId === "custom") {
+      return customWaNumber.trim() || undefined;
+    }
+    return selectedTargetId || undefined;
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vesselName.trim()) return;
+    if (!vesselName.trim() || vesselName.trim().length < 2) {
+      setMonitorError("Masukkan nama vessel minimal 2 karakter.");
+      return;
+    }
 
     setLoading(true);
-    setResult(null);
-    setMonitorMessage("");
     setMonitorError("");
-
-    const res = await searchVesselScheduleAction(
-      port,
-      vesselName.trim()
-    );
-
-    if (res.success) {
-      setResult(res.data);
-    } else {
-      setResult({
-        success: false,
-        port,
-        vesselName: vesselName.trim(),
-        schedules: [],
-        selectedSchedule: null,
-        error: res.error || `Gagal mengambil jadwal dari ${port.toUpperCase()}.`,
-      });
-    }
-    setLoading(false);
-  };
-
-  const handleEnableMonitor = async () => {
-    if (!vesselName.trim()) return;
-
-    let formattedWa = waNumber.trim().replace(/\D/g, "");
-    if (formattedWa.startsWith("0")) {
-      formattedWa = "62" + formattedWa.substring(1);
-    }
-
-    setMonitorLoading(true);
     setMonitorMessage("");
-    setMonitorError("");
+    startProgress();
 
-    const res = await enableVesselMonitoringAction(
-      vesselName.trim(),
-      port,
-      formattedWa || undefined
-    );
-
-    if (res.success) {
-      setMonitorMessage(res.data.message);
-      if (res.data.trackingResult) {
-        setResult(res.data.trackingResult);
+    try {
+      const res = await searchVesselAllPortsAction(vesselName.trim());
+      if (res.success) {
+        setSearchResult(res.data);
+        setSearchedKeyword(vesselName.trim().toUpperCase());
+        setSearchedVoyage(voyageNo.trim().toUpperCase());
+      } else {
+        setMonitorError(res.error || "Gagal melakukan pencarian jadwal kapal.");
+        setSearchResult(null);
       }
-      onMonitorChanged?.();
-    } else {
-      setMonitorError(res.error || "Gagal mengaktifkan auto-monitoring.");
+    } catch (err) {
+      setMonitorError(
+        err instanceof Error ? err.message : "Terjadi kesalahan sistem.",
+      );
+      setSearchResult(null);
+    } finally {
+      setLoading(false);
+      stopProgress();
     }
-    setMonitorLoading(false);
   };
 
-  const s: VesselScheduleItem | null = result?.selectedSchedule || null;
+  const handleEnableSinglePortMonitor = async (
+    vessel: string,
+    port: string,
+    voyageNo?: string,
+  ) => {
+    const targetWa = getEffectiveWaNumber();
+    setMonitorLoading(true);
+    setMonitorError("");
+    setMonitorMessage("");
+    startProgress();
+
+    try {
+      const res = await enableVesselMonitoringAction(vessel, port, targetWa, voyageNo);
+      if (res.success) {
+        setMonitorMessage(res.data.message);
+        await refreshMonitors();
+      } else {
+        setMonitorError(res.error || "Gagal mengaktifkan monitoring kapal.");
+      }
+    } catch (err) {
+      setMonitorError(
+        err instanceof Error ? err.message : "Terjadi kesalahan sistem.",
+      );
+    } finally {
+      setMonitorLoading(false);
+      stopProgress();
+    }
+  };
+
+  const handleEnableMultiPortMonitor = async () => {
+    if (!searchedKeyword) return;
+    const targetWa = getEffectiveWaNumber();
+    setMonitorLoading(true);
+    setMonitorError("");
+    setMonitorMessage("");
+    startProgress();
+
+    try {
+      const res = await enableMultiPortVesselMonitoringAction(
+        searchedKeyword,
+        searchedVoyage || undefined,
+        targetWa,
+      );
+      if (res.success) {
+        setMonitorMessage(res.data.message);
+        await refreshMonitors();
+      } else {
+        setMonitorError(
+          res.error || "Gagal mengaktifkan pemantauan multi-pelabuhan.",
+        );
+      }
+    } catch (err) {
+      setMonitorError(
+        err instanceof Error ? err.message : "Terjadi kesalahan sistem.",
+      );
+    } finally {
+      setMonitorLoading(false);
+      stopProgress();
+    }
+  };
+
+  // Filter schedules strictly if voyage number search filter is set
+  const getFilteredSchedules = (
+    schedules: VesselScheduleItem[],
+  ): VesselScheduleItem[] => {
+    if (!searchedVoyage || !searchedVoyage.trim()) return schedules;
+    const rawVq = searchedVoyage.trim().toLowerCase();
+    const cleanVq = rawVq.replace(/[^a-z0-9]/g, "");
+
+    return schedules.filter((s) => {
+      const voyIn = (s.voyIn || "").trim().toLowerCase();
+      const voyOut = (s.voyOut || "").trim().toLowerCase();
+      const cleanVoyIn = voyIn.replace(/[^a-z0-9]/g, "");
+      const cleanVoyOut = voyOut.replace(/[^a-z0-9]/g, "");
+
+      if (!cleanVoyIn && !cleanVoyOut) return false;
+
+      const matchesVoyIn =
+        voyIn === rawVq ||
+        (cleanVoyIn.length > 0 &&
+          (cleanVoyIn === cleanVq ||
+            cleanVoyIn.includes(cleanVq) ||
+            cleanVq.includes(cleanVoyIn)));
+
+      const matchesVoyOut =
+        voyOut === rawVq ||
+        (cleanVoyOut.length > 0 &&
+          (cleanVoyOut === cleanVq ||
+            cleanVoyOut.includes(cleanVq) ||
+            cleanVq.includes(cleanVoyOut)));
+
+      return matchesVoyIn || matchesVoyOut;
+    });
+  };
+
+  const filteredVessels = searchResult
+    ? getFilteredSchedules(searchResult.vessels)
+    : [];
 
   return (
-    <div className="space-y-6">
-      <Card className="border-border shadow-sm">
-        <CardHeader className="bg-muted/30 border-b border-border pb-4">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Ship className="w-5 h-5 text-primary" />
-            Port Vessel Open Stack Checker
-          </CardTitle>
-          <CardDescription>
-            Pilih terminal dan masukkan nama kapal untuk mengecek jadwal Open Stacking real-time.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-              <div className="w-full md:w-1/3">
-                <Select
-                  value={port}
-                  onValueChange={(val) => {
-                    setPort(val);
-                    setResult(null);
-                    setMonitorMessage("");
-                    setMonitorError("");
-                  }}
-                >
-                  <SelectTrigger className="w-full font-semibold">
-                    <SelectValue placeholder="Pilih Terminal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VESSEL_TERMINALS.map((t) => (
-                      <SelectItem key={t.id} value={t.id} className="font-medium">
-                        {t.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+    <div className="space-y-6 pb-12">
+      {/* Grid Layout: Search Form & Monitoring Controls */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Search Form Card (Sticky on desktop, neat natural height) */}
+        <Card className="lg:col-span-5 border-border/60 shadow-xs lg:sticky lg:top-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Ship className="w-4 h-4 text-primary" /> Pencarian Kapal 5
+              Pelabuhan
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Masukkan nama vessel dan nomor voyage untuk mencari ke seluruh
+              pelabuhan secara bersamaan.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form onSubmit={handleSearch} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Nama Vessel <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <Input
+                    placeholder="Contoh: JOSEPHINE MAERSK / AXPER"
+                    value={vesselName}
+                    onChange={(e) => setVesselName(e.target.value)}
+                    className="font-mono text-xs uppercase pl-8"
+                    required
+                  />
+                  <Ship className="w-4 h-4 text-muted-foreground absolute left-2.5 top-2.5" />
+                </div>
               </div>
 
-              <div className="w-full md:flex-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="w-4 h-4 text-muted-foreground" />
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  No. Voyage{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (Opsional)
+                  </span>
+                </label>
                 <Input
-                  placeholder="Masukkan Nama Kapal (contoh: SKY PRIDE atau JOSEPHINE MAERSK)"
-                  value={vesselName}
-                  onChange={(e) => setVesselName(e.target.value.toUpperCase())}
-                  className="pl-9 font-mono uppercase font-bold text-foreground"
-                  disabled={loading}
+                  placeholder="Contoh: 2501S / 0025N"
+                  value={voyageNo}
+                  onChange={(e) => setVoyageNo(e.target.value)}
+                  className="font-mono text-xs uppercase"
                 />
+              </div>
+
+              {/* Target WhatsApp Selection */}
+              <div className="space-y-1.5 pt-1 border-t border-border">
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <BellRing className="w-3.5 h-3.5 text-primary" /> Target
+                  Notifikasi WhatsApp
+                </label>
+
+                {currentUser?.role === "MEMBER" &&
+                currentUser.subscriptionTargetId ? (
+                  <div className="p-2.5 rounded-lg bg-primary/5 border border-primary/20 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">
+                        {currentUser.subscriptionName ||
+                          "Grup WhatsApp Terhubung"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        Member Account Linked
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Select
+                      value={selectedTargetId}
+                      onValueChange={setSelectedTargetId}
+                    >
+                      <SelectTrigger className="text-xs h-9">
+                        <SelectValue placeholder="Pilih Target Notifikasi WA" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subscriptions.map((sub) => (
+                          <SelectItem
+                            key={sub.id}
+                            value={sub.targetId}
+                            className="text-xs"
+                          >
+                            <span className="font-semibold">{sub.name}</span>{" "}
+                            <span className="text-[10px] text-muted-foreground">
+                              ({sub.isGroup ? "Grup WA" : "Nomor HP"})
+                            </span>
+                          </SelectItem>
+                        ))}
+                        <SelectItem
+                          value="custom"
+                          className="text-xs font-mono text-primary"
+                        >
+                          + Input Nomor WA / ID Grup Manual
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {selectedTargetId === "custom" && (
+                      <Input
+                        placeholder="Contoh: 628123456789 atau 120363...@g.us"
+                        value={customWaNumber}
+                        onChange={(e) => setCustomWaNumber(e.target.value)}
+                        className="font-mono text-xs mt-2"
+                      />
+                    )}
+                  </>
+                )}
               </div>
 
               <Button
                 type="submit"
-                disabled={loading || !vesselName.trim()}
-                className="w-full md:w-auto font-bold px-8"
+                disabled={loading}
+                className="w-full text-xs font-bold gap-2 cursor-pointer"
               >
-                {loading ? "Mencari..." : "Cek Schedule"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Result Display */}
-      {result && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
-          {!result.success ? (
-            <Card className="border-destructive/30 bg-destructive/5 shadow-sm">
-              <CardContent className="p-6 flex items-start gap-4">
-                <AlertCircle className="w-6 h-6 text-destructive shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-destructive text-base">
-                    Pencarian Gagal
-                  </h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {result.error}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : !s ? (
-            <Card className="border-blue-500/30 bg-blue-500/5 shadow-sm">
-              <CardContent className="p-6 flex items-start gap-4">
-                <CheckCircle2 className="w-6 h-6 text-blue-500 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-foreground text-base">
-                    Tidak Ada Jadwal Kapal Aktif
-                  </h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Kapal <strong>{result.vesselName}</strong> tidak memiliki jadwal aktif di terminal <strong>{result.port.toUpperCase()}</strong> (kapal mungkin sudah berlayar/SAILED atau belum terjadwal).
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-primary/20 shadow-md overflow-hidden bg-card">
-              {/* Header banner */}
-              <div className="bg-primary/5 p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="font-bold uppercase tracking-wider text-[11px]">
-                      {result.port.toUpperCase()} Terminal
-                    </Badge>
-                    <Badge
-                      className={`font-bold text-[11px] uppercase ${
-                        s.status.toUpperCase() === "ACTIVE" || s.status.toUpperCase() === "WORKING"
-                          ? "bg-emerald-600 text-white"
-                          : "bg-blue-600 text-white"
-                      }`}
-                    >
-                      {s.status}
-                    </Badge>
-                  </div>
-                  <h2 className="text-2xl font-black tracking-tight text-foreground mt-2">
-                    {s.vessel}
-                  </h2>
-                  <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                    Line: <span className="font-bold text-foreground">{s.line || "-"}</span> | Service:{" "}
-                    <span className="font-bold text-foreground">{s.service || "-"}</span> | Voy In/Out:{" "}
-                    <span className="font-bold text-foreground">{s.voyIn || "-"} / {s.voyOut || "-"}</span>
-                  </p>
-                </div>
-
-                {/* Highlighted Open Stacking Box */}
-                <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center gap-3 shrink-0">
-                  <Calendar className="w-8 h-8 text-primary" />
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                      Jadwal Open Stacking
-                    </p>
-                    <p className="text-lg font-black text-primary font-mono mt-0.5">
-                      {s.openStacking || "BELUM TERSEDIA"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Schedule detail cards */}
-              <CardContent className="p-6 space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-xl border border-border bg-muted/20">
-                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                      <Anchor className="w-4 h-4 text-blue-500" /> ETB (Berthing)
-                    </p>
-                    <p className="text-sm font-bold font-mono text-foreground mt-2">
-                      {s.etb || "-"}
-                    </p>
-                    {s.ata && (
-                      <p className="text-[11px] text-emerald-600 font-semibold mt-1">
-                        ATA: {s.ata}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-border bg-muted/20">
-                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-amber-500" /> ETD (Departure)
-                    </p>
-                    <p className="text-sm font-bold font-mono text-foreground mt-2">
-                      {s.etd || "-"}
-                    </p>
-                    {s.atd && (
-                      <p className="text-[11px] text-emerald-600 font-semibold mt-1">
-                        ATD: {s.atd}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-border bg-muted/20">
-                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                      <FileCheck className="w-4 h-4 text-purple-500" /> Closing Document
-                    </p>
-                    <p className="text-sm font-bold font-mono text-foreground mt-2">
-                      {s.closingDoc || "-"}
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-border bg-muted/20">
-                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                      <PackageCheck className="w-4 h-4 text-rose-500" /> Closing Physic
-                    </p>
-                    <p className="text-sm font-bold font-mono text-foreground mt-2">
-                      {s.closingPhysic || "-"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Auto-Monitoring Registration section */}
-                {(() => {
-                  const isSailingOrCompleted = isVesselSailingOrCompleted(s.status, s.etd);
-
-                  if (isSailingOrCompleted) {
-                    return (
-                      <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 flex items-center gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
-                        <div>
-                          <h4 className="font-bold text-foreground text-sm">
-                            Kapal Berstatus {s.status} (Sudah Bertolak / Sailing)
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Kegiatan operasional kapal ini di terminal {result.port.toUpperCase()} telah selesai/berangkat, sehingga pemantauan otomatis (auto-monitoring) tidak perlu diaktifkan.
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="p-5 rounded-xl border border-primary/20 bg-primary/5 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-bold text-foreground text-sm flex items-center gap-2">
-                            <BellRing className="w-4 h-4 text-primary" /> Auto-Monitoring Open Stack ({result.port.toUpperCase()})
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Dapatkan notifikasi instan via WhatsApp / Telegram saat jadwal Open Stacking tersedia / terupdate.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-3">
-                        <Input
-                          placeholder="Nomor WhatsApp (misal: 08123456789)"
-                          value={waNumber}
-                          onChange={(e) => setWaNumber(e.target.value)}
-                          className="font-mono text-sm"
-                          disabled={monitorLoading}
-                        />
-                        <Button
-                          onClick={handleEnableMonitor}
-                          disabled={monitorLoading}
-                          className="font-bold shrink-0"
-                        >
-                          {monitorLoading ? "Mengaktifkan..." : "Aktifkan Auto-Monitoring"}
-                        </Button>
-                      </div>
-
-                      {monitorMessage && (
-                        <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>{monitorMessage}</span>
-                        </div>
-                      )}
-
-                      {monitorError && (
-                        <div className="flex items-center gap-2 text-xs font-medium text-destructive bg-destructive/10 p-2.5 rounded-lg border border-destructive/20">
-                          <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
-                          <span>{monitorError}</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Other schedule records if multiple exist */}
-                {result.schedules.length > 1 && (
-                  <div className="space-y-3 pt-4 border-t border-border">
-                    <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
-                      Semua Schedule Ditemukan ({result.schedules.length})
-                    </h4>
-                    <div className="overflow-x-auto rounded-lg border border-border">
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-muted text-muted-foreground font-bold">
-                          <tr>
-                            <th className="p-2.5">VESSEL</th>
-                            <th className="p-2.5">LINE</th>
-                            <th className="p-2.5">VOY IN/OUT</th>
-                            <th className="p-2.5">STATUS</th>
-                            <th className="p-2.5">ETB</th>
-                            <th className="p-2.5">OPEN STACKING</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {result.schedules.map((item, idx) => (
-                            <tr
-                              key={idx}
-                              className={
-                                item === s ? "bg-primary/10 font-bold" : "hover:bg-muted/30"
-                              }
-                            >
-                              <td className="p-2.5 font-mono">{item.vessel}</td>
-                              <td className="p-2.5">{item.line}</td>
-                              <td className="p-2.5 font-mono">
-                                {item.voyIn} / {item.voyOut}
-                              </td>
-                              <td className="p-2.5">
-                                <Badge variant="outline" className="text-[10px]">
-                                  {item.status}
-                                </Badge>
-                              </td>
-                              <td className="p-2.5 font-mono">{item.etb || "-"}</td>
-                              <td className="p-2.5 font-mono text-primary">
-                                {item.openStacking || "-"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Memindai
+                    5 Pelabuhan...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-3.5 h-3.5" /> Cari di 5 Pelabuhan
+                  </>
                 )}
-              </CardContent>
+              </Button>
+            </form>
+
+            {/* Notifications / Alerts */}
+            {monitorMessage && (
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-start gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{monitorMessage}</span>
+              </div>
+            )}
+            {monitorError && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-start gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{monitorError}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Search Results / Unscheduled State Display */}
+        <div className="lg:col-span-7 flex flex-col gap-4">
+          {!searchResult && !loading && (
+            <Card className="h-full flex flex-col items-center justify-center text-center p-8 border-dashed border-border/80 bg-muted/20">
+              <Compass className="w-12 h-12 text-muted-foreground/40 mb-3" />
+              <h3 className="text-sm font-bold text-foreground">
+                Siap Melacak Kapal 5 Pelabuhan
+              </h3>
+              <p className="text-xs text-muted-foreground max-w-sm mt-1">
+                Masukkan Nama Vessel (dan Nomor Voyage opsional) pada form di
+                sebelah kiri untuk mencari jadwal secara serentak di JICT,
+                NPCT1, KOJA, TMAL, dan TER3.
+              </p>
             </Card>
           )}
+
+          {searchResult && (
+            <>
+              {searchResult.vessels.length > 0 ? (
+                filteredVessels.length > 0 ? (
+                  /* Case A: Found schedules matching vessel & voyage filter */
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-primary" /> Hasil
+                        Pencarian Kapal:{" "}
+                        <span className="text-foreground font-black">
+                          {searchedKeyword}
+                        </span>
+                        {searchedVoyage && (
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-[10px] ml-1 bg-primary/10 border-primary/30 text-primary"
+                          >
+                            Voyage: {searchedVoyage}
+                          </Badge>
+                        )}
+                      </h3>
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] font-mono"
+                      >
+                        {searchedVoyage
+                          ? `Menampilkan ${filteredVessels.length} dari ${searchResult.vessels.length} Jadwal`
+                          : `Ditemukan ${filteredVessels.length} Jadwal`}
+                      </Badge>
+                    </div>
+
+                    {filteredVessels.map((s, idx) => {
+                      const isBest = filteredVessels[0] === s;
+                      const portName = (s.port || "npct1").toLowerCase();
+                      return (
+                        <Card
+                          key={`${portName}-${s.voyIn || s.voyOut || idx}`}
+                          className={`border-border shadow-xs overflow-hidden transition-all ${
+                            isBest ? "ring-2 ring-primary/40 bg-primary/5" : ""
+                          }`}
+                        >
+                          <CardHeader className="py-3 bg-muted/30 border-b border-border/50 flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="default"
+                                className="text-xs font-bold uppercase"
+                              >
+                                {portName}
+                              </Badge>
+                              <span className="text-xs font-bold text-foreground">
+                                {s.vessel}
+                              </span>
+                              {(s.voyIn || s.voyOut) && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] font-mono bg-background"
+                                >
+                                  Voy: {s.voyIn || s.voyOut}
+                                </Badge>
+                              )}
+                            </div>
+                            {s.status && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] font-bold"
+                              >
+                                {s.status}
+                              </Badge>
+                            )}
+                          </CardHeader>
+                          <CardContent className="p-4 space-y-4">
+                            {/* Metrics Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                              <div className="p-2 rounded-lg bg-background border border-border">
+                                <p className="text-[10px] text-muted-foreground font-semibold">
+                                  ETB
+                                </p>
+                                <p className="font-mono font-bold">
+                                  {s.etb || "-"}
+                                </p>
+                              </div>
+                              <div className="p-2 rounded-lg bg-background border border-border">
+                                <p className="text-[10px] text-muted-foreground font-semibold">
+                                  ETD
+                                </p>
+                                <p className="font-mono font-bold">
+                                  {s.etd || "-"}
+                                </p>
+                              </div>
+                              <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 col-span-2 sm:col-span-2">
+                                <p className="text-[10px] text-primary font-bold uppercase">
+                                  Open Stacking
+                                </p>
+                                <p className="font-mono font-black text-primary text-sm">
+                                  {s.openStacking || "BELUM TERSEDIA"}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+                              <div>
+                                <span className="font-semibold">
+                                  Closing Doc:
+                                </span>{" "}
+                                <span className="font-mono text-foreground">
+                                  {s.closingDoc || "-"}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="font-semibold">
+                                  Closing Physic:
+                                </span>{" "}
+                                <span className="font-mono text-foreground">
+                                  {s.closingPhysic || "-"}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="font-semibold">Line:</span>{" "}
+                                <span className="text-foreground">
+                                  {s.line || "-"}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="font-semibold">Service:</span>{" "}
+                                <span className="text-foreground">
+                                  {s.service || "-"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <div className="flex justify-end pt-2">
+                              <Button
+                                type="button"
+                                onClick={() =>
+                                  handleEnableSinglePortMonitor(
+                                    s.vessel,
+                                    portName,
+                                    s.voyIn || s.voyOut,
+                                  )
+                                }
+                                disabled={monitorLoading}
+                                size="sm"
+                                className="text-xs font-bold gap-1.5 cursor-pointer"
+                              >
+                                <BellRing className="w-3.5 h-3.5" />
+                                Monitoring Open Stack ({portName.toUpperCase()})
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Case B: Vessel exists in port, but NO schedule matches the entered searchedVoyage */
+                  <Card className="border-amber-500/30 bg-amber-500/5 shadow-xs p-6 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-bold text-foreground">
+                          Voyage &quot;{searchedVoyage}&quot; Tidak Ditemukan
+                          untuk Vessel &quot;{searchedKeyword}&quot;
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          Ditemukan {searchResult.vessels.length} jadwal untuk
+                          kapal ini di pelabuhan, namun tidak ada yang cocok
+                          dengan Voyage &quot;{searchedVoyage}&quot;.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-background border border-amber-500/20 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <h4 className="text-xs font-bold text-foreground">
+                          Opsi Pemantauan Kapal
+                        </h4>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Anda dapat melihat seluruh jadwal voyage untuk kapal ini
+                        atau memantau Voyage &quot;{searchedVoyage}&quot; secara
+                        otomatis di ke-5 pelabuhan.
+                      </p>
+
+                      <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setSearchedVoyage("")}
+                          className="text-xs font-bold gap-1.5 cursor-pointer"
+                        >
+                          Tampilkan Semua Voyage ({searchResult.vessels.length}{" "}
+                          Jadwal)
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleEnableMultiPortMonitor}
+                          disabled={monitorLoading}
+                          className="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white gap-2 cursor-pointer"
+                        >
+                          {monitorLoading ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <BellRing className="w-3.5 h-3.5" />
+                          )}
+                          Pantau Voyage Ini (Auto-Scan 5 Port)
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                )
+              ) : (
+                /* Case C: NOT found in any port */
+                <Card className="border-amber-500/30 bg-amber-500/5 shadow-xs p-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-bold text-foreground">
+                        Kapal &quot;{searchedKeyword}&quot; Belum Terdaftar di
+                        Pelabuhan Manapun
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Jadwal kapal ini belum ditemukan di JICT, NPCT1, KOJA,
+                        TMAL, atau TER3 saat ini.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-background border border-amber-500/20 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <h4 className="text-xs font-bold text-foreground">
+                        Fitur Auto-Scan Multi-Pelabuhan
+                      </h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Daftarkan kapal ini untuk dipantau secara otomatis oleh
+                      sistem di ke-5 pelabuhan. Begitu jadwal sandar atau Open
+                      Stacking terdaftar di salah satu pelabuhan, sistem akan
+                      langsung mengirimkan notifikasi WhatsApp & Telegram!
+                    </p>
+
+                    <Button
+                      type="button"
+                      onClick={handleEnableMultiPortMonitor}
+                      disabled={monitorLoading}
+                      className="w-full text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white gap-2 cursor-pointer"
+                    >
+                      {monitorLoading ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <BellRing className="w-3.5 h-3.5" />
+                      )}
+                      Pantau Kapal Ini di Semua Pelabuhan (Auto-Scan)
+                    </Button>
+                  </div>
+                </Card>
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

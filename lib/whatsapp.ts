@@ -39,8 +39,8 @@ export async function sendWhatsappMessage(phone: string, text: string): Promise<
         text,
         session: WAHA_SESSION,
       }),
-      retries: 1,
-      timeoutMs: 4000,
+      retries: 2,
+      timeoutMs: 10000,
     });
 
     if (!response.ok) {

@@ -590,7 +590,7 @@ npx eslint .
 1. **Scraping Real-Time Vessel Schedule (Multi-Port Engine)**:
    - Panggil `trackVesselSchedule(port, vesselName, line)` dari `@/actions/tracking/vessel`.
    - **Pemilihan Voyage Utama (`selectSingleBestSchedule`)**: Seluruh tracker terminal menggunakan `selectSingleBestSchedule` untuk memilih pelayaran mendatang paling awal (*earliest active upcoming voyage*, e.g. Voyage `0002S` sebelum `0003S`) dan secara otomatis mengesampingkan jadwal pelayaran lama yang sudah selesai (*SAILING/COMPLETE*).
-   - **Multi-Format Date Parsing (`parseVesselDateMs`)**: Seluruh konversi string tanggal jadwal kapal (`DD/MM/YYYY`, `MM/DD/YYYY`, `YYYY-MM-DD`, `DD-MM-YYYY`) menggunakan helper terpusat `parseVesselDateMs` untuk menghindari kegagalan parsing Date di JavaScript.
+   - **Multi-Format Date Parsing (`parseVesselDateMs`)**: Seluruh konversi string tanggal jadwal kapal (`DD/MM/YYYY`, `MM/DD/YYYY`, `YYYY-MM-DD`, `DD-MM-YYYY`) menggunakan helper terpusat `parseVesselDateMs` untuk menghindari kegagalan parsing Date di JavaScript. Untuk format slashing (`/`), tanggal pelabuhan domestik Indonesia di-parse dengan mendahulukan format `DD/MM/YYYY` jika kedua nilai `<= 12`.
    - **NPCT1 (`actions/tracking/vessel/ports/npct1.ts`)**:
      Engine mengambil CSRF token & cookie session, melakukan POST request ke `https://www.npct1.co.id/req/vessel`, mendownload HTML redirect, dan memparse `#idTableVesselSchedule`.
    - **JICT (`actions/tracking/vessel/ports/jict.ts`)**:
@@ -603,11 +603,11 @@ npx eslint .
    - Pengguna WhatsApp dapat mengirim perintah `/openstack <Nama Kapal> [Terminal]` (misal `/openstack SKY PRIDE jict`).
    - Bot membalas dengan status Open Stacking terbaru dan mendaftarkan pemantauan otomatis secara bersamaan.
 4. **Cron Job Alerting & Multi-Field Change Detection**:
-   - Endpoint `/api/cron/monitor` memeriksa seluruh kapal di `VesselMonitor` secara berkala (30 menit) menggunakan pemrosesan paralel berbasis chunk (`chunkSize = 5`) dan in-memory request caching.
+   - Endpoint `/api/cron/monitor` memeriksa seluruh kapal di `VesselMonitor` secara berkala (30 menit) menggunakan pemrosesan paralel berbasis chunk (`chunkSize = 5`) and in-memory request caching.
    - **Multi-Field Change Detection**: Cron membandingkan seluruh field jadwal dan status (`openStacking`, `status`, `etb`, `ata`, `etd`, `atd`, `closingDoc`, `closingPhysic`).
    - Jika terdapat perubahan apapun pada tanggal jadwal atau status kapal, DB diperbarui dan notifikasi Telegram & WhatsApp (`vesselScheduleUpdatedAlert` / `npct1OpenStackAvailableAlert`) dikirimkan secara instan yang merinci seluruh daftar perubahan.
    - Sebelum mengirim WhatsApp, cron secara ketat memverifikasi status langganan via `checkWaSubscription`.
-   - Pengecekan status kapal yang sudah berlayar / bertolak / selesai menggunakan helper terpusat `isVesselSailingOrCompleted(status)` dari `@/actions/tracking/vessel`.
+   - Pengecekan status kapal yang sudah berlayar / bertolak / selesai menggunakan helper terpusat `isVesselSailingOrCompleted(status, etd)` dari `@/actions/tracking/vessel`. String status aktif (`BERTHING`, `WORKING`, `OPEN STACK`, `SCHEDULED`, `ANCHORAGE`, `PORT`, dll) diprioritaskan utama dan tidak akan di-override oleh batas waktu ETD.
 5. **Deaktivasi Auto-Monitoring Kapal**:
    - Panggil `disableVesselMonitoringAction(vesselName, port)` dari `@/actions/vessel-action` untuk mematikan pemantauan (`isActive = false`).
    - Pada Web UI (`VesselTrackerTab.tsx`), sediakan tombol `Stop` dengan penanganan `router.refresh()` agar UI langsung tersinkronisasi tanpa manual reload.

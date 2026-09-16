@@ -378,11 +378,21 @@ Sistem akan melakukan pengecekan otomatis secara berkala.`,
     openStacking: string,
     etb: string,
     port: string = "NPCT1",
+    voyageIn?: string,
+    voyageOut?: string,
   ) => {
     const cleanPort = port.toUpperCase();
+    const voyInText = voyageIn || "-";
+    const voyOutText = voyageOut || "-";
+    const voyLine =
+      voyageIn || voyageOut
+        ? `⛵ Voyage In / Out : *${voyInText} / ${voyOutText}*`
+        : `⛵ Voyage In / Out : *- / -*`;
+
     return `🚢 *Auto Monitoring Kapal (${cleanPort}) Aktif*
 
 🚢 Vessel        : *${vessel}*
+${voyLine}
 📋 Status        : *${status}*
 📅 Open Stacking: *${openStacking}*
 🕒 ETB          : *${etb}*
@@ -423,11 +433,21 @@ Sistem akan memberikan notifikasi otomatis saat jadwal Open Stacking tersedia / 
     etd: string,
     status: string,
     port: string = "NPCT1",
+    voyageIn?: string,
+    voyageOut?: string,
   ) => {
     const cleanPort = port.toUpperCase();
+    const voyInText = voyageIn || "-";
+    const voyOutText = voyageOut || "-";
+    const voyLine =
+      voyageIn || voyageOut
+        ? `⛵ Voyage In / Out : *${voyInText} / ${voyOutText}*`
+        : `⛵ Voyage In / Out : *- / -*`;
+
     return `🎉 *JADWAL OPEN STACK (${cleanPort}) TERSEDIA!* 🎉
 
 🚢 Vessel        : *${vessel}*
+${voyLine}
 📊 Status        : *${status}*
 
 📅 *OPEN STACKING*: *${openStacking}*
@@ -446,6 +466,8 @@ Silakan persiapkan pengiriman kontainer ke terminal ${cleanPort}.`;
     openStacking: string,
     etb: string,
     etd: string,
+    voyageIn?: string,
+    voyageOut?: string,
   ) => {
     const cleanPort = port.toUpperCase();
     const statusLine =
@@ -456,9 +478,17 @@ Silakan persiapkan pengiriman kontainer ke terminal ${cleanPort}.`;
       changesSummary.length > 0
         ? `📌 *Perubahan*: ${changesSummary.join(", ")}\n\n`
         : "";
+    const voyInText = voyageIn || "-";
+    const voyOutText = voyageOut || "-";
+    const voyLine =
+      voyageIn || voyageOut
+        ? `⛵ Voyage In / Out : *${voyInText} / ${voyOutText}*`
+        : `⛵ Voyage In / Out : *- / -*`;
+
     return `🔔 *UPDATE JADWAL/STATUS KAPAL (${cleanPort})*
 
 🚢 Vessel        : *${vessel}*
+${voyLine}
 ${statusLine}
 
 ${changesText}📅 *OPEN STACKING*: *${openStacking || "BELUM TERSEDIA"}*

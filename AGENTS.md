@@ -121,7 +121,15 @@ shipment-track/
 - **Fungsi**: Pendaftaran kontainer aktif ke watchlist `TerminalMonitor` dan kapal aktif ke watchlist `VesselMonitor`. Cron job memeriksa kontainer (`OUTGT`) dan jadwal Open Stacking / Status / Sandar (ETB/ATA/ETD/ATD/Closing Doc/Closing Physic) kapal secara berkala. Setiap ada perubahan status atau tanggal jadwal kapal, DB diperbarui dan notifikasi instan WhatsApp & Telegram dikirimkan. Kapal yang berstatus `SAILING` atau `COMPLETED` di-deaktivasi otomatis (`isActive: false`).
 - **File Kunci**: `actions/monitor-action.ts`, `actions/vessel-action.ts`, `features/tracker/TerminalTrackerClient.tsx`, `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
-### 4. Auto-Monitoring Module
+### 4. Vessel Track & Multi-Port Monitor Module (`/vessel-track`)
+- **Fungsi**: Menu khusus pelacakan dan auto-monitoring kapal multi-pelabuhan. Mengizinkan pencarian kapal berdasarkan Nama Vessel dan Voyage No secara serentak di ke-5 pelabuhan (JICT, NPCT1, KOJA, TMAL, TER3).
+- **Fitur Utama**:
+  1. **Real-Time Multi-Port Search**: Menampilkan kartu detail jadwal kapal per pelabuhan (ETB, ATA, ETD, ATD, Open Stacking, Closing Doc, Closing Physic, Line, Service, Status) beserta tombol 1-click **"Monitoring Open Stack"**.
+  2. **Pemantauan Kapal Belum Ditemukan (`port: "all"`)**: Apabila kapal/voyage belum terdaftar di pelabuhan manapun, user dapat mengeklik **"Pantau Kapal Ini di Semua Pelabuhan"**. Sistem mendaftarkan `VesselMonitor` dengan `port: "all"`.
+  3. **Auto-Scan Cron Scanner**: Pada siklus cron 30 menit, `processVesselMonitors` memindai ke-5 pelabuhan untuk record ber-`port: "all"`. Seketika jadwal kapal terdeteksi di Pelabuhan A (misal NPCT1), DB secara otomatis mengunci `port: "npct1"`, mengisi tanggal jadwal, dan mengirimkan notifikasi instan WhatsApp & Telegram (`🚢 KAPAL DITEMUKAN DI NPCT1! 🚢`).
+- **File Kunci**: `app/vessel-track/page.tsx`, `features/tracker/VesselTrackerClient.tsx`, `actions/vessel-action.ts`, `service/cron-monitor-service.ts`, `components/layout/AppSidebar.tsx`.
+
+### 5. Auto-Monitoring Module
 - **Fungsi**: Pendaftaran kontainer aktif ke watchlist `TerminalMonitor` dan kapal aktif ke watchlist `VesselMonitor`. Cron job memeriksa kontainer (`OUTGT`) dan jadwal Open Stacking / Status / Sandar (ETB/ATA/ETD/ATD/Closing Doc/Closing Physic) kapal secara berkala. Setiap ada perubahan status atau tanggal jadwal kapal, DB diperbarui dan notifikasi instan WhatsApp & Telegram dikirimkan. Kapal yang berstatus `SAILING`, `COMPLETED`, atau tidak lagi terdaftar pada jadwal sandar pelabuhan (schedule cleared) di-deaktivasi otomatis (`isActive: false`, `status: SAILED`).
 - **File Kunci**: `actions/monitor-action.ts`, `actions/vessel-action.ts`, `features/tracker/TerminalTrackerClient.tsx`, `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
@@ -154,11 +162,15 @@ shipment-track/
 - **File Kunci**: `actions/daily-todo-action.ts`, `actions/todo-action.ts`, `app/todos/page.tsx`, `features/todos/*`.
 
 ### 11. Subscription & Access Control Module
-- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`) dengan prinsip **Strict 100% Zero-Trust Access Control**, pembatasan kuota monitor aktif bersama (Shared Quota Pool: Kontainer + Kapal; STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, **Dual-Identity Matching & Auto-Linking (`checkWaSubscription`)**, serta **Pengait Otomatis Akun Member (`User.subscriptionId`)**:
+- **Fungsi**: Manajemen otorisasi akses bot WhatsApp per nomor HP / ID Grup (`WaSubscription`) dengan prinsip **Strict 100% Zero-Trust Access Control**, pembatasan kuota monitor aktif bersama (Shared Quota Pool: Kontainer + Kapal; STARTER: 10, BUSINESS: 25, ENTERPRISE/UNLIMITED: 0), batas tanggal kadaluarsa (`expiredAt`), saklar aktif/suspend manual, **Dual-Identity Matching & Auto-Linking (`checkWaSubscription`)**, serta **Pengait Otomatis & Pengeditan Akun (`User.subscriptionId`)**:
   - Akun user dengan role `MEMBER` atau `CS` secara otomatis terhubung ke paket `WaSubscription` yang ditentukan Admin/Owner.
-  - Saat akun `MEMBER` mentracking via Web UI (`/terminal-tracker`), target notifikasi WhatsApp otomatis terkunci & terarah ke `subscriptionTargetId` akun member tersebut tanpa perlu memilih dropdown.
+  - Akun `OWNER` / `ADMIN` (serta akun pengguna itu sendiri) dapat mengedit detail akun (Nama, Username, Role, Password Baru) dan secara langsung menautkan/mengubah tautan `subscriptionId` ke WhatsApp Subscription terdaftar mana pun via modal `EditUserModal` (`updateUserAction`) atau dari `ProfileModal`.
+  - Saat akun `MEMBER` mentracking via Web UI (`/terminal-tracker` & `/vessel-track`), target notifikasi WhatsApp otomatis terkunci & terarah ke `subscriptionTargetId` akun member tersebut tanpa perlu memilih dropdown.
   - Admin/Owner dapat membuat akun member baru sekaligus memprovisi/membuat paket `WaSubscription` baru dalam 1 langkah (*Simultaneous Provisioning*).
 - **File Kunci**: `prisma/schema.prisma`, `lib/whatsapp/subscription.ts`, `actions/subscription-action.ts`, `actions/user-action.ts`, `app/subscriptions/page.tsx`, `features/subscriptions/*`.
+
+### 12. UI Header Standard (Single Header Rule)
+- **Aturan Tata Letak Header**: Seluruh halaman (`/`, `/shipments`, `/shipments/create`, `/shipments/[id]`, `/tracker`, `/terminal-tracker`, `/vessel-track`, `/subscriptions`, `/todos`) wajib menerapkan **Single Header Standard**. Setiap rute halaman hanya memiliki 1 top-level page header di tingkat halaman (`page.tsx`) dan **dilarang keras memiliki double header / header bertumpuk** di dalam client feature component.
 
 ---
 
@@ -310,7 +322,7 @@ erDiagram
 - `Reminder`: `@@index([shipmentId])`, `@@index([completed, dueDate])`
 - `Todo`: `@@index([shipmentId])`
 - `TerminalMonitor`: `@unique([containerNo])`, `@@index([isActive])`, `@@index([isActive, port])`
-- `VesselMonitor`: `@@unique([vesselName, port])`, `@@index([isActive])`, `@@index([isActive, port])`, `@@index([port, vesselName])`
+- `VesselMonitor`: `@@unique([vesselName, port, voyageIn])`, `@@index([isActive])`, `@@index([isActive, port])`, `@@index([port, vesselName])`
 - `WaSubscription`: `@unique([targetId])`, `@@index([isActive, expiredAt])`, `@@index([targetId])`, `@@index([phoneNumber])`
 
 ---
@@ -514,22 +526,19 @@ Next.js 16+ menggunakan konvensi `proxy.ts` di root project untuk menggantikan `
            ▼
 7. Status Changed?
     ├── NO  ──► Lanjut ke kontainer berikutnya
-    └── YES ──► Update DB (TerminalMonitor.status = newStatus)
+    └── YES ──► Check WhatsApp Subscription & Dispatch Alerts (WhatsApp & Telegram)
                  │
-                 ├── Status == 'GNSTK'? ──► Send Telegram & WhatsApp Alert
-                 ├── Status == 'OB'?    ──► Send WhatsApp OB Alert
-                 └── Status == 'OUTGT'? ──► Send Outgate Alert & Set isActive = false (STOP MONITORING)
+                 ├── Notifikasi Berhasil (atau WA tidak diset) ──► Update DB (TerminalMonitor.status = newStatus, isActive: !isOutgate)
+                 └── Notifikasi Gagal (Timeout/Network Error) ──► Status DB TIDAK diubah. Ditahan untuk retry otomatis di siklus cron berikutnya.
 ```
 
 ---
 
-## 13. Port Tracking Implementations & Differences
-
-| Terminal | Engine | Strategy / Protocol | Auth Requirements | Identifikasi Status GNSTK | Identifikasi Status OUTGATE |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **JICT** | API JSON & TLS Socket | Form POST `jict.co.id/container-tracking-search` + TLS Socket ke `bcondemand.jict.co.id` untuk cek OB | None | Array `data[20]` memuat `GNSTK` | Array `data[20]` memuat `OUTGATE` / `GATE OUT` |
-| **KOJA** | HTML Parsing (Cheerio) | Form POST `tpkkoja.co.id/online-consignee-container-tracking/` | None | Field "In Time / Stack CY" terisi tanggal valid & Location bukan `ONVSL` | Location memuat `GATE OUT` / `DELIVERED` atau field "Out Time" terisi |
-| **NPCT1** | HTML & Redirect Flow | CSRF Cookie Fetch `npct1.co.id/` ──► POST `/req/container` ──► Redirect GET Result Page | CSRF Token & Cookies | Text `.status-desc` memuat `STACKING YARD` (didi-normalize ke `GNSTK`) | Text `.status-desc` memuat `GATEOUT TERMINAL` |
+### Catatan Keandalan Monitoring & Notifikasi (Resilience Rules):
+1. **Pembaruan Status DB Hanya Setelah Notifikasi Berhasil (State-Notification Guard)**: Untuk mencegah kehilangan notifikasi akibat timeout WAHA API / kegagalan jaringan, status kontainer di PostgreSQL hanya diperbarui setelah pesan WhatsApp sukses terkirim. Jika pengiriman WA gagal, status DB dipertahankan sehingga cron berikutnya secara otomatis melakukan retry pengiriman notifikasi.
+2. **Perlindungan Kapal Aktif (Active Vessel Keyword Override)**: Penentuan status `SAILING` pada `VesselMonitor` memprioritaskan string status aktif (`BERTHING`, `WORKING`, `OPEN STACK`, `SCHEDULED`, `ANCHORAGE`, `PORT`, dll). Kapal dengan status aktif di website pelabuhan tidak akan diubah menjadi `SAILING` hanya karena estimasi tanggal ETD sudah lewat.
+4. **Auto-Fetch Daftar Kapal NPCT1**: Sistem secara otomatis mengikis (*scrape*) opsi pilihan kapal dari `<select name="vesselTracking">` pada server NPCT1 dan menayangkannya pada form input Web UI (`Npct1VesselSelect`) lengkap dengan fitur pencarian cepat (*search/filter*) dan opsi input kode manual.
+| **NPCT1** | HTML & Redirect Flow | CSRF Cookie Fetch `npct1.co.id/` ──► POST `/req/container` ──► Redirect GET Result Page. Mendukung Auto-Fetch daftar kapal sandar (`getNpct1Vessels()`). | CSRF Token & Cookies | Text `.status-desc` memuat `STACKING YARD` (didi-normalize ke `GNSTK`) | Text `.status-desc` memuat `GATEOUT TERMINAL` |
 | **TMAL** | HTML Parsing (Cheerio) | Form POST `malt300.com/Layanan/statusImpor` + GET Detail URL | None | "Tanggal Bongkar" terisi & status bukan `ON VESSEL` | Detail page memuat match `"Tanggal Keluar"` |
 | **TER3 / PARAMA**| JSON REST API | POST `parama.pelindo.co.id:8031/gateway-8021/api/parama/getContainerDetail` | Login Session (`sessionId` & Cookie) | Field `activity` / `statusCode` memuat `YARD STACK` (didi-normalize ke `GNSTK`) | Field `activity` / `statusCode` memuat `GATE OUT` |
 

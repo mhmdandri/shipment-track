@@ -189,7 +189,7 @@ model VesselMonitor {
   vesselName    String
   port          String    @default("npct1")
   line          String?
-  voyageIn      String?
+  voyageIn      String    @default("")
   voyageOut     String?
   service       String?
   status        String    @default("REGISTER")
@@ -205,7 +205,7 @@ model VesselMonitor {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  @@unique([vesselName, port])
+  @@unique([vesselName, port, voyageIn])
   @@index([isActive])
   @@index([isActive, port])
   @@index([port, vesselName])

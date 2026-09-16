@@ -41,6 +41,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Npct1VesselSelect } from "./components/Npct1VesselSelect";
 import { isOutgateStatus, isYardStatus } from "@/actions/tracking/utils";
 
 const TERMINALS = [
@@ -242,7 +243,9 @@ export default function TerminalTrackerClient() {
 
   const handleBatchMonitor = async () => {
     const validItems = batchResults
-      .filter((r) => r.success && Boolean(r.status) && !isOutgateStatus(r.status))
+      .filter(
+        (r) => r.success && Boolean(r.status) && !isOutgateStatus(r.status),
+      )
       .map((r) => ({
         containerNo: r.containerNo,
         port: r.port,
@@ -292,7 +295,8 @@ export default function TerminalTrackerClient() {
             <CardHeader className="bg-muted/30 border-b border-border pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-primary" /> Port Container Tracker
+                  <MapPin className="w-5 h-5 text-primary" /> Port Container
+                  Tracker
                 </CardTitle>
                 <CardDescription className="text-xs">
                   Lacak posisi kontainer real-time di pelabuhan.
@@ -342,7 +346,11 @@ export default function TerminalTrackerClient() {
                     </SelectTrigger>
                     <SelectContent>
                       {TERMINALS.map((t) => (
-                        <SelectItem key={t.id} value={t.id} className="font-medium text-xs">
+                        <SelectItem
+                          key={t.id}
+                          value={t.id}
+                          className="font-medium text-xs"
+                        >
                           {t.name}
                         </SelectItem>
                       ))}
@@ -394,32 +402,27 @@ export default function TerminalTrackerClient() {
 
                 {/* NPCT1 Extra Parameters */}
                 {port === "npct1" && (
-                  <div className="flex flex-col sm:flex-row gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex flex-col sm:flex-row gap-3 animate-in fade-in slide-in-from-top-2 duration-300 items-start">
                     <div className="w-full sm:w-1/2">
-                      <Input
-                        placeholder="Vessel Code (misal: EVBIT)"
+                      <Npct1VesselSelect
                         value={vesselName}
-                        onChange={(e) =>
-                          setVesselName(e.target.value.toUpperCase())
-                        }
-                        className="font-mono uppercase bg-primary/5 border-primary/20 text-xs"
+                        onChange={setVesselName}
                         disabled={loading}
                       />
-                      <p className="text-[10px] text-muted-foreground mt-0.5 ml-1 font-medium">
-                        NPCT1 Kode Kapal
-                      </p>
                     </div>
-                    <div className="w-full sm:w-1/2">
+                    <div className="w-full sm:w-1/2 flex flex-col gap-1">
+                      <label className="text-[10px] text-muted-foreground font-semibold uppercase">
+                        NPCT1 Voyage No
+                      </label>
                       <Input
                         placeholder="Voyage No (misal: 080B)"
                         value={voyageNo}
-                        onChange={(e) => setVoyageNo(e.target.value.toUpperCase())}
-                        className="font-mono uppercase bg-primary/5 border-primary/20 text-xs"
+                        onChange={(e) =>
+                          setVoyageNo(e.target.value.toUpperCase())
+                        }
+                        className="font-mono uppercase bg-primary/5 border-primary/20 text-xs h-9"
                         disabled={loading}
                       />
-                      <p className="text-[10px] text-muted-foreground mt-0.5 ml-1 font-medium">
-                        NPCT1 Voyage No
-                      </p>
                     </div>
                   </div>
                 )}
@@ -442,10 +445,11 @@ export default function TerminalTrackerClient() {
                         <Users className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         Subscription:
                       </span>
-                      <strong className="font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded text-xs truncate max-w-[180px]">
+                      <strong className="font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded text-xs truncate max-w-45">
                         {currentUser.subscriptionName ||
                           subscriptions.find(
-                            (s) => s.targetId === currentUser.subscriptionTargetId,
+                            (s) =>
+                              s.targetId === currentUser.subscriptionTargetId,
                           )?.name ||
                           "Subscription Member"}
                       </strong>
@@ -546,7 +550,7 @@ export default function TerminalTrackerClient() {
           {mode === "single" && singleResult ? (
             <div className="animate-in fade-in slide-in-from-right-2 duration-300 h-full flex flex-col">
               <Card className="overflow-hidden border-border shadow-sm h-full flex flex-col">
-                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 border-b border-border flex items-center justify-between shrink-0">
+                <div className="bg-linear-to-r from-primary/10 via-primary/5 to-transparent p-4 border-b border-border flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-2">
                     <Map className="w-5 h-5 text-primary" />
                     <h3 className="font-bold tracking-tight text-foreground text-sm">
@@ -561,7 +565,7 @@ export default function TerminalTrackerClient() {
                   </Badge>
                 </div>
 
-                <div className="p-5 flex-1 max-h-[460px] overflow-y-auto space-y-4">
+                <div className="p-5 flex-1 max-h-115 overflow-y-auto space-y-4">
                   {(() => {
                     const isOutgate = isOutgateStatus(singleResult.status);
                     const isYard = isYardStatus(singleResult.status);
@@ -655,7 +659,8 @@ export default function TerminalTrackerClient() {
                               typeof singleResult.raw === "object" &&
                               "remarks" in
                                 (singleResult.raw as Record<string, unknown>) &&
-                              (singleResult.raw as Record<string, unknown>).remarks,
+                              (singleResult.raw as Record<string, unknown>)
+                                .remarks,
                             ) && (
                               <div>
                                 <span className="font-bold uppercase tracking-wider">
@@ -679,7 +684,8 @@ export default function TerminalTrackerClient() {
                                 Auto-Monitor Container
                               </h4>
                               <p className="text-[11px] text-muted-foreground">
-                                Pengecekan otomatis setiap 30 menit & alert WhatsApp.
+                                Pengecekan otomatis setiap 30 menit & alert
+                                WhatsApp.
                               </p>
                             </div>
 
@@ -713,14 +719,19 @@ export default function TerminalTrackerClient() {
             </div>
           ) : mode === "single" && loading ? (
             /* Loading State Card */
-            <Card className="border-border shadow-sm p-8 text-center flex flex-col items-center justify-center h-full min-h-[380px]">
+            <Card className="border-border shadow-sm p-8 text-center flex flex-col items-center justify-center h-full min-h-95">
               <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
-              <h4 className="font-bold text-foreground text-sm">Sedang Memproses Tracking Terminal...</h4>
-              <p className="text-xs text-muted-foreground mt-1">Mengambil data real-time dari pelabuhan {TERMINALS.find(t => t.id === port)?.name || port}.</p>
+              <h4 className="font-bold text-foreground text-sm">
+                Sedang Memproses Tracking Terminal...
+              </h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mengambil data real-time dari pelabuhan{" "}
+                {TERMINALS.find((t) => t.id === port)?.name || port}.
+              </p>
             </Card>
           ) : mode === "multi" && loading ? (
             /* Loading State Card for Multi Mode */
-            <Card className="border-border shadow-sm p-8 text-center flex flex-col items-center justify-center h-full min-h-[380px]">
+            <Card className="border-border shadow-sm p-8 text-center flex flex-col items-center justify-center h-full min-h-95">
               <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
               <h4 className="font-bold text-foreground text-sm">
                 Sedang Memproses Batch Tracking Terminal...
@@ -756,7 +767,10 @@ export default function TerminalTrackerClient() {
                     🏁 Outgate
                   </p>
                   <p className="text-lg font-black text-destructive font-mono">
-                    {batchResults.filter((r) => isOutgateStatus(r.status)).length}
+                    {
+                      batchResults.filter((r) => isOutgateStatus(r.status))
+                        .length
+                    }
                   </p>
                 </div>
                 <div className="p-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5">
@@ -773,7 +787,8 @@ export default function TerminalTrackerClient() {
                 <CardHeader className="bg-muted/40 border-b border-border p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
                   <div>
                     <CardTitle className="text-xs flex items-center gap-2 font-bold">
-                      <Layers className="w-4 h-4 text-primary" /> Hasil Batch ({batchResults.length} Kontainer)
+                      <Layers className="w-4 h-4 text-primary" /> Hasil Batch (
+                      {batchResults.length} Kontainer)
                     </CardTitle>
                   </div>
 
@@ -803,9 +818,9 @@ export default function TerminalTrackerClient() {
                     </div>
                   )}
 
-                  <div className="overflow-x-auto max-h-[380px] overflow-y-auto rounded-xl border border-border flex-1">
+                  <div className="overflow-x-auto max-h-95 overflow-y-auto rounded-xl border border-border flex-1">
                     <table className="w-full text-xs text-left">
-                      <thead className="bg-muted text-muted-foreground font-bold uppercase tracking-wider sticky top-0 bg-muted">
+                      <thead className="bg-muted text-muted-foreground font-bold uppercase tracking-wider sticky top-0">
                         <tr>
                           <th className="p-2.5">CONTAINER NO</th>
                           <th className="p-2.5">TERMINAL</th>
@@ -827,7 +842,9 @@ export default function TerminalTrackerClient() {
                                   Belum Ada Data Batch Kontainer
                                 </p>
                                 <p className="text-[11px] text-muted-foreground max-w-xs">
-                                  Masukkan daftar nomor kontainer pada formulir di sebelah kiri lalu klik <strong>Track Multi-Container Batch</strong>.
+                                  Masukkan daftar nomor kontainer pada formulir
+                                  di sebelah kiri lalu klik{" "}
+                                  <strong>Track Multi-Container Batch</strong>.
                                 </p>
                               </div>
                             </td>

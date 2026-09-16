@@ -1,25 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import { UserWithSubscription, deleteUserAction } from "@/actions/user-action";
 import { SubscriptionWithCount } from "@/actions/subscription-action";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Trash2, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Users, Trash2, Edit2, MessageSquare, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
+import EditUserModal from "./EditUserModal";
 
 interface Props {
   users: UserWithSubscription[];
   subscriptions: SubscriptionWithCount[];
   onDeleteUser: (id: string) => void;
+  onUserUpdated?: (user: UserWithSubscription) => void;
   onOpenAddModal: () => void;
 }
 
 export default function MemberUsersList({
   users,
+  subscriptions,
   onDeleteUser,
+  onUserUpdated,
   onOpenAddModal,
 }: Props) {
+  const [editingUser, setEditingUser] = useState<UserWithSubscription | null>(null);
+
   const handleDelete = async (user: UserWithSubscription) => {
     if (confirm(`Apakah Anda yakin ingin menghapus akun user "${user.name}" (@${user.username})?`)) {
       const res = await deleteUserAction(user.id);
@@ -121,15 +128,26 @@ export default function MemberUsersList({
                   {/* Actions */}
                   <div className="pt-2 border-t border-border flex items-center justify-between text-muted-foreground text-[11px]">
                     <span>Dibuat: {format(new Date(u.createdAt), "dd/MM/yyyy")}</span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-destructive/70 hover:text-destructive"
-                      onClick={() => handleDelete(u)}
-                      title="Hapus Akun Member"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
+                        onClick={() => setEditingUser(u)}
+                        title="Edit Akun & Subscription Link"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDelete(u)}
+                        title="Hapus Akun Member"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -137,6 +155,23 @@ export default function MemberUsersList({
           })}
         </div>
       )}
+
+      {/* Edit User Modal */}
+      <EditUserModal
+        key={editingUser?.id || "none"}
+        user={editingUser}
+        subscriptions={subscriptions}
+        open={Boolean(editingUser)}
+        onOpenChange={(open) => {
+          if (!open) setEditingUser(null);
+        }}
+        onUserUpdated={(updatedUser) => {
+          if (onUserUpdated) {
+            onUserUpdated(updatedUser);
+          }
+        }}
+      />
     </div>
   );
 }
+

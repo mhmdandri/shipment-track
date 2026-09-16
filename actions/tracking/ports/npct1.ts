@@ -1,6 +1,63 @@
 import { PortTracker, TerminalTrackingResult, TrackInput } from "../types";
 import { getCheerio } from "../utils";
 
+export interface Npct1VesselOption {
+  code: string;
+  name: string;
+}
+
+let npct1VesselCache: { timestamp: number; data: Npct1VesselOption[] } | null = null;
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes cache
+
+export async function getNpct1Vessels(): Promise<Npct1VesselOption[]> {
+  if (
+    npct1VesselCache &&
+    Date.now() - npct1VesselCache.timestamp < CACHE_TTL_MS &&
+    npct1VesselCache.data.length > 0
+  ) {
+    return npct1VesselCache.data;
+  }
+
+  try {
+    const res = await fetch("https://www.npct1.co.id/", {
+      signal: AbortSignal.timeout(10000),
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+
+    if (!res.ok) return npct1VesselCache?.data || [];
+
+    const html = await res.text();
+    const $ = await getCheerio(html);
+
+    const vessels: Npct1VesselOption[] = [];
+
+    $('select[name="vesselTracking"] option, select#vesselTrakcing option').each((_, opt) => {
+      const code = $(opt).attr("value")?.trim() || "";
+      const rawText = $(opt).text().trim();
+
+      if (code && rawText) {
+        const cleanedText = rawText.replace(/\(\s+/g, "(");
+        vessels.push({
+          code,
+          name: cleanedText,
+        });
+      }
+    });
+
+    if (vessels.length > 0) {
+      npct1VesselCache = { timestamp: Date.now(), data: vessels };
+    }
+
+    return vessels;
+  } catch (error) {
+    console.error("Error fetching NPCT1 vessel options:", error);
+    return npct1VesselCache?.data || [];
+  }
+}
+
 export async function getCsrfToken(): Promise<{
   cookieStr: string;
   csrfToken: string;

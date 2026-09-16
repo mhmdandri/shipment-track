@@ -9,6 +9,7 @@ import {
   Search,
   ListTodo,
   MapPin,
+  Compass,
   CreditCard,
   LogIn,
   User as UserIcon,
@@ -148,6 +149,14 @@ export function AppSidebar() {
             >
               <MapPin className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
               <span className="text-sm font-medium">Track Container</span>
+            </Link>
+            <Link
+              href="/vessel-track"
+              onClick={closeSidebar}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
+            >
+              <Compass className="w-5 h-5 text-sidebar-foreground/50 group-hover:text-sidebar-primary" />
+              <span className="text-sm font-medium">Vessel Track</span>
             </Link>
           </nav>
         </div>
