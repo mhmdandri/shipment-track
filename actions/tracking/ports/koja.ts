@@ -5,27 +5,60 @@ import { checkJictOb } from "./jict";
 export async function fetchHtml(
   containerNo: string,
 ): Promise<{ ok: boolean; status: number; html?: string }> {
+  const cleanContainer = containerNo.trim().toUpperCase();
   const params = new URLSearchParams();
-  params.set("CNTR_ID", containerNo);
-  params.set("submit", "Show Detail");
+  params.set("CNTR_ID", cleanContainer);
+  params.set("submit", "Search");
 
-  const response = await fetch(
-    "https://www.tpkkoja.co.id/online-consignee-container-tracking/",
-    {
+  try {
+    const response = await fetch("https://www.tpkkoja.co.id/container-tracking/", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
       body: params.toString(),
-    },
-  );
+      signal: AbortSignal.timeout(12000),
+    });
 
-  if (!response.ok) {
-    return { ok: false, status: response.status };
+    if (response.ok) {
+      const html = await response.text();
+      return { ok: true, status: response.status, html };
+    }
+  } catch (err) {
+    console.warn("Primary KOJA tracking endpoint error, checking fallback:", err);
   }
 
-  const html = await response.text();
-  return { ok: true, status: response.status, html };
+  // Fallback to legacy endpoint if primary is down
+  try {
+    const legacyParams = new URLSearchParams();
+    legacyParams.set("CNTR_ID", cleanContainer);
+    legacyParams.set("submit", "Show Detail");
+
+    const fallbackRes = await fetch(
+      "https://www.tpkkoja.co.id/online-consignee-container-tracking/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+        body: legacyParams.toString(),
+        signal: AbortSignal.timeout(10000),
+      },
+    );
+
+    if (!fallbackRes.ok) {
+      return { ok: false, status: fallbackRes.status };
+    }
+
+    const html = await fallbackRes.text();
+    return { ok: true, status: fallbackRes.status, html };
+  } catch {
+    return { ok: false, status: 500 };
+  }
 }
 
 export async function parseLocation(html: string): Promise<{
@@ -35,10 +68,66 @@ export async function parseLocation(html: string): Promise<{
   foundOutTime: string;
   foundCustomer: string;
   foundRemarks: string;
+  foundVessel?: string;
+  foundCategory?: string;
+  foundSize?: string;
 }> {
   const $ = await getCheerio(html);
-  const table = $("table#datatables");
 
+  // 1. New KOJA Container Tracking Layout (.cntr-wrap)
+  if ($(".cntr-wrap").length > 0) {
+    const fields: Record<string, string> = {};
+    $(".cntr-field").each((_, el) => {
+      const label = $(el).find(".label").text().trim();
+      const value = $(el).find(".value").text().trim();
+      if (label) {
+        fields[label] = value;
+      }
+    });
+
+    const foundStatus = fields["Location"] || fields["Terminal Status"] || "";
+    const foundTime = fields["In Time / Stack CY"] || fields["In Time"] || "";
+    const foundOutTime =
+      fields["Out Time"] ||
+      fields["Out Time / Gate Out"] ||
+      fields["Gate Out"] ||
+      "";
+    const foundCustomer = fields["Consignee"] || fields["Shipper"] || "";
+    const foundRemarks = fields["Remarks"] || "";
+    const foundCategory = fields["Category"] || "";
+    const foundSize = fields["Size/Type/Height"] || fields["ISO Code"] || "";
+
+    let foundVessel = "";
+    $(".cntr-carriers > div").each((_, div) => {
+      const title = $(div).find(".cntr-carrier-title").text().trim();
+      if (title.toLowerCase().includes("vessel")) {
+        $(div)
+          .find(".cntr-field")
+          .each((_, el) => {
+            const label = $(el).find(".label").text().trim();
+            const value = $(el).find(".value").text().trim();
+            if (label.toLowerCase() === "name") {
+              foundVessel = value;
+            }
+          });
+      }
+    });
+
+    return {
+      tableFound: true,
+      foundStatus,
+      foundTime,
+      foundOutTime,
+      foundCustomer,
+      foundRemarks,
+      foundVessel,
+      foundCategory,
+      foundSize,
+    };
+  }
+
+  // 2. Legacy Table Format Fallback (table#datatables)
+  const table = $("table#datatables, table");
   if (table.length === 0) {
     return {
       tableFound: false,
@@ -83,8 +172,10 @@ export async function parseLocation(html: string): Promise<{
       });
   });
 
+  const tableFound = Boolean(foundStatus || foundTime || foundOutTime || foundCustomer);
+
   return {
-    tableFound: true,
+    tableFound,
     foundStatus,
     foundTime,
     foundOutTime,
@@ -164,6 +255,12 @@ export async function trackKoja(
     console.error("Error checking BC On Demand for KOJA:", err);
   }
 
+  const rawData: Record<string, unknown> = {};
+  if (parsed.foundRemarks) rawData.remarks = parsed.foundRemarks;
+  if (parsed.foundVessel) rawData.vessel = parsed.foundVessel;
+  if (parsed.foundCategory) rawData.category = parsed.foundCategory;
+  if (parsed.foundSize) rawData.size = parsed.foundSize;
+
   return {
     success: true,
     port,
@@ -174,7 +271,7 @@ export async function trackKoja(
     customer: parsed.foundCustomer,
     ob,
     obName,
-    raw: parsed.foundRemarks ? { remarks: parsed.foundRemarks } : undefined,
+    raw: Object.keys(rawData).length > 0 ? rawData : undefined,
   };
 }
 

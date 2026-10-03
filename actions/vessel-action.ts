@@ -7,6 +7,7 @@ import {
   searchVesselAllPorts,
   parseVesselDate,
   isVesselSailingOrCompleted,
+  isVoyageMatch,
   VesselTrackingResult,
   MultiPortVesselResult,
 } from "./tracking/vessel";
@@ -161,35 +162,14 @@ export async function enableVesselMonitoringInternal(
     let selected = trackingResult.selectedSchedule;
 
     // If a specific voyage number was provided, strictly select the schedule matching that voyage
-    if (
-      cleanVoyage &&
-      trackingResult.schedules &&
-      trackingResult.schedules.length > 0
-    ) {
-      const rawVq = cleanVoyage.toLowerCase();
-      const cleanVq = rawVq.replace(/[^a-z0-9]/g, "");
-      const matched = trackingResult.schedules.find((item) => {
-        const vIn = (item.voyIn || "")
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, "");
-        const vOut = (item.voyOut || "")
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, "");
-        return (
-          (vIn.length > 0 &&
-            (vIn === cleanVq ||
-              vIn.includes(cleanVq) ||
-              cleanVq.includes(vIn))) ||
-          (vOut.length > 0 &&
-            (vOut === cleanVq ||
-              vOut.includes(cleanVq) ||
-              cleanVq.includes(vOut)))
-        );
-      });
-      if (matched) {
-        selected = matched;
+    if (cleanVoyage) {
+      if (trackingResult.schedules && trackingResult.schedules.length > 0) {
+        selected =
+          trackingResult.schedules.find((item) =>
+            isVoyageMatch(cleanVoyage, item.voyIn, item.voyOut)
+          ) || null;
+      } else {
+        selected = null;
       }
     }
 

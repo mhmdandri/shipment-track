@@ -5,6 +5,8 @@ import {
   searchVesselAllPorts,
   parseVesselDate,
   isVesselSailingOrCompleted,
+  isVoyageMatch,
+  VesselScheduleItem,
 } from "@/actions/tracking/vessel";
 
 import { isOutgateStatus, isYardStatus, isObType } from "@/actions/tracking/utils";
@@ -226,23 +228,18 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
           // Handle unscheduled vessel monitoring across all 5 ports
           if (vMonitor.port === "all") {
             const multiRes = await searchVesselAllPorts(vMonitor.vesselName);
-            let bestSchedule = multiRes?.vessels?.[0];
-            const targetVoyage = vMonitor.voyageIn || vMonitor.voyageOut;
+            const targetVoyage = (vMonitor.voyageIn || vMonitor.voyageOut || "").trim();
+            let bestSchedule: VesselScheduleItem | null = null;
 
-            if (targetVoyage && multiRes?.vessels && multiRes.vessels.length > 0) {
-              const rawVq = targetVoyage.trim().toLowerCase();
-              const cleanVq = rawVq.replace(/[^a-z0-9]/g, "");
-              const matched = multiRes.vessels.find((item) => {
-                const vIn = (item.voyIn || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-                const vOut = (item.voyOut || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-                return (
-                  (vIn.length > 0 && (vIn === cleanVq || vIn.includes(cleanVq) || cleanVq.includes(vIn))) ||
-                  (vOut.length > 0 && (vOut === cleanVq || vOut.includes(cleanVq) || cleanVq.includes(vOut)))
-                );
-              });
-              if (matched) {
-                bestSchedule = matched;
+            if (targetVoyage) {
+              if (multiRes?.vessels && multiRes.vessels.length > 0) {
+                bestSchedule =
+                  multiRes.vessels.find((item) =>
+                    isVoyageMatch(targetVoyage, item.voyIn, item.voyOut)
+                  ) || null;
               }
+            } else {
+              bestSchedule = multiRes?.vessels?.[0] || null;
             }
 
             if (bestSchedule) {
@@ -281,7 +278,8 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               });
 
               // Dispatch Telegram Alert
-              const teleMsg = `🚢 <b>KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nVoyage: <b>${s.voyIn || s.voyOut || "N/A"}</b>\nPort: <b>${foundPort.toUpperCase()}</b>\nStatus: <b>${s.status}</b>\nOpen Stacking: <b>${s.openStacking || "Belum Tersedia"}</b>\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}\n\nJadwal kapal yang sebelumnya belum terdaftar kini telah ditemukan dan otomatis aktif dipantau!`;
+              const currentVoy = s.voyIn || s.voyOut || targetVoyage || "N/A";
+              const teleMsg = `🚢 <b>KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nVoyage: <b>${currentVoy}</b>\nPort: <b>${foundPort.toUpperCase()}</b>\nStatus: <b>${s.status}</b>\nOpen Stacking: <b>${s.openStacking || "Belum Tersedia"}</b>\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}\n\nJadwal kapal yang sebelumnya belum terdaftar kini telah ditemukan dan otomatis aktif dipantau!`;
               await sendTelegramMessage(teleMsg).catch((e) =>
                 console.error("Telegram error in multi-port vessel cron:", e)
               );
@@ -290,7 +288,7 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               if (vMonitor.waNumber) {
                 const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
                 if (subCheck.allowed) {
-                  const waMsg = `🚢 *KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!* 🚢\n\nKapal: *${vMonitor.vesselName}*\nVoyage: *${s.voyIn || s.voyOut || "-"}*\nPelabuhan: *${foundPort.toUpperCase()}*\nStatus: *${s.status}*\nOpen Stacking: *${s.openStacking || "Belum Tersedia"}*\nETB: *${s.etb || "-"}*\nETD: *${s.etd || "-"}*\n\nJadwal kapal yang Anda pantau kini telah terdaftar di ${foundPort.toUpperCase()} dan otomatis aktif dipantau oleh sistem CS Eksim Tracker!`;
+                  const waMsg = `🚢 *KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!* 🚢\n\nKapal: *${vMonitor.vesselName}*\nVoyage: *${currentVoy}*\nPelabuhan: *${foundPort.toUpperCase()}*\nStatus: *${s.status}*\nOpen Stacking: *${s.openStacking || "Belum Tersedia"}*\nETB: *${s.etb || "-"}*\nETD: *${s.etd || "-"}*\n\nJadwal kapal yang Anda pantau kini telah terdaftar di ${foundPort.toUpperCase()} dan otomatis aktif dipantau oleh sistem CS Eksim Tracker!`;
                   await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
                     console.error("WhatsApp error in multi-port vessel cron:", e)
                   );
@@ -301,7 +299,7 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
                 type: "vessel",
                 vesselName: vMonitor.vesselName,
                 port: foundPort,
-                status: `Discovered schedule at ${foundPort.toUpperCase()} (${s.status})`,
+                status: `Discovered schedule at ${foundPort.toUpperCase()} (${s.status}, Voyage: ${currentVoy})`,
               };
             }
 
@@ -309,40 +307,28 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               type: "vessel",
               vesselName: vMonitor.vesselName,
               port: "all",
-              status: "Searching 5 ports (schedule unconfirmed)",
+              status: targetVoyage
+                ? `Searching 5 ports (schedule for voyage ${targetVoyage} unconfirmed)`
+                : "Searching 5 ports (schedule unconfirmed)",
             };
           }
 
           const result = await fetchScheduleCached(vMonitor.port, vMonitor.vesselName);
+          const targetVoyage = (vMonitor.voyageIn || vMonitor.voyageOut || "").trim();
+
+          let s: VesselScheduleItem | null = null;
           if (result.success && result.schedules && result.schedules.length > 0) {
-            let s = result.selectedSchedule;
-            const targetVoyage = vMonitor.voyageIn || vMonitor.voyageOut;
-
             if (targetVoyage) {
-              const rawVq = targetVoyage.trim().toLowerCase();
-              const cleanVq = rawVq.replace(/[^a-z0-9]/g, "");
-              const matched = result.schedules.find((item) => {
-                const vIn = (item.voyIn || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-                const vOut = (item.voyOut || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-                return (
-                  (vIn.length > 0 && (vIn === cleanVq || vIn.includes(cleanVq) || cleanVq.includes(vIn))) ||
-                  (vOut.length > 0 && (vOut === cleanVq || vOut.includes(cleanVq) || cleanVq.includes(vOut)))
-                );
-              });
-              if (matched) {
-                s = matched;
-              }
+              s =
+                result.schedules.find((item) =>
+                  isVoyageMatch(targetVoyage, item.voyIn, item.voyOut)
+                ) || null;
+            } else {
+              s = result.selectedSchedule;
             }
+          }
 
-            if (!s) {
-              return {
-                type: "vessel",
-                vesselName: vMonitor.vesselName,
-                port: vMonitor.port,
-                status: "Schedule details unavailable",
-              };
-            }
-
+          if (s) {
             const newOpenStackDate = parseVesselDate(s.openStacking);
             const newEtbDate = parseVesselDate(s.etb);
             const newAtaDate = parseVesselDate(s.ata);
@@ -422,12 +408,16 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               if (closingPhysicChanged) changesSummary.push(`Closing Physic (${s.closingPhysic || "N/A"})`);
               if (isSailingOrCompleted && !statusChanged) changesSummary.push("Status Kapal Berlayar / SAILED");
 
-              // Send Telegram Alert
+              const currentVoyIn = s.voyIn || vMonitor.voyageIn || "-";
+              const currentVoyOut = s.voyOut || vMonitor.voyageOut || "-";
+              const voyDisplay = currentVoyIn !== "-" ? currentVoyIn : currentVoyOut;
+
+              // Send Telegram Alert (including Voyage)
               const teleHeader = hasNewOpenStack
                 ? `🚢 <b>OPEN STACK AVAILABLE (${vMonitor.port.toUpperCase()})</b> 🚢`
                 : `🚢 <b>VESSEL SCHEDULE UPDATED (${vMonitor.port.toUpperCase()})</b> 🚢`;
 
-              const teleMsg = `${teleHeader}\n\nVessel: <b>${vMonitor.vesselName}</b>\nStatus: <b>${s.status}</b>\nChanges: <i>${changesSummary.join(", ")}</i>\nOpen Stacking: <b>${s.openStacking || "N/A"}</b>\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}`;
+              const teleMsg = `${teleHeader}\n\nVessel: <b>${vMonitor.vesselName}</b>\nVoyage: <b>${voyDisplay}</b>\nStatus: <b>${s.status}</b>\nChanges: <i>${changesSummary.join(", ")}</i>\nOpen Stacking: <b>${s.openStacking || "N/A"}</b>\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}`;
               await sendTelegramMessage(teleMsg).catch((e) =>
                 console.error("Telegram error in vessel cron:", e)
               );
@@ -436,8 +426,6 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               if (vMonitor.waNumber) {
                 const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
                 if (subCheck.allowed) {
-                  const currentVoyIn = vMonitor.voyageIn || s.voyIn || "-";
-                  const currentVoyOut = vMonitor.voyageOut || s.voyOut || "-";
                   const waMsg = hasNewOpenStack
                     ? whatsappMessage.npct1OpenStackAvailableAlert(
                         vMonitor.vesselName,
@@ -474,7 +462,7 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
                 type: "vessel",
                 vesselName: vMonitor.vesselName,
                 port: vMonitor.port,
-                status: `Updated (${changesSummary.join(", ")})`,
+                status: `Updated (${changesSummary.join(", ")}) [Voyage: ${voyDisplay}]`,
               };
             }
 
@@ -486,59 +474,62 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
             };
           }
 
-          // Handles case where selectedSchedule is null or schedule unconfirmed
-          if (result.success && !result.selectedSchedule) {
-            const isEtdPast = isVesselSailingOrCompleted(vMonitor.status, vMonitor.etd);
+          // Handles case where schedule for this voyage is not listed / cleared / departed
+          const currentVoy = targetVoyage || vMonitor.voyageIn || vMonitor.voyageOut || "-";
+          const isEtdPast = isVesselSailingOrCompleted(vMonitor.status, vMonitor.etd);
 
-            if (isEtdPast) {
-              await prisma.vesselMonitor.update({
-                where: { id: vMonitor.id },
-                data: {
-                  status: "SAILED",
-                  isActive: false,
-                  updatedAt: new Date(),
-                },
-              });
+          if (isEtdPast) {
+            await prisma.vesselMonitor.update({
+              where: { id: vMonitor.id },
+              data: {
+                status: "SAILED",
+                isActive: false,
+                updatedAt: new Date(),
+              },
+            });
 
-              // Dispatch Telegram completion alert
-              const teleMsg = `🚢 <b>VESSEL DEPARTED / MONITORING CLOSED (${vMonitor.port.toUpperCase()})</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nStatus: <b>SAILED / DEPARTED</b>\nJadwal kapal telah selesai dan bertolak dari terminal. Auto-monitoring otomatis dinonaktifkan.`;
-              await sendTelegramMessage(teleMsg).catch((e) =>
-                console.error("Telegram error in vessel cron:", e)
-              );
+            // Dispatch Telegram completion alert
+            const teleMsg = `🚢 <b>VESSEL DEPARTED / MONITORING CLOSED (${vMonitor.port.toUpperCase()})</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nVoyage: <b>${currentVoy}</b>\nStatus: <b>SAILED / DEPARTED</b>\nJadwal kapal telah selesai dan bertolak dari terminal. Auto-monitoring otomatis dinonaktifkan.`;
+            await sendTelegramMessage(teleMsg).catch((e) =>
+              console.error("Telegram error in vessel cron:", e)
+            );
 
-              // Dispatch WhatsApp completion alert
-              if (vMonitor.waNumber) {
-                const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
-                if (subCheck.allowed) {
-                  const waMsg = whatsappMessage.vesselScheduleUpdatedAlert(
-                    vMonitor.vesselName,
-                    vMonitor.port,
-                    vMonitor.status,
-                    "SAILED / DEPARTED",
-                    ["Jadwal kapal telah selesai dan bertolak dari terminal."],
-                    "SELESAI",
-                    "-",
-                    "-"
-                  );
-                  await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
-                    console.error("WhatsApp error in vessel cron:", e)
-                  );
-                }
+            // Dispatch WhatsApp completion alert
+            if (vMonitor.waNumber) {
+              const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
+              if (subCheck.allowed) {
+                const waMsg = whatsappMessage.vesselScheduleUpdatedAlert(
+                  vMonitor.vesselName,
+                  vMonitor.port,
+                  vMonitor.status,
+                  "SAILED / DEPARTED",
+                  ["Jadwal kapal telah selesai dan bertolak dari terminal."],
+                  "SELESAI",
+                  "-",
+                  "-",
+                  vMonitor.voyageIn || "-",
+                  vMonitor.voyageOut || "-"
+                );
+                await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
+                  console.error("WhatsApp error in vessel cron:", e)
+                );
               }
-
-              return {
-                type: "vessel",
-                vesselName: vMonitor.vesselName,
-                port: vMonitor.port,
-                status: "Deactivated (SAILED / Schedule completed)",
-              };
             }
 
             return {
               type: "vessel",
               vesselName: vMonitor.vesselName,
               port: vMonitor.port,
-              status: "Unchanged (Schedule unconfirmed, retaining active monitoring)",
+              status: `Deactivated (SAILED / Schedule completed for voyage ${currentVoy})`,
+            };
+          }
+
+          if (!result.success) {
+            return {
+              type: "vessel",
+              vesselName: vMonitor.vesselName,
+              port: vMonitor.port,
+              status: `Transient error: ${result.error}`,
             };
           }
 
@@ -546,7 +537,9 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
             type: "vessel",
             vesselName: vMonitor.vesselName,
             port: vMonitor.port,
-            status: `Transient error: ${result.error}`,
+            status: targetVoyage
+              ? `Unchanged (Schedule for voyage ${targetVoyage} not listed, retaining active monitoring)`
+              : "Unchanged (Schedule unconfirmed, retaining active monitoring)",
           };
         } catch (error) {
           console.error(`Error processing vessel monitor ${vMonitor.vesselName}:`, error);

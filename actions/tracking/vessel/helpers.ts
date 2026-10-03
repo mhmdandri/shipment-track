@@ -221,3 +221,52 @@ export function selectSingleBestSchedule(
   const bestList = filterAndSelectBestSchedules(schedules);
   return bestList[0] || null;
 }
+
+/**
+ * Accurately matches a target voyage number against schedule voyIn / voyOut.
+ * Handles variations such as prefixes, slashes, whitespace, and leading zeros.
+ * Prevents false positives where short numbers match unrelated voyages.
+ */
+export function isVoyageMatch(
+  targetVoyage: string | null | undefined,
+  voyIn: string | null | undefined,
+  voyOut?: string | null | undefined
+): boolean {
+  if (!targetVoyage) return false;
+  const targetClean = targetVoyage.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!targetClean) return false;
+
+  const candidates = [voyIn, voyOut]
+    .filter((v): v is string => Boolean(v && v.trim()))
+    .map((v) => v.trim().toLowerCase().replace(/[^a-z0-9]/g, ""))
+    .filter((v) => v.length > 0);
+
+  if (candidates.length === 0) return false;
+
+  const targetNoZero = targetClean.replace(/^0+/, "");
+
+  for (const cand of candidates) {
+    if (cand === targetClean) return true;
+
+    // Check with leading zeros stripped (e.g., "025N" vs "25N")
+    const candNoZero = cand.replace(/^0+/, "");
+    if (
+      candNoZero.length > 0 &&
+      (candNoZero === targetNoZero || candNoZero === targetClean || cand === targetNoZero)
+    ) {
+      return true;
+    }
+
+    // Candidate contains target (e.g. candidate "CARITA-025N" or "025N/025S" contains target "025N")
+    if (cand.includes(targetClean) && targetClean.length >= 2) {
+      return true;
+    }
+
+    // Target contains candidate (e.g. target "CARITA-025N" contains candidate "025N")
+    if (targetClean.includes(cand) && cand.length >= 3) {
+      return true;
+    }
+  }
+
+  return false;
+}

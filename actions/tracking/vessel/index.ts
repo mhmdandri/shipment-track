@@ -37,6 +37,7 @@ export async function trackVesselSchedule(
 }
 
 export * from "./helpers";
+export * from "./types";
 
 export interface MultiPortVesselResult {
   vesselNameQuery: string;

@@ -79,6 +79,6 @@ export async function handleOpenStackCommand(context: WhatsappCommandContext) {
 
   await sendWhatsappMessage(sender, replyMsg);
 
-  // Auto-enable monitoring for this vessel
-  await enableVesselMonitoringInternal(vesselName, port, sender);
+  // Auto-enable monitoring for this vessel and voyage
+  await enableVesselMonitoringInternal(vesselName, port, sender, s.voyIn || s.voyOut);
 }

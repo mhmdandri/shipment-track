@@ -14,6 +14,7 @@ import {
   Layers,
   MessageSquare,
   Users,
+  Navigation,
 } from "lucide-react";
 import { trackTerminalContainer } from "@/actions/terminal-track-action";
 import type { TerminalTrackingResult } from "@/actions/tracking/types";
@@ -402,17 +403,18 @@ export default function TerminalTrackerClient() {
 
                 {/* NPCT1 Extra Parameters */}
                 {port === "npct1" && (
-                  <div className="flex flex-col sm:flex-row gap-3 animate-in fade-in slide-in-from-top-2 duration-300 items-start">
-                    <div className="w-full sm:w-1/2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="w-full">
                       <Npct1VesselSelect
                         value={vesselName}
                         onChange={setVesselName}
                         disabled={loading}
                       />
                     </div>
-                    <div className="w-full sm:w-1/2 flex flex-col gap-1">
-                      <label className="text-[10px] text-muted-foreground font-semibold uppercase">
-                        NPCT1 Voyage No
+                    <div className="w-full flex flex-col gap-1">
+                      <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5">
+                        <Navigation className="w-3.5 h-3.5 text-primary" />
+                        <span>Voyage No</span>
                       </label>
                       <Input
                         placeholder="Voyage No (misal: 080B)"
@@ -420,7 +422,7 @@ export default function TerminalTrackerClient() {
                         onChange={(e) =>
                           setVoyageNo(e.target.value.toUpperCase())
                         }
-                        className="font-mono uppercase bg-primary/5 border-primary/20 text-xs h-9"
+                        className="font-mono uppercase text-xs h-9 bg-background border-input"
                         disabled={loading}
                       />
                     </div>
