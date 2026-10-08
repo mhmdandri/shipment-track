@@ -112,7 +112,8 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
       },
     });
 
-    if (!user) return payload;
+    // User was deleted after the token was issued — treat the session as revoked
+    if (!user) return null;
 
     return {
       id: user.id,
@@ -128,7 +129,7 @@ export async function getCurrentUser(): Promise<JWTPayload | null> {
   }
 }
 
-import { UnauthorizedError } from "@/lib/errors";
+import { ForbiddenError, UnauthorizedError } from "@/lib/errors";
 
 /**
  * Requires an authenticated user session for Server Actions.
@@ -138,6 +139,27 @@ export async function requireAuth(): Promise<JWTPayload> {
   const user = await getCurrentUser();
   if (!user) {
     throw new UnauthorizedError("Unauthorized: Membutuhkan sesi login yang valid.");
+  }
+  return user;
+}
+
+/** Roles allowed to manage users & WhatsApp subscriptions. */
+export const ADMIN_ROLES = ["ADMIN", "OWNER"] as const;
+
+export function isAdminRole(role: string | null | undefined): boolean {
+  return Boolean(role && (ADMIN_ROLES as readonly string[]).includes(role));
+}
+
+/**
+ * Requires an authenticated ADMIN/OWNER session.
+ * Throws ForbiddenError for authenticated users without admin privileges.
+ */
+export async function requireAdmin(
+  message = "Akses ditolak: Hanya Admin/Owner yang dapat melakukan aksi ini.",
+): Promise<JWTPayload> {
+  const user = await requireAuth();
+  if (!isAdminRole(user.role)) {
+    throw new ForbiddenError(message);
   }
   return user;
 }

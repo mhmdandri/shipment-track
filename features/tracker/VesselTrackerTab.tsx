@@ -15,9 +15,11 @@ interface VesselTrackerTabProps {
   activeVesselMonitors: VesselMonitor[];
 }
 
-function formatDateDisplay(d: Date | null): string {
+function formatDateDisplay(d: Date | string | null | undefined): string {
   if (!d) return "-";
-  return new Date(d).toLocaleString("id-ID", {
+  const dateObj = d instanceof Date ? d : new Date(d);
+  if (isNaN(dateObj.getTime())) return typeof d === "string" ? d : "-";
+  return dateObj.toLocaleString("id-ID", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

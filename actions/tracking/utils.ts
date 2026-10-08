@@ -13,10 +13,6 @@ export function isOutgateStatus(status?: string): boolean {
   );
 }
 
-export function isGateOut(status: string): boolean {
-  return isOutgateStatus(status);
-}
-
 export function isExplicitYardStatus(status?: string): boolean {
   if (!status) return false;
   const upper = status.toUpperCase().trim();
@@ -84,10 +80,6 @@ export function isYardStatus(status?: string): boolean {
   }
 
   return true;
-}
-
-export function parseDate(dateStr: string): string {
-  return dateStr.trim();
 }
 
 export function isObType(obCode?: string): boolean {

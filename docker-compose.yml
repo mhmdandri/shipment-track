@@ -1,0 +1,17 @@
+services:
+  shipment-track:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shipment-track
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env
+    networks:
+      - undangan-andri_default
+
+networks:
+  undangan-andri_default:
+    external: true

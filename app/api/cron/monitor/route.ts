@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import {
   processContainerMonitors,
   processVesselMonitors,
 } from "@/service/cron-monitor-service";
+import { safeCompare } from "@/lib/security";
 
 // Forces Next.js not to cache the cron route
 export const dynamic = "force-dynamic";
 
 function isAuthorized(authHeader: string | null): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret || secret.trim().length === 0 || !authHeader) return false;
-
-  const expected = `Bearer ${secret}`;
-  const authBuffer = Buffer.from(authHeader);
-  const expectedBuffer = Buffer.from(expected);
-
-  if (authBuffer.length !== expectedBuffer.length) return false;
-  return crypto.timingSafeEqual(authBuffer, expectedBuffer);
+  if (!secret || secret.trim().length === 0) return false;
+  return safeCompare(authHeader, `Bearer ${secret}`);
 }
 
 export async function GET(request: Request) {

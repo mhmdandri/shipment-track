@@ -5,6 +5,7 @@ import {
   authenticateCredentials,
 } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +17,7 @@ const loginSchema = z.object({
 export async function POST(request: Request) {
   try {
     // Apply IP-based rate limiting (5 attempts per 60 seconds)
-    const clientIp =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      request.headers.get("x-real-ip") ||
-      "127.0.0.1";
+    const clientIp = getClientIp(request.headers);
 
     const rateLimit = checkRateLimit(`login:${clientIp}`, 5, 60 * 1000);
     if (!rateLimit.success) {

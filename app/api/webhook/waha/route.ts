@@ -1,21 +1,24 @@
 import { NextResponse } from "next/server";
 import { WhatsappCommandContext } from "@/lib/whatsapp/types";
 import { dispatchWhatsappCommand } from "@/lib/whatsapp/dispatcher";
+import { safeCompare } from "@/lib/security";
+
+let hasWarnedMissingSecret = false;
 
 export async function POST(request: Request) {
   try {
-    // 0. Verify WAHA Webhook Secret if configured
-    const webhookSecret = process.env.WAHA_WEBHOOK_SECRET;
-    if (webhookSecret && webhookSecret.trim().length > 0) {
+    // 0. Verify WAHA Webhook Secret if configured (timing-safe)
+    const webhookSecret = process.env.WAHA_WEBHOOK_SECRET?.trim();
+    if (webhookSecret) {
       const apiKeyHeader = request.headers.get("x-api-key");
       const wahaSecretHeader = request.headers.get("x-waha-secret");
       const authHeader = request.headers.get("authorization");
 
       const isValid =
-        apiKeyHeader === webhookSecret ||
-        wahaSecretHeader === webhookSecret ||
-        authHeader === webhookSecret ||
-        authHeader === `Bearer ${webhookSecret}`;
+        safeCompare(apiKeyHeader, webhookSecret) ||
+        safeCompare(wahaSecretHeader, webhookSecret) ||
+        safeCompare(authHeader, webhookSecret) ||
+        safeCompare(authHeader, `Bearer ${webhookSecret}`);
 
       if (!isValid) {
         return NextResponse.json(
@@ -23,6 +26,11 @@ export async function POST(request: Request) {
           { status: 401 },
         );
       }
+    } else if (!hasWarnedMissingSecret) {
+      hasWarnedMissingSecret = true;
+      console.warn(
+        "[WAHA] WAHA_WEBHOOK_SECRET is not set. Webhook accepts unauthenticated requests — set it in production.",
+      );
     }
 
     const body = await request.json();

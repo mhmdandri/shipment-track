@@ -2,7 +2,7 @@ import SubscriptionClient from "@/features/subscriptions/SubscriptionClient";
 import {
   SubscriptionWithCount,
   getAllSubscriptionsWithCount,
-} from "@/actions/subscription-action";
+} from "@/service/subscription-service";
 
 export const dynamic = "force-dynamic";
 

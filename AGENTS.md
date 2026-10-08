@@ -37,6 +37,7 @@ CS Eksim Tracker (`shipment-track`) adalah sistem dashboard operasional freight 
 - `node-cron`: Cron scheduler di standalone script
 - `date-fns`: Manipulasi tanggal & kalkulasi SLA
 - `@bprogress/next`: Indicator progress bar bagian atas (top loading bar) untuk semua navigasi halaman (`ProgressProvider`) serta eksekusi async form submit & server actions (`useProgress()`).
+- **Containerization & Deployment**: Dockerfile multi-stage (Node.js 22 Alpine + Next.js Standalone Runner) & `docker-compose.yml` terhubung ke network eksternal `undangan-andri_default` pada port `3001` (`3001:3000`). Entrypoint otomatis menjalankan migrasi `prisma migrate deploy` saat startup container.
 
 ---
 
@@ -111,7 +112,7 @@ shipment-track/
 - **File Kunci**: `actions/track-action.ts`, `app/tracker/page.tsx`, `features/tracker/*`.
 
 ### 3. Terminal & Vessel Tracking Module
-- **Fungsi**: Scraping dan query data real-time ke 5 terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB via BC On Demand `bcondemand.jict.co.id` untuk JICT & KOJA, serta `Remarks` KOJA). Pada KOJA, tracking menggunakan endpoint terbaru `https://www.tpkkoja.co.id/container-tracking/` (POST `CNTR_ID` & `submit: Search`) dengan parser dual-mode (layout modern card `.cntr-wrap` dan fallback tabel legacy `table#datatables`). Khusus TMAL, jika ditemukan multiple data impor (lintas tahun/voyage), sistem secara otomatis mem-parse timestamp (`parseTmalDateMs`).
+- **Fungsi**: Scraping dan query data real-time ke 5 terminal pelabuhan domestik (JICT, KOJA, NPCT1, TMAL, TER3/PARAMA) untuk mengetahui posisi kontainer (ONVSL, GNSTK, OUTGT, OB via BC On Demand `bcondemand.jict.co.id` untuk JICT & KOJA, serta `Remarks` KOJA). Pada KOJA, tracking menggunakan endpoint terbaru `https://www.tpkkoja.co.id/container-tracking/` (POST `CNTR_ID` & `submit: Search`) dengan parser dual-mode (layout modern card `.cntr-wrap` dan fallback tabel legacy `table#datatables`). Khusus TMAL, jika ditemukan multiple data impor (lintas tahun/voyage), sistem secara otomatis mem-parse timestamp (`parseTmalDateMs`). Pada PARAMA / TER3 (Pelindo), tracking kontainer menggunakan API detail `https://parama.pelindo.co.id:8031/gateway-8021/api/parama/getContainerDetail` (POST `{ containerNo, terminalCode: "T003", terminalCodeBilling: "T003" }`) dengan session cache DB (`TER3_SESSION`), auto-login saat sesi expired, serta parsing status lengkap (Gate Out, Yard Stack block/slot/tier/row, Vessel In, dan riwayat handling lengkap).
 - **Antarmuka UI & User Experience (UX)**:
   - Layout antarmuka tracker (`/terminal-tracker`) menggunakan **Grid 2-Kolom Berdampingan Sejajar (Side-by-Side Kiri-Kanan, Equal Height `items-stretch`)**:
     - **Kolom Kiri**: Form Input Nomor Kontainer, Pemilihan Terminal, dan Target Notifikasi WhatsApp.
@@ -130,7 +131,8 @@ shipment-track/
 - **File Kunci**: `app/vessel-track/page.tsx`, `features/tracker/VesselTrackerClient.tsx`, `actions/vessel-action.ts`, `service/cron-monitor-service.ts`, `components/layout/AppSidebar.tsx`.
 
 ### 5. Auto-Monitoring Module
-- **Fungsi**: Pendaftaran kontainer aktif ke watchlist `TerminalMonitor` dan kapal aktif ke watchlist `VesselMonitor`. Cron job memeriksa kontainer (`OUTGT`) dan jadwal Open Stacking / Status / Sandar (ETB/ATA/ETD/ATD/Closing Doc/Closing Physic) kapal secara berkala dengan **Strict Multi-Voyage Matching (`isVoyageMatch`)**. Setiap kapal yang dipantau diverifikasi secara presisi berdasarkan Voyage In / Voyage Out; sistem tidak akan mengasumsikan atau menimpa voyage lain jika voyage yang dipantau belum muncul atau telah selesai. Setiap ada perubahan status atau tanggal jadwal kapal, DB diperbarui dan notifikasi instan WhatsApp & Telegram dikirimkan lengkap dengan nomor voyage. Kapal yang berstatus `SAILING`, `COMPLETED`, atau jadwal voyagenya telah selesai bertolak dari terminal di-deaktivasi otomatis (`isActive: false`, `status: SAILED`).
+- **Fungsi**: Pendaftaran kontainer aktif ke watchlist `TerminalMonitor` dan kapal aktif ke watchlist `VesselMonitor`. Cron job memeriksa kontainer (`OUTGT`) dan jadwal Open Stacking / Status / Sandar (ETB/ATA/ETD/ATD/Closing Doc/Closing Physic) kapal secara berkala dengan **Strict Multi-Voyage Matching (`isVoyageMatch`)**. Setiap kapal yang dipantau diverifikasi secara presisi berdasarkan Voyage In / Voyage Out; sistem tidak akan mengasumsikan atau menimpa voyage lain jika voyage yang dipantau belum muncul atau telah selesai.
+- **Vessel Alert Rule (Open Stacking Only)**: Cron memperbarui database (`VesselMonitor`) untuk setiap perubahan jadwal (ETA/ETB/ETD/Status dll), namun **notifikasi WhatsApp & Telegram HANYA dikirim jika terjadi ketersediaan atau perubahan tanggal/jam Open Stacking**. Perubahan yang hanya menyangkut jam sandar (ETA/ETB/ETD) tidak memicu notifikasi agar tidak menimbulkan spam. Setiap notifikasi Open Stacking wajib menyertakan rincian lengkap: Nama Kapal, Voyage, Port, Status, Open Stacking, ETA, ETB, dan ETD. Kapal yang berstatus `SAILING`, `COMPLETED`, atau jadwal voyagenya telah selesai bertolak dari terminal di-deaktivasi otomatis (`isActive: false`, `status: SAILED`).
 - **File Kunci**: `actions/monitor-action.ts`, `actions/vessel-action.ts`, `features/tracker/TerminalTrackerClient.tsx`, `service/cron-monitor-service.ts`, `actions/tracking/vessel/helpers.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
 ### 5. WhatsApp Integration Module (WAHA)
@@ -145,13 +147,17 @@ shipment-track/
 - **Fungsi**: Menjalankan pengecekan periodik status kontainer & jadwal kapal setiap 30 menit via service `cron-monitor-service.ts` melalui HTTP endpoint (`/api/cron/monitor`) atau daemon script (`scripts/monitor-terminals.ts`).
 - **File Kunci**: `service/cron-monitor-service.ts`, `app/api/cron/monitor/route.ts`, `scripts/monitor-terminals.ts`.
 
-### 8. Authentication Module
+### 8. Authentication & Security Module
 - **Fungsi**:
-  - Validasi Cron request via `CRON_SECRET` Bearer Token.
+  - Validasi Cron request via `CRON_SECRET` Bearer Token dengan **Timing-Safe Compare (`safeCompare` di `lib/security.ts`)**.
+  - Validasi WAHA Webhook request via `WAHA_WEBHOOK_SECRET` dengan Timing-Safe Compare.
+  - Perlindungan Brute-Force Login Rate-Limiter (In-Memory IP Limiter di `lib/security.ts`) membatasi maksimal 5 percobaan per menit per alamat IP pada endpoint login API dan Server Action.
   - Strict Global Route Protection via `proxy.ts`: Menutup semua akses publik pada aplikasi web kecuali `/auth/login`. Jika pengguna belum login (*unauthenticated*), sistem secara otomatis mengarahkan ke form login `/auth/login?redirect=...`.
-  - Enforce Server Action Auth: Pengecekan `requireAuth()` pada seluruh Server Actions publik (`actions/terminal-track-action.ts` & `actions/track-action.ts`). Service cron Latar Belakang (`service/cron-monitor-service.ts`) dan WAHA WhatsApp Bot Command Handlers (`lib/whatsapp/commands/*`) mengimpor langsung engine tracking & monitoring internal (`@/actions/tracking`, `enableTerminalMonitoringInternal`, `enableVesselMonitoringInternal`) tanpa kebergantungan sesi cookie user. Otorisasi pengguna WhatsApp divalidasi secara khusus berbasis langganan via `checkWaSubscription`.
+  - Session Revocation: `getCurrentUser()` di `lib/auth.ts` memverifikasi keberadaan user di database secara aktif. Jika user telah dihapus, sesi langsung dibatalkan (mengembalikan `null`), mencegah eksploitasi token tersisa.
+  - Role-Based Access Control (RBAC): Penambahan helper `requireAdmin()` dan `isAdminRole()` serta `ForbiddenError` (403) di `lib/errors.ts`. Operasi mutasi subscription (create, update, toggle, delete) dan manajemen akun user dilindungi ketat di level Server Action sehingga hanya `ADMIN` dan `OWNER` yang dapat mengeksekusinya.
+  - Architectural Separation (Pencegahan Unauthenticated RPC Leak): Logika pendaftaran background monitoring kontainer (`enableTerminalMonitoringInternal`), kapal (`enableVesselMonitoringInternal`), dan agregasi subscription (`getAllSubscriptionsWithCount`) dipindahkan ke Service Layer (`service/terminal-monitor-service.ts`, `service/vessel-monitor-service.ts`, `service/subscription-service.ts`). Ini memastikan file Server Action (`"use server"`) hanya mengekspos endpoint publik yang memiliki guard `requireAuth()` / `requireAdmin()`.
   - Sesi otomatis & login token management ke PARAMA Pelindo (TER3) yang disimpan di tabel `SystemConfig`.
-- **File Kunci**: `proxy.ts`, `actions/terminal-track-action.ts`, `actions/track-action.ts`, `actions/tracking/ports/ter3.ts`, `app/api/cron/monitor/route.ts`.
+- **File Kunci**: `proxy.ts`, `lib/security.ts`, `lib/auth.ts`, `lib/errors.ts`, `service/terminal-monitor-service.ts`, `service/vessel-monitor-service.ts`, `service/subscription-service.ts`, `actions/subscription-action.ts`, `actions/terminal-track-action.ts`, `actions/track-action.ts`, `app/api/auth/login/route.ts`, `app/api/cron/monitor/route.ts`, `app/api/webhook/waha/route.ts`.
 
 ### 9. Dashboard Module
 - **Fungsi**: Perhitungan real-time metric KPI (Total Active, Need Action Today, Overdue, ETA This Week), penyusunan Action Board (Overdue, Today, Upcoming 15), dan quick action resolve.

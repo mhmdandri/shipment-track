@@ -279,7 +279,7 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
 
               // Dispatch Telegram Alert
               const currentVoy = s.voyIn || s.voyOut || targetVoyage || "N/A";
-              const teleMsg = `🚢 <b>KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nVoyage: <b>${currentVoy}</b>\nPort: <b>${foundPort.toUpperCase()}</b>\nStatus: <b>${s.status}</b>\nOpen Stacking: <b>${s.openStacking || "Belum Tersedia"}</b>\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}\n\nJadwal kapal yang sebelumnya belum terdaftar kini telah ditemukan dan otomatis aktif dipantau!`;
+              const teleMsg = `🚢 <b>KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!</b> 🚢\n\nVessel: <b>${vMonitor.vesselName}</b>\nVoyage: <b>${currentVoy}</b>\nPort: <b>${foundPort.toUpperCase()}</b>\nStatus: <b>${s.status}</b>\nOpen Stacking: <b>${s.openStacking || "Belum Tersedia"}</b>\nETA: ${s.eta || s.etb || "N/A"}\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}\n\nJadwal kapal yang sebelumnya belum terdaftar kini telah ditemukan dan otomatis aktif dipantau!`;
               await sendTelegramMessage(teleMsg).catch((e) =>
                 console.error("Telegram error in multi-port vessel cron:", e)
               );
@@ -288,7 +288,7 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               if (vMonitor.waNumber) {
                 const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
                 if (subCheck.allowed) {
-                  const waMsg = `🚢 *KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!* 🚢\n\nKapal: *${vMonitor.vesselName}*\nVoyage: *${currentVoy}*\nPelabuhan: *${foundPort.toUpperCase()}*\nStatus: *${s.status}*\nOpen Stacking: *${s.openStacking || "Belum Tersedia"}*\nETB: *${s.etb || "-"}*\nETD: *${s.etd || "-"}*\n\nJadwal kapal yang Anda pantau kini telah terdaftar di ${foundPort.toUpperCase()} dan otomatis aktif dipantau oleh sistem CS Eksim Tracker!`;
+                  const waMsg = `🚢 *KAPAL DITEMUKAN DI ${foundPort.toUpperCase()}!* 🚢\n\nKapal: *${vMonitor.vesselName}*\nVoyage: *${currentVoy}*\nPelabuhan: *${foundPort.toUpperCase()}*\nStatus: *${s.status}*\nOpen Stacking: *${s.openStacking || "Belum Tersedia"}*\nETA: *${s.eta || s.etb || "-"}*\nETB: *${s.etb || "-"}*\nETD: *${s.etd || "-"}*\n\nJadwal kapal yang Anda pantau kini telah terdaftar di ${foundPort.toUpperCase()} dan otomatis aktif dipantau oleh sistem CS Eksim Tracker!`;
                   await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
                     console.error("WhatsApp error in multi-port vessel cron:", e)
                   );
@@ -411,50 +411,65 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               const currentVoyIn = s.voyIn || vMonitor.voyageIn || "-";
               const currentVoyOut = s.voyOut || vMonitor.voyageOut || "-";
               const voyDisplay = currentVoyIn !== "-" ? currentVoyIn : currentVoyOut;
+              const etaDisplay = s.eta || s.etb || "-";
+              const etbDisplay = s.etb || "-";
+              const etdDisplay = s.etd || "-";
+              const openStackDisplay = s.openStacking || "TERSEDIA";
 
-              // Send Telegram Alert (including Voyage)
-              const teleHeader = hasNewOpenStack
-                ? `🚢 <b>OPEN STACK AVAILABLE (${vMonitor.port.toUpperCase()})</b> 🚢`
-                : `🚢 <b>VESSEL SCHEDULE UPDATED (${vMonitor.port.toUpperCase()})</b> 🚢`;
+              // RULE: Notifikasi WA & Telegram HANYA dikirim jika ada perubahan Open Stacking
+              // (Jika perubahan hanya ETA, ETB, ETD, ATA, ATD, atau Status tanpa perubahan Open Stack, DB diupdate tanpa notif)
+              const isOpenStackChange = Boolean(hasNewOpenStack || openStackChanged);
 
-              const teleMsg = `${teleHeader}\n\nVessel: <b>${vMonitor.vesselName}</b>\nVoyage: <b>${voyDisplay}</b>\nStatus: <b>${s.status}</b>\nChanges: <i>${changesSummary.join(", ")}</i>\nOpen Stacking: <b>${s.openStacking || "N/A"}</b>\nETB: ${s.etb || "N/A"}\nETD: ${s.etd || "N/A"}`;
-              await sendTelegramMessage(teleMsg).catch((e) =>
-                console.error("Telegram error in vessel cron:", e)
-              );
+              if (isOpenStackChange) {
+                // Send Telegram Alert (lengkap dengan ETA, ETB, ETD, dan Open Stacking)
+                const teleHeader = hasNewOpenStack
+                  ? `🚢 <b>OPEN STACK TERSEDIA (${vMonitor.port.toUpperCase()})</b> 🚢`
+                  : `🚢 <b>OPEN STACK BERUBAH (${vMonitor.port.toUpperCase()})</b> 🚢`;
 
-              // Send WhatsApp Alert
-              if (vMonitor.waNumber) {
-                const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
-                if (subCheck.allowed) {
-                  const waMsg = hasNewOpenStack
-                    ? whatsappMessage.npct1OpenStackAvailableAlert(
-                        vMonitor.vesselName,
-                        s.openStacking || "TERSEDIA",
-                        s.etb || "-",
-                        s.etd || "-",
-                        s.status,
-                        vMonitor.port,
-                        currentVoyIn,
-                        currentVoyOut,
-                      )
-                    : whatsappMessage.vesselScheduleUpdatedAlert(
-                        vMonitor.vesselName,
-                        vMonitor.port,
-                        oldStatus,
-                        s.status,
-                        changesSummary,
-                        s.openStacking || "BELUM TERSEDIA",
-                        s.etb || "-",
-                        s.etd || "-",
-                        currentVoyIn,
-                        currentVoyOut,
-                      );
+                const teleMsg = `${teleHeader}\n\nVessel: <b>${vMonitor.vesselName}</b>\nVoyage: <b>${voyDisplay}</b>\nPort: <b>${vMonitor.port.toUpperCase()}</b>\nStatus: <b>${s.status}</b>\n\n📅 <b>Open Stacking:</b> <b>${openStackDisplay}</b>\n🕒 <b>ETA:</b> ${etaDisplay}\n🕒 <b>ETB:</b> ${etbDisplay}\n🕒 <b>ETD:</b> ${etdDisplay}${s.closingPhysic ? `\n⏰ <b>Closing:</b> ${s.closingPhysic}` : ""}`;
 
-                  await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
-                    console.error("WhatsApp error in vessel cron:", e)
-                  );
-                } else {
-                  console.log(`Skipping WhatsApp notification for ${vMonitor.waNumber}: subscription expired or suspended`);
+                await sendTelegramMessage(teleMsg).catch((e) =>
+                  console.error("Telegram error in vessel cron:", e)
+                );
+
+                // Send WhatsApp Alert
+                if (vMonitor.waNumber) {
+                  const subCheck = await checkWaSubscription(vMonitor.waNumber, 0);
+                  if (subCheck.allowed) {
+                    const waMsg = hasNewOpenStack
+                      ? whatsappMessage.npct1OpenStackAvailableAlert(
+                          vMonitor.vesselName,
+                          openStackDisplay,
+                          etbDisplay,
+                          etdDisplay,
+                          s.status,
+                          vMonitor.port,
+                          currentVoyIn,
+                          currentVoyOut,
+                          etaDisplay,
+                          s.closingPhysic || undefined,
+                        )
+                      : whatsappMessage.openStackUpdatedAlert(
+                          vMonitor.vesselName,
+                          vMonitor.port,
+                          s.status,
+                          openStackDisplay,
+                          etaDisplay,
+                          etbDisplay,
+                          etdDisplay,
+                          currentVoyIn,
+                          currentVoyOut,
+                          s.closingPhysic || undefined,
+                        );
+
+                    await sendWhatsappMessage(vMonitor.waNumber, waMsg).catch((e) =>
+                      console.error("WhatsApp error in vessel cron:", e)
+                    );
+                  } else {
+                    console.log(
+                      `Skipping WhatsApp notification for ${vMonitor.waNumber}: subscription expired or suspended`
+                    );
+                  }
                 }
               }
 

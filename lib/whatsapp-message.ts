@@ -435,6 +435,8 @@ Sistem akan memberikan notifikasi otomatis saat jadwal Open Stacking tersedia / 
     port: string = "NPCT1",
     voyageIn?: string,
     voyageOut?: string,
+    eta?: string,
+    closingPhysic?: string,
   ) => {
     const cleanPort = port.toUpperCase();
     const voyInText = voyageIn || "-";
@@ -443,6 +445,8 @@ Sistem akan memberikan notifikasi otomatis saat jadwal Open Stacking tersedia / 
       voyageIn || voyageOut
         ? `⛵ Voyage In / Out : *${voyInText} / ${voyOutText}*`
         : `⛵ Voyage In / Out : *- / -*`;
+    const etaLine = eta ? `🕒 ETA / Tiba     : *${eta}*\n` : "";
+    const closingLine = closingPhysic ? `⏰ Closing Physic : *${closingPhysic}*\n` : "";
 
     return `🎉 *JADWAL OPEN STACK (${cleanPort}) TERSEDIA!* 🎉
 
@@ -451,10 +455,45 @@ ${voyLine}
 📊 Status        : *${status}*
 
 📅 *OPEN STACKING*: *${openStacking}*
-🕒 ETB          : *${etb || "-"}*
-🕒 ETD          : *${etd || "-"}*
-
+${etaLine}🕒 ETB / Sandar  : *${etb || "-"}*
+🕒 ETD / Tolak   : *${etd || "-"}*
+${closingLine}
 Silakan persiapkan pengiriman kontainer ke terminal ${cleanPort}.`;
+  },
+
+  openStackUpdatedAlert: (
+    vessel: string,
+    port: string,
+    status: string,
+    newOpenStacking: string,
+    eta?: string,
+    etb?: string,
+    etd?: string,
+    voyageIn?: string,
+    voyageOut?: string,
+    closingPhysic?: string,
+  ) => {
+    const cleanPort = port.toUpperCase();
+    const voyInText = voyageIn || "-";
+    const voyOutText = voyageOut || "-";
+    const voyLine =
+      voyageIn || voyageOut
+        ? `⛵ Voyage In / Out : *${voyInText} / ${voyOutText}*`
+        : `⛵ Voyage In / Out : *- / -*`;
+    const etaLine = eta ? `🕒 ETA / Tiba     : *${eta}*\n` : "";
+    const closingLine = closingPhysic ? `⏰ Closing Physic : *${closingPhysic}*\n` : "";
+
+    return `🔔 *JADWAL OPEN STACK BERUBAH (${cleanPort})* 🔔
+
+🚢 Vessel        : *${vessel}*
+${voyLine}
+📊 Status        : *${status}*
+
+📅 *OPEN STACKING BARU*: *${newOpenStacking}*
+${etaLine}🕒 ETB / Sandar      : *${etb || "-"}*
+🕒 ETD / Tolak       : *${etd || "-"}*
+${closingLine}
+Perubahan jadwal Open Stacking terdeteksi di sistem terminal ${cleanPort}.`;
   },
 
   vesselScheduleUpdatedAlert: (

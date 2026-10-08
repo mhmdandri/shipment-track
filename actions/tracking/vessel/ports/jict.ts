@@ -7,16 +7,33 @@ import {
 } from "../types";
 
 /**
- * Normalizes JICT date format "DD/MM/YYYY HH:mm" into "YYYY-MM-DD HH:mm:ss".
+ * Normalizes JICT date format "DD/MM/YYYY HH:mm" or "DD-MM-YYYY HH:mm" into "DD/MM/YYYY HH:mm".
+ * Accurately extracts hours and minutes even with non-breaking spaces, HTML tags, or dot separators.
  * Returns null if invalid or "-".
  */
 export function parseJictDate(dateStr: string | null | undefined): string | null {
   if (!dateStr || dateStr === "-" || dateStr.trim() === "") return null;
-  const clean = dateStr.trim();
-  const match = clean.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}:\d{2}))?/);
+  const clean = dateStr
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[\u00a0\s]+/g, " ")
+    .trim();
+
+  const match = clean.match(
+    /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[,\s]+(\d{1,2})[:.](\d{2})(?:[:.]\d{2})?)?/
+  );
   if (!match) return null;
-  const [, day, month, year, time] = match;
-  return `${year}-${month}-${day} ${time ? `${time}:00` : "00:00:00"}`;
+
+  const [, day, month, year, rawHour, rawMinute] = match;
+  const d = day.padStart(2, "0");
+  const m = month.padStart(2, "0");
+
+  if (rawHour !== undefined && rawMinute !== undefined) {
+    const hh = rawHour.padStart(2, "0");
+    const mm = rawMinute.padStart(2, "0");
+    return `${d}/${m}/${year} ${hh}:${mm}`;
+  }
+
+  return `${d}/${m}/${year}`;
 }
 
 import { selectSingleBestSchedule } from "../helpers";

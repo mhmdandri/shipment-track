@@ -409,8 +409,8 @@ npx eslint .
    - Bot membalas dengan status Open Stacking terbaru dan mendaftarkan pemantauan otomatis secara bersamaan.
 4. **Cron Job Alerting & Multi-Field Change Detection**:
    - Endpoint `/api/cron/monitor` memeriksa seluruh kapal di `VesselMonitor` secara berkala (30 menit) menggunakan pemrosesan paralel berbasis chunk (`chunkSize = 5`) dan in-memory request caching.
-   - **Multi-Field Change Detection**: Cron membandingkan seluruh field jadwal dan status (`openStacking`, `status`, `etb`, `ata`, `etd`, `atd`, `closingDoc`, `closingPhysic`).
-   - Jika terdapat perubahan apapun pada tanggal jadwal atau status kapal, DB diperbarui dan notifikasi Telegram & WhatsApp (`vesselScheduleUpdatedAlert` / `npct1OpenStackAvailableAlert`) dikirimkan secara instan yang merinci seluruh daftar perubahan.
+   - **Database Schedule Sync & Open Stacking-Only Alert Rule**: Cron membandingkan seluruh field jadwal dan status (`openStacking`, `status`, `etb`, `ata`, `etd`, `atd`, `closingDoc`, `closingPhysic`). Jika ada perubahan, DB selalu diperbarui. Namun **notifikasi Telegram & WhatsApp HANYA dikirim jika terdapat ketersediaan atau perubahan pada Open Stacking** (`hasNewOpenStack || openStackChanged`). Perubahan yang hanya menyangkut jam sandar (ETA/ETB/ETD/Status) tidak memicu pesan keluar.
+   - Notifikasi Open Stacking wajib menyertakan rincian lengkap: Nama Kapal, Voyage, Port, Status, **Open Stacking**, **ETA**, **ETB**, dan **ETD**.
    - Sebelum mengirim WhatsApp, cron secara ketat memverifikasi status langganan via `checkWaSubscription`.
    - Pengecekan status kapal yang sudah berlayar / bertolak / selesai menggunakan helper terpusat `isVesselSailingOrCompleted(status)` dari `@/actions/tracking/vessel`.
 5. **Deaktivasi Auto-Monitoring Kapal**:
@@ -658,4 +658,49 @@ npx eslint .
    - Komponen UI `TerminalTrackerClient` **hanya menampilkan Nama Subscription (`sub.name` / `subscriptionName`)** (contoh: **PT Logistics Indonesia**).
    - Dilarang menampilkan string mentah seperti `120363428254459304@g.us` atau `628123456789@c.us` di antarmuka pengguna demi kenyamanan dan estetika.
 3. **Metric Summary Cards & Scrollable Batch Table**:
-   - Hasil batch tracking multi-kontainer dilengkapi kartu statistik di bagian atas (Total, Stacking Yard, Outgate, Fail/Unknown) serta tabel ber-scroll area.ontainer.
+   - Hasil batch tracking multi-kontainer dilengkapi kartu statistik di bagian atas (Total, Stacking Yard, Outgate, Fail/Unknown) serta tabel ber-scroll area.
+
+---
+
+## 22. Best Practice Keamanan: Timing-Safe Comparison & Proteksi Brute-Force Rate Limiting
+
+### Aturan & Implementasi:
+
+1. **Timing-Safe Secret Checking (`safeCompare`)**:
+   - String perbandingan token rahasia seperti `CRON_SECRET` atau `WAHA_WEBHOOK_SECRET` dilarang menggunakan operator equality biasa (`===`) karena rentan terhadap *timing attack*.
+   - Gunakan `safeCompare(a, b)` dari `@/lib/security` yang memanfaatkan `crypto.timingSafeEqual` dengan buffer panjang yang dinormalisasi.
+   ```typescript
+   import { safeCompare } from "@/lib/security";
+   if (!safeCompare(providedToken, expectedSecret)) {
+     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   }
+   ```
+
+2. **In-Memory IP Rate Limiting untuk Endpoint Sensitif**:
+   - Endpoint login (`/api/auth/login` dan `loginAction`) wajib diamankan dengan `checkRateLimit(ip, limit, windowMs)` dari `@/lib/security`.
+   - Batasi percobaan gagal (misalnya 5 permintaan per 60 detik) untuk menangkal serangan brute-force credential stuffing.
+
+---
+
+## 23. Pemisahan Layer: Service Logic vs Server Actions (Mencegah Unauthenticated RPC Leakage)
+
+### Aturan & Implementasi:
+
+1. **Next.js Server Actions ("use server") RPC Exposure**:
+   - Setiap fungsi yang di-`export` dari file bertanda `"use server"` otomatis dibuatkan HTTP POST endpoint publik oleh Next.js.
+   - **DILARANG** meng-export fungsi background helper atau engine internal (yang tidak memeriksa sesi pengguna) di dalam file `"use server"`.
+2. **Pola Pemisahan**:
+   - Tempatkan logika bisnis inti, scraping, mutasi database tanpa guard sesi, dan cron processors di dalam direktori `service/*` (tanpa directive `"use server"`).
+   - Di dalam file `actions/*` (`"use server"`), import fungsi dari `service/*` dan bungkus dengan validasi autentikasi ketat (`requireAuth()`, `requireAdmin()`, serta schema parsing Zod).
+   ```typescript
+   // service/terminal-monitor-service.ts (Internal Engine)
+   export async function enableTerminalMonitoringInternal(data: MonitorPayload) { ... }
+
+   // actions/monitor-action.ts (Public Server Action)
+   "use server";
+   export async function enableTerminalMonitoringAction(data: MonitorPayload) {
+     await requireAuth(); // Enforce user session
+     return enableTerminalMonitoringInternal(data);
+   }
+   ```
+

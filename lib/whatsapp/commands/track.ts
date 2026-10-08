@@ -1,5 +1,5 @@
 import { trackTerminalContainer } from "@/actions/tracking";
-import { enableTerminalMonitoringInternal } from "@/actions/monitor-action";
+import { enableTerminalMonitoringInternal } from "@/service/terminal-monitor-service";
 import { isOutgateStatus } from "@/actions/tracking/utils";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";

@@ -13,10 +13,10 @@ echo "📦 2. Menginstal dependencies..."
 pnpm install
 
 echo "⚙️ 3. Melakukan generate Prisma Client..."
-pnpm prisma generate
+pnpm exec prisma generate
 
 echo "🗄️ 4. Melakukan migrasi database (Deploy)..."
-pnpm prisma migrate deploy
+pnpm exec prisma migrate deploy
 
 echo "🔨 5. Mem-build aplikasi Next.js..."
 pnpm build

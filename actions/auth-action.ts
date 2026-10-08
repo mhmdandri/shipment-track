@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { z } from "zod";
 import {
   AUTH_COOKIE_NAME,
@@ -9,6 +9,8 @@ import {
   JWTPayload,
 } from "@/lib/auth";
 import { ActionResponse } from "@/lib";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/security";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username wajib diisi"),
@@ -29,6 +31,18 @@ export async function loginAction(
   input: LoginInput,
 ): Promise<ActionResponse<LoginResult>> {
   try {
+    // Shares the same IP bucket as /api/auth/login (5 attempts / 60s)
+    const clientIp = getClientIp(await headers());
+    const rateLimit = checkRateLimit(`login:${clientIp}`, 5, 60 * 1000);
+    if (!rateLimit.success) {
+      return {
+        success: false,
+        error: `Terlalu banyak percobaan login. Coba lagi dalam ${Math.ceil(
+          rateLimit.resetMs / 1000,
+        )} detik.`,
+      };
+    }
+
     const validated = loginSchema.parse(input);
 
     const authResult = await authenticateCredentials(

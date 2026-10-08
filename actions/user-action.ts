@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ActionResponse } from "@/lib";
-import { requireAuth, hashPassword } from "@/lib/auth";
+import { requireAuth, requireAdmin, isAdminRole, hashPassword } from "@/lib/auth";
 import { normalizeWaTargetId } from "@/lib/whatsapp/subscription";
 
 export interface UserWithSubscription {
@@ -106,13 +106,7 @@ export async function getCurrentUserAction(): Promise<
 
 export async function getUsersAction(): Promise<ActionResponse<UserWithSubscription[]>> {
   try {
-    const authUser = await requireAuth();
-    if (authUser.role !== "ADMIN" && authUser.role !== "OWNER") {
-      return {
-        success: false,
-        error: "Akses ditolak: Hanya Admin/Owner yang dapat mengelola akun pengguna.",
-      };
-    }
+    await requireAdmin("Akses ditolak: Hanya Admin/Owner yang dapat mengelola akun pengguna.");
 
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
@@ -153,13 +147,7 @@ export async function createMemberUserAction(
   data: unknown
 ): Promise<ActionResponse<UserWithSubscription>> {
   try {
-    const authUser = await requireAuth();
-    if (authUser.role !== "ADMIN" && authUser.role !== "OWNER") {
-      return {
-        success: false,
-        error: "Akses ditolak: Hanya Admin/Owner yang dapat membuat akun member.",
-      };
-    }
+    await requireAdmin("Akses ditolak: Hanya Admin/Owner yang dapat membuat akun member.");
 
     const parsed = createMemberUserSchema.parse(data);
 
@@ -295,7 +283,7 @@ export async function updateUserAction(
     const parsed = updateUserSchema.parse(data);
 
     const isSelf = authUser.id === parsed.userId;
-    const isOwnerOrAdmin = authUser.role === "ADMIN" || authUser.role === "OWNER";
+    const isOwnerOrAdmin = isAdminRole(authUser.role);
 
     if (!isSelf && !isOwnerOrAdmin) {
       return {
@@ -381,73 +369,11 @@ export async function updateUserAction(
   }
 }
 
-export async function updateUserSubscriptionAction(
-  userId: string,
-  subscriptionId: string | null
-): Promise<ActionResponse<UserWithSubscription>> {
-  try {
-    const authUser = await requireAuth();
-    const isSelf = authUser.id === userId;
-    const isOwnerOrAdmin = authUser.role === "ADMIN" || authUser.role === "OWNER";
-
-    if (!isSelf && !isOwnerOrAdmin) {
-      return {
-        success: false,
-        error: "Akses ditolak.",
-      };
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { subscriptionId },
-      select: {
-        id: true,
-        username: true,
-        name: true,
-        role: true,
-        subscriptionId: true,
-        createdAt: true,
-        updatedAt: true,
-        subscription: {
-          select: {
-            id: true,
-            targetId: true,
-            phoneNumber: true,
-            name: true,
-            plan: true,
-            maxContainers: true,
-            expiredAt: true,
-            isActive: true,
-          },
-        },
-      },
-    });
-
-    revalidatePath("/subscriptions");
-    return { success: true, data: updatedUser };
-  } catch (error) {
-    console.error("Error updating user subscription link:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Gagal memperbarui tautan subscription user.",
-    };
-  }
-}
-
 export async function deleteUserAction(
   userId: string
 ): Promise<ActionResponse<{ deleted: boolean }>> {
   try {
-    const authUser = await requireAuth();
-    if (authUser.role !== "ADMIN" && authUser.role !== "OWNER") {
-      return {
-        success: false,
-        error: "Akses ditolak.",
-      };
-    }
+    const authUser = await requireAdmin();
 
     if (authUser.id === userId) {
       return {

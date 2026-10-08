@@ -1,5 +1,5 @@
 import { trackVesselSchedule } from "@/actions/tracking/vessel";
-import { enableVesselMonitoringInternal } from "@/actions/vessel-action";
+import { enableVesselMonitoringInternal } from "@/service/vessel-monitor-service";
 import { sendWhatsappMessage } from "@/lib/whatsapp";
 import { whatsappMessage } from "@/lib/whatsapp-message";
 import { verifyAndReplyWaSubscription } from "@/lib/whatsapp/subscription";

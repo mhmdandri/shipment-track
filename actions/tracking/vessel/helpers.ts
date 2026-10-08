@@ -80,48 +80,69 @@ export function isVesselSailingOrCompleted(
  */
 export function parseVesselDateMs(dateStr: string | null | undefined): number {
   if (!dateStr || dateStr === "-" || dateStr.trim() === "") return 0;
-  const clean = dateStr.trim();
+  const clean = dateStr
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[\u00a0\s]+/g, " ")
+    .trim();
 
   // 1. YYYY-MM-DD HH:mm:ss
-  const isoMatch = clean.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?/);
+  const isoMatch = clean.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[,\s]+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?)?/
+  );
   if (isoMatch) {
-    const [, year, month, day, time] = isoMatch;
-    const iso = `${year}-${month}-${day}T${time || "00:00:00"}`;
+    const [, year, month, day, h, m, s] = isoMatch;
+    const timeStr =
+      h !== undefined
+        ? `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${(s || "00").padStart(2, "0")}`
+        : "00:00:00";
+    const iso = `${year}-${month}-${day}T${timeStr}`;
     const t = new Date(iso).getTime();
     if (!isNaN(t)) return t;
   }
 
-  // 2. DD-MM-YYYY HH:mm:ss (TMAL)
-  const dmyDashMatch = clean.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?/);
+  // 2. DD-MM-YYYY HH:mm:ss (TMAL, KOJA)
+  const dmyDashMatch = clean.match(
+    /^(\d{1,2})-(\d{1,2})-(\d{4})(?:[,\s]+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?)?/
+  );
   if (dmyDashMatch) {
-    const [, day, month, year, time] = dmyDashMatch;
-    const iso = `${year}-${month}-${day}T${time || "00:00:00"}`;
+    const [, day, month, year, h, m, s] = dmyDashMatch;
+    const timeStr =
+      h !== undefined
+        ? `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${(s || "00").padStart(2, "0")}`
+        : "00:00:00";
+    const iso = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${timeStr}`;
     const t = new Date(iso).getTime();
     if (!isNaN(t)) return t;
   }
 
   // 3. Slashing format DD/MM/YYYY (Indonesian standard) or MM/DD/YYYY
-  const slashMatch = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?/);
+  const slashMatch = clean.match(
+    /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[,\s]+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?)?/
+  );
   if (slashMatch) {
-    const [, p1, p2, year, time] = slashMatch;
+    const [, p1, p2, year, h, m, s] = slashMatch;
     const n1 = parseInt(p1, 10);
     const n2 = parseInt(p2, 10);
+    const timeStr =
+      h !== undefined
+        ? `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${(s || "00").padStart(2, "0")}`
+        : "00:00:00";
 
     // If p2 > 12 -> p2 is Day -> MM/DD/YYYY (e.g. TER3 "07/30/2026")
     if (n2 > 12) {
-      const iso = `${year}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}T${time || "00:00:00"}`;
+      const iso = `${year}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}T${timeStr}`;
       const t = new Date(iso).getTime();
       if (!isNaN(t)) return t;
     }
     // If p1 > 12 -> p1 is Day -> DD/MM/YYYY (e.g. JICT "29/07/2026")
     else if (n1 > 12) {
-      const iso = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${time || "00:00:00"}`;
+      const iso = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${timeStr}`;
       const t = new Date(iso).getTime();
       if (!isNaN(t)) return t;
     }
     // Default to DD/MM/YYYY (Day = p1, Month = p2) for Indonesian domestic port standards
     else {
-      const iso1 = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${time || "00:00:00"}`;
+      const iso1 = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${timeStr}`;
       const t1 = new Date(iso1).getTime();
       if (!isNaN(t1)) return t1;
     }

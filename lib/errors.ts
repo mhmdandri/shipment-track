@@ -35,6 +35,12 @@ export class UnauthorizedError extends AppError {
   }
 }
 
+export class ForbiddenError extends AppError {
+  constructor(message: string, code = "FORBIDDEN") {
+    super(message, code, 403);
+  }
+}
+
 export class DatabaseError extends AppError {
   constructor(message: string, code = "DATABASE_ERROR") {
     super(message, code, 500, false); // Usually not an operational user error
