@@ -19,7 +19,7 @@ export function parseJictDate(dateStr: string | null | undefined): string | null
     .trim();
 
   const match = clean.match(
-    /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[,\s]+(\d{1,2})[:.](\d{2})(?:[:.]\d{2})?)?/
+    /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[,\s]+(\d{1,2})[:.](\d{2})(?:[:.]\d{2})?)?/
   );
   if (!match) return null;
 
@@ -93,21 +93,46 @@ export const jictVesselTracker: VesselTracker = {
 
       const allSchedules: VesselScheduleItem[] = [];
 
+      const colMap = {
+        vessel: 0,
+        voyage: 1,
+        arrival: 2,
+        berthing: 3,
+        departure: 4,
+        closing: 5,
+        terminal: 6,
+        status: 7,
+        openStack: 8,
+      };
+
+      $(".working-vessel-table thead th").each((idx, th) => {
+        const text = $(th).text().trim().toLowerCase();
+        if (text.includes("vessel")) colMap.vessel = idx;
+        else if (text.includes("voyage")) colMap.voyage = idx;
+        else if (text.includes("arrival")) colMap.arrival = idx;
+        else if (text.includes("berth")) colMap.berthing = idx;
+        else if (text.includes("depart")) colMap.departure = idx;
+        else if (text.includes("closing")) colMap.closing = idx;
+        else if (text.includes("terminal")) colMap.terminal = idx;
+        else if (text.includes("status")) colMap.status = idx;
+        else if (text.includes("open") || text.includes("stack")) colMap.openStack = idx;
+      });
+
       $(".working-vessel-table tbody tr").each((_, tr) => {
         const tds = $(tr).find("td");
         if (tds.length < 8) return;
 
         const getVal = (idx: number) => $(tds[idx]).text().trim();
 
-        const vName = getVal(0);
-        const voy = getVal(1);
-        const arrivalRaw = getVal(2);
-        const berthingRaw = getVal(3);
-        const departureRaw = getVal(4);
-        const closingRaw = getVal(5);
-        const terminalCol = getVal(6);
-        const statusRaw = getVal(7);
-        const openStackRaw = tds.length >= 9 ? getVal(8) : "-";
+        const vName = getVal(colMap.vessel);
+        const voy = getVal(colMap.voyage);
+        const arrivalRaw = getVal(colMap.arrival);
+        const berthingRaw = getVal(colMap.berthing);
+        const departureRaw = getVal(colMap.departure);
+        const closingRaw = getVal(colMap.closing);
+        const terminalCol = getVal(colMap.terminal);
+        const statusRaw = getVal(colMap.status);
+        const openStackRaw = tds.length > colMap.openStack ? getVal(colMap.openStack) : "-";
 
         allSchedules.push({
           vessel: vName,

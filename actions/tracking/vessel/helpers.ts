@@ -85,6 +85,12 @@ export function parseVesselDateMs(dateStr: string | null | undefined): number {
     .replace(/[\u00a0\s]+/g, " ")
     .trim();
 
+  // If already has ISO timezone or offset (+07:00, Z, etc.)
+  if (/[Zz]|[+-]\d{2}:?\d{2}$/.test(clean)) {
+    const t = Date.parse(clean);
+    if (!isNaN(t)) return t;
+  }
+
   // 1. YYYY-MM-DD HH:mm:ss
   const isoMatch = clean.match(
     /^(\d{4})-(\d{2})-(\d{2})(?:[,\s]+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?)?/
@@ -95,7 +101,7 @@ export function parseVesselDateMs(dateStr: string | null | undefined): number {
       h !== undefined
         ? `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${(s || "00").padStart(2, "0")}`
         : "00:00:00";
-    const iso = `${year}-${month}-${day}T${timeStr}`;
+    const iso = `${year}-${month}-${day}T${timeStr}+07:00`;
     const t = new Date(iso).getTime();
     if (!isNaN(t)) return t;
   }
@@ -110,7 +116,7 @@ export function parseVesselDateMs(dateStr: string | null | undefined): number {
       h !== undefined
         ? `${h.padStart(2, "0")}:${m.padStart(2, "0")}:${(s || "00").padStart(2, "0")}`
         : "00:00:00";
-    const iso = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${timeStr}`;
+    const iso = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${timeStr}+07:00`;
     const t = new Date(iso).getTime();
     if (!isNaN(t)) return t;
   }
@@ -130,19 +136,19 @@ export function parseVesselDateMs(dateStr: string | null | undefined): number {
 
     // If p2 > 12 -> p2 is Day -> MM/DD/YYYY (e.g. TER3 "07/30/2026")
     if (n2 > 12) {
-      const iso = `${year}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}T${timeStr}`;
+      const iso = `${year}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}T${timeStr}+07:00`;
       const t = new Date(iso).getTime();
       if (!isNaN(t)) return t;
     }
     // If p1 > 12 -> p1 is Day -> DD/MM/YYYY (e.g. JICT "29/07/2026")
     else if (n1 > 12) {
-      const iso = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${timeStr}`;
+      const iso = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${timeStr}+07:00`;
       const t = new Date(iso).getTime();
       if (!isNaN(t)) return t;
     }
     // Default to DD/MM/YYYY (Day = p1, Month = p2) for Indonesian domestic port standards
     else {
-      const iso1 = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${timeStr}`;
+      const iso1 = `${year}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}T${timeStr}+07:00`;
       const t1 = new Date(iso1).getTime();
       if (!isNaN(t1)) return t1;
     }

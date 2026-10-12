@@ -20,6 +20,7 @@ function formatDateDisplay(d: Date | string | null | undefined): string {
   const dateObj = d instanceof Date ? d : new Date(d);
   if (isNaN(dateObj.getTime())) return typeof d === "string" ? d : "-";
   return dateObj.toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

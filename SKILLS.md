@@ -395,7 +395,7 @@ npx eslint .
 1. **Scraping Real-Time Vessel Schedule (Multi-Port Engine)**:
    - Panggil `trackVesselSchedule(port, vesselName, line)` dari `@/actions/tracking/vessel`.
    - **Pemilihan Voyage Utama (`selectSingleBestSchedule`)**: Seluruh tracker terminal menggunakan `selectSingleBestSchedule` untuk memilih pelayaran mendatang paling awal (*earliest active upcoming voyage*, e.g. Voyage `0002S` sebelum `0003S`) dan secara otomatis mengesampingkan jadwal pelayaran lama yang sudah selesai (*SAILING/COMPLETE*).
-   - **Multi-Format Date Parsing (`parseVesselDateMs`)**: Seluruh konversi string tanggal jadwal kapal (`DD/MM/YYYY`, `MM/DD/YYYY`, `YYYY-MM-DD`, `DD-MM-YYYY`) menggunakan helper terpusat `parseVesselDateMs` untuk menghindari kegagalan parsing Date di JavaScript.
+   - **Multi-Format Date Parsing (`parseVesselDateMs`)**: Seluruh konversi string tanggal jadwal kapal (`DD/MM/YYYY`, `MM/DD/YYYY`, `YYYY-MM-DD`, `DD-MM-YYYY`) menggunakan helper terpusat `parseVesselDateMs` dengan penambahan eksplisit offset zona waktu Indonesia Barat (`+07:00` / WIB) untuk mencegah pergeseran jam saat server/cloud berjalan di zona waktu UTC atau UTC+8.
    - **NPCT1 (`actions/tracking/vessel/ports/npct1.ts`)**:
      Engine mengambil CSRF token & cookie session, melakukan POST request ke `https://www.npct1.co.id/req/vessel`, mendownload HTML redirect, dan memparse `#idTableVesselSchedule`.
    - **JICT (`actions/tracking/vessel/ports/jict.ts`)**:

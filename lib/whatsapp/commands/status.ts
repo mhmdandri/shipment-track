@@ -115,7 +115,10 @@ export async function handleStatusCommand(context: WhatsappCommandContext) {
         });
       }
 
-      const checkTime = result.timeOut || result.time || new Date().toLocaleString("id-ID");
+      const checkTime =
+        result.timeOut ||
+        result.time ||
+        new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
 
       const message = whatsappMessage.statusRealtime(
         monitor.containerNo,
@@ -210,7 +213,9 @@ export async function handleStatusCommand(context: WhatsappCommandContext) {
         }
 
         const checkTime =
-          result.timeOut || result.time || new Date().toLocaleString("id-ID");
+          result.timeOut ||
+          result.time ||
+          new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
 
         return {
           containerNo,
