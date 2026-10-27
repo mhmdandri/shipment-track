@@ -1,7 +1,7 @@
 # ========================================================
 # Stage 1: Base & Dependencies
 # ========================================================
-FROM node:22-alpine AS deps
+FROM node:26-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN pnpm install --frozen-lockfile
 # ========================================================
 # Stage 2: Builder
 # ========================================================
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -36,7 +36,7 @@ RUN pnpm exec next build
 # ========================================================
 # Stage 3: Runner
 # ========================================================
-FROM node:22-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
