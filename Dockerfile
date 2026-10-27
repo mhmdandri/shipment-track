@@ -5,8 +5,8 @@ FROM node:26-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Enable corepack for pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm (corepack removed from Node.js 26+)
+RUN npm install -g pnpm@12.10.1
 
 # Copy package descriptors
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
@@ -20,7 +20,7 @@ RUN pnpm install --frozen-lockfile
 # ========================================================
 FROM node:26-alpine AS builder
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm@12.10.1
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
