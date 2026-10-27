@@ -16,6 +16,7 @@ import {
   normalizeWaTargetId,
 } from "@/lib/whatsapp/subscription";
 import { z } from "zod";
+import { Prisma } from "@/app/generated/prisma/client";
 
 /**
  * Vessel open-stack monitoring business logic.
@@ -26,10 +27,10 @@ import { z } from "zod";
  */
 
 const enableVesselMonitorSchema = z.object({
-  vesselName: z.string().min(2, "Nama kapal minimal 2 karakter"),
-  port: z.string().min(2, "Port/Terminal wajib diisi"),
-  waNumber: z.string().optional(),
-  voyageNo: z.string().optional(),
+  vesselName: z.string().trim().min(2, "Nama kapal minimal 2 karakter").max(150),
+  port: z.enum(["jict", "koja", "npct1", "tmal", "ter3", "parama", "all"]),
+  waNumber: z.string().trim().max(100).optional(),
+  voyageNo: z.string().trim().max(50).optional(),
 });
 
 /** Normalizes vessel name: trims, collapses whitespace, uppercases. */
@@ -45,6 +46,7 @@ async function checkVesselMonitorQuota(
   cleanWaNumber: string,
   rawWaNumber: string,
   existing: { isActive: boolean; waNumber: string | null } | null,
+  db: typeof prisma | Prisma.TransactionClient = prisma,
 ): Promise<string | null> {
   const isAlreadyActiveForSameTarget = Boolean(
     existing &&
@@ -56,6 +58,8 @@ async function checkVesselMonitorQuota(
   const subCheck = await checkWaSubscription(
     cleanWaNumber,
     isAlreadyActiveForSameTarget ? 0 : 1,
+    undefined,
+    db,
   );
 
   return subCheck.allowed ? null : formatSubscriptionErrorMessage(subCheck, rawWaNumber);
@@ -105,7 +109,7 @@ export async function enableVesselMonitoringInternal(
 
   try {
     const cleanVessel = normalizeVesselName(vesselName);
-    const cleanPort = port.trim().toLowerCase();
+    const cleanPort = port.trim().toLowerCase() as z.infer<typeof enableVesselMonitorSchema>["port"];
     const rawWaNumber = waNumber?.trim() || "";
     const cleanWaNumber = rawWaNumber
       ? normalizeWaTargetId(rawWaNumber)
@@ -138,16 +142,6 @@ export async function enableVesselMonitoringInternal(
     };
 
     // Single lookup reused for subscription check & first-time detection
-    const existing = await prisma.vesselMonitor.findUnique({ where: uniqueKey });
-
-    // Strict WhatsApp Subscription Validation
-    if (cleanWaNumber) {
-      const quotaError = await checkVesselMonitorQuota(cleanWaNumber, rawWaNumber, existing);
-      if (quotaError) {
-        return { success: false, error: quotaError };
-      }
-    }
-
     if (selected && isVesselSailingOrCompleted(selected.status, selected.etd)) {
       return {
         success: false,
@@ -165,30 +159,39 @@ export async function enableVesselMonitoringInternal(
       closingPhysic: parseVesselDate(selected?.closingPhysic),
     };
 
-    await prisma.vesselMonitor.upsert({
-      where: uniqueKey,
-      update: {
-        isActive: true,
-        line: selected?.line || undefined,
-        voyageIn: targetVoyageIn,
-        voyageOut: selected?.voyOut || undefined,
-        service: selected?.service || undefined,
-        status: selected?.status || "REGISTER",
-        ...scheduleDates,
-        ...(cleanWaNumber ? { waNumber: cleanWaNumber } : {}),
-      },
-      create: {
-        vesselName: cleanVessel,
-        port: cleanPort,
-        line: selected?.line || null,
-        voyageIn: targetVoyageIn,
-        voyageOut: selected?.voyOut || null,
-        service: selected?.service || null,
-        status: selected?.status || "REGISTER",
-        ...scheduleDates,
-        waNumber: cleanWaNumber || null,
-        isActive: true,
-      },
+    const existing = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${cleanWaNumber || cleanVessel}))`;
+      const current = await tx.vesselMonitor.findUnique({ where: uniqueKey });
+      if (cleanWaNumber) {
+        const quotaError = await checkVesselMonitorQuota(cleanWaNumber, rawWaNumber, current, tx);
+        if (quotaError) throw new Error(quotaError);
+      }
+      await tx.vesselMonitor.upsert({
+        where: uniqueKey,
+        update: {
+          isActive: true,
+          line: selected?.line || undefined,
+          voyageIn: targetVoyageIn,
+          voyageOut: selected?.voyOut || undefined,
+          service: selected?.service || undefined,
+          status: selected?.status || "REGISTER",
+          ...scheduleDates,
+          ...(cleanWaNumber ? { waNumber: cleanWaNumber } : {}),
+        },
+        create: {
+          vesselName: cleanVessel,
+          port: cleanPort,
+          line: selected?.line || null,
+          voyageIn: targetVoyageIn,
+          voyageOut: selected?.voyOut || null,
+          service: selected?.service || null,
+          status: selected?.status || "REGISTER",
+          ...scheduleDates,
+          waNumber: cleanWaNumber || null,
+          isActive: true,
+        },
+      });
+      return current;
     });
 
     const isFirstTime = !existing || !existing.isActive;

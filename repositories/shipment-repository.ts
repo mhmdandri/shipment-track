@@ -8,6 +8,7 @@ import {
   Prisma,
 } from "@/app/generated/prisma/client";
 import { ShipmentWithRelations } from "@/lib";
+import { NotFoundError } from "@/lib/errors";
 
 export class ShipmentRepository {
   constructor(private prisma: PrismaClient) { }
@@ -49,7 +50,7 @@ export class ShipmentRepository {
       include: {
         tasks: { orderBy: { stepOrder: "asc" } },
         reminders: { orderBy: { dueDate: "asc" } },
-        activityLogs: { orderBy: { createdAt: "desc" } },
+        activityLogs: { orderBy: { createdAt: "desc" }, take: 100 },
         todos: { orderBy: { createdAt: "asc" } },
       },
     });
@@ -111,26 +112,31 @@ export class ShipmentRepository {
 
   async updateTask(
     taskId: string,
+    shipmentId: string,
     completed: boolean,
     completedAt: Date | null,
     notes?: string,
   ): Promise<ShipmentTask> {
-    return this.prisma.shipmentTask.update({
-      where: { id: taskId },
+    const result = await this.prisma.shipmentTask.updateMany({
+      where: { id: taskId, shipmentId },
       data: { completed, completedAt, notes },
     });
+    if (result.count !== 1) throw new NotFoundError("Task not found for shipment.");
+    return this.prisma.shipmentTask.findUniqueOrThrow({ where: { id: taskId } });
   }
 
-  async updateReminder(id: string, completed: boolean): Promise<Reminder> {
-    return this.prisma.reminder.update({
-      where: { id },
+  async updateReminder(id: string, completed: boolean, shipmentId?: string): Promise<Reminder> {
+    const result = await this.prisma.reminder.updateMany({
+      where: { id, ...(shipmentId ? { shipmentId } : {}) },
       data: { completed },
     });
+    if (result.count !== 1) throw new NotFoundError("Reminder not found for shipment.");
+    return this.prisma.reminder.findUniqueOrThrow({ where: { id } });
   }
 
-  async findReminderById(id: string): Promise<Reminder | null> {
-    return this.prisma.reminder.findUnique({
-      where: { id },
+  async findReminderById(id: string, shipmentId?: string): Promise<Reminder | null> {
+    return this.prisma.reminder.findFirst({
+      where: { id, ...(shipmentId ? { shipmentId } : {}) },
     });
   }
 

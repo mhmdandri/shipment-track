@@ -11,6 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -85,6 +92,12 @@ export default function AddMemberModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (subscriptionMode === "existing" && !existingSubscriptionId) {
+      setError("Pilih subscription terlebih dahulu.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     startProgress();
@@ -208,16 +221,16 @@ export default function AddMemberModal({
                 <Label htmlFor="mem-role" className="text-xs font-semibold">
                   Role Akses
                 </Label>
-                <select
-                  id="mem-role"
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-semibold"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as "MEMBER" | "CS" | "ADMIN")}
-                >
-                  <option value="MEMBER">MEMBER (Auto WhatsApp Sub)</option>
-                  <option value="CS">CS (Customer Service)</option>
-                  <option value="ADMIN">ADMIN (Akses Penuh)</option>
-                </select>
+                <Select value={role} onValueChange={(v) => setRole(v as "MEMBER" | "CS" | "ADMIN")}>
+                  <SelectTrigger id="mem-role" className="h-9 text-xs font-semibold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MEMBER">MEMBER (Auto WhatsApp Sub)</SelectItem>
+                    <SelectItem value="CS">CS (Customer Service)</SelectItem>
+                    <SelectItem value="ADMIN">ADMIN (Akses Penuh)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -293,12 +306,9 @@ export default function AddMemberModal({
                     <Label htmlFor="sub-plan" className="text-xs font-semibold">
                       Paket Subscription
                     </Label>
-                    <select
-                      id="sub-plan"
-                      className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    <Select
                       value={plan}
-                      onChange={(e) => {
-                        const selected = e.target.value;
+                      onValueChange={(selected) => {
                         setPlan(selected);
                         if (selected === "STARTER") setMaxContainers(10);
                         else if (selected === "BUSINESS") setMaxContainers(25);
@@ -306,11 +316,16 @@ export default function AddMemberModal({
                           setMaxContainers(0);
                       }}
                     >
-                      <option value="STARTER">STARTER (10 Container)</option>
-                      <option value="BUSINESS">BUSINESS (25 Container)</option>
-                      <option value="ENTERPRISE">ENTERPRISE (Unlimited)</option>
-                      <option value="UNLIMITED">CUSTOM UNLIMITED</option>
-                    </select>
+                      <SelectTrigger id="sub-plan" className="h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="STARTER">STARTER (10 Container)</SelectItem>
+                        <SelectItem value="BUSINESS">BUSINESS (25 Container)</SelectItem>
+                        <SelectItem value="ENTERPRISE">ENTERPRISE (Unlimited)</SelectItem>
+                        <SelectItem value="UNLIMITED">CUSTOM UNLIMITED</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-1">
@@ -336,20 +351,27 @@ export default function AddMemberModal({
                 <Label htmlFor="sub-existing" className="text-xs font-semibold">
                   Pilih Subscription Terdaftar
                 </Label>
-                <select
-                  id="sub-existing"
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                <Select
                   value={existingSubscriptionId}
-                  onChange={(e) => setExistingSubscriptionId(e.target.value)}
-                  required={subscriptionMode === "existing"}
+                  onValueChange={setExistingSubscriptionId}
                 >
-                  <option value="">-- Pilih Subscription Klien --</option>
-                  {existingSubscriptions.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.targetId}) - {s.plan}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="sub-existing" className="h-9 text-xs">
+                    <SelectValue placeholder="-- Pilih Subscription Klien --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {existingSubscriptions.length === 0 ? (
+                      <SelectItem value="__empty__" disabled>
+                        Belum ada subscription terdaftar
+                      </SelectItem>
+                    ) : (
+                      existingSubscriptions.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name} ({s.targetId}) - {s.plan}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
                 <p className="text-[10px] text-muted-foreground">
                   Akun member ini akan otomatis menggunakan kuota dan target notifikasi paket subscription terpilih.
                 </p>

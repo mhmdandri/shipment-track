@@ -125,6 +125,7 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
           result.containerNo,
           result.port,
           result.status,
+          result.time,
         ),
       );
       continue;
@@ -139,6 +140,7 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
       sender,
       vesselName,
       voyageNo,
+      result.time,
     );
     console.log(
       `-> enableTerminalMonitoring result for ${containerNo}:`,
@@ -153,6 +155,7 @@ export async function handleTrackCommand(context: WhatsappCommandContext) {
           result.port,
           result.status,
           monitorRes.error || "Unknown error",
+          result.time,
         ),
       );
     }

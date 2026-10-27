@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/app/generated/prisma/client";
 import { sendWhatsappMessage } from "../whatsapp";
 import { whatsappMessage } from "../whatsapp-message";
 
@@ -134,6 +135,7 @@ export function buildWaMatchConditions(
 export async function countActiveContainersForTarget(
   targetId: string,
   alternateId?: string,
+  db: typeof prisma | Prisma.TransactionClient = prisma,
 ): Promise<number> {
   try {
     const raw = targetId.trim();
@@ -145,13 +147,13 @@ export async function countActiveContainersForTarget(
     ];
 
     const [containerCount, vesselCount] = await Promise.all([
-      prisma.terminalMonitor.count({
+      db.terminalMonitor.count({
         where: {
           isActive: true,
           OR: conditions,
         },
       }),
-      prisma.vesselMonitor.count({
+      db.vesselMonitor.count({
         where: {
           isActive: true,
           OR: conditions,
@@ -170,6 +172,7 @@ export async function checkWaSubscription(
   sender: string,
   newContainersCount: number = 0,
   alternateSender?: string,
+  db: typeof prisma | Prisma.TransactionClient = prisma,
 ): Promise<SubscriptionCheckResult> {
   try {
     const rawSenders = [sender, alternateSender].filter((s): s is string =>
@@ -203,7 +206,7 @@ export async function checkWaSubscription(
     }
 
     // Strict subscription check with dual identity fallback
-    const subscription = await prisma.waSubscription.findFirst({
+    const subscription = await db.waSubscription.findFirst({
       where: {
         OR: matchConditions,
       },
@@ -248,7 +251,7 @@ export async function checkWaSubscription(
       }
 
       if (Object.keys(updateData).length > 0) {
-        await prisma.waSubscription
+        await db.waSubscription
           .update({
             where: { id: subscription.id },
             data: updateData,
@@ -277,6 +280,7 @@ export async function checkWaSubscription(
       const activeCount = await countActiveContainersForTarget(
         subscription.targetId,
         subscription.phoneNumber || alternateSender,
+        db,
       );
 
       if (activeCount + newContainersCount > subscription.maxContainers) {

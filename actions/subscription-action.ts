@@ -63,7 +63,10 @@ export async function getActiveSubscriptionsAction(): Promise<
   ActionResponse<Array<{ id: string; targetId: string; name: string; isGroup: boolean }>>
 > {
   try {
-    await requireAuth();
+    const user = await requireAuth();
+    if (user.role !== "ADMIN" && user.role !== "OWNER") {
+      return { success: false, error: "Akses ditolak." };
+    }
     const subs = await prisma.waSubscription.findMany({
       where: {
         isActive: true,
@@ -263,4 +266,3 @@ export async function deleteSubscriptionAction(
     };
   }
 }
-

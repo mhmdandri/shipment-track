@@ -97,7 +97,7 @@ export function VesselTrackerTab({ activeVesselMonitors }: VesselTrackerTabProps
                   if (s.includes("SAIL") || s.includes("COMPLETE") || s.includes("FINISH")) {
                     return "bg-slate-600 text-white";
                   }
-                  return "bg-blue-600 text-white";
+                  return "bg-primary text-primary-foreground";
                 };
 
                 return (
@@ -154,7 +154,7 @@ export function VesselTrackerTab({ activeVesselMonitors }: VesselTrackerTabProps
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="p-2 rounded-lg border border-border bg-muted/20">
                         <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
-                          <Anchor className="w-3 h-3 text-blue-500" /> ETB / Sandar
+                          <Anchor className="w-3 h-3 text-primary" /> ETB / Sandar
                         </p>
                         <p className="font-bold font-mono text-foreground mt-0.5 text-[11px]">
                           {formatDateDisplay(vMonitor.etb)}

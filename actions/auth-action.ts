@@ -21,7 +21,6 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 export interface LoginResult {
   user: JWTPayload;
-  token: string;
 }
 
 /**
@@ -75,7 +74,6 @@ export async function loginAction(
       success: true,
       data: {
         user,
-        token,
       },
     };
   } catch (error) {

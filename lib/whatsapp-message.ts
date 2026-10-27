@@ -77,8 +77,10 @@ ${error}`,
     container: string,
     port: string,
     status: string,
+    time?: string,
   ) => {
     const emoji = getStatusEmoji(status);
+    const timeStr = time && time !== "-" ? time : "-";
     return `✅ *Auto Monitoring Aktif*
 
 📦 Container : *${container}*
@@ -88,6 +90,8 @@ Status saat ini
 
 ${emoji} *${status}*
 
+🕒 Waktu      : *${timeStr}*
+
 Sistem akan melakukan pengecekan otomatis secara berkala.`;
   },
 
@@ -96,8 +100,10 @@ Sistem akan melakukan pengecekan otomatis secara berkala.`;
     port: string,
     status: string,
     error: string,
+    time?: string,
   ) => {
     const emoji = getStatusEmoji(status);
+    const timeStr = time && time !== "-" ? time : "-";
     return `⚠️ *Monitoring Gagal Diaktifkan*
 
 📦 Container : *${container}*
@@ -106,6 +112,8 @@ Sistem akan melakukan pengecekan otomatis secara berkala.`;
 Status saat ini
 
 ${emoji} *${status}*
+
+🕒 Waktu      : *${timeStr}*
 
 Namun terjadi kesalahan saat mengaktifkan auto monitoring.
 
@@ -118,8 +126,10 @@ ${error}`;
     container: string,
     port: string,
     status: string,
+    time?: string,
   ) => {
     const emoji = getStatusEmoji(status);
+    const timeStr = time && time !== "-" ? time : "-";
     return `ℹ️ *Kontainer Sudah Dipantau*
 
 📦 Container : *${container}*
@@ -128,6 +138,8 @@ ${error}`;
 Status saat ini
 
 ${emoji} *${status}*
+
+🕒 Waktu      : *${timeStr}*
 
 Kontainer ini sudah masuk dalam daftar auto monitoring aktif.`;
   },
@@ -346,7 +358,10 @@ ${error}`,
     status: string,
     ob?: string,
     obName?: string,
-  ) => `🚨 *CONTAINER OB* 🚨
+    time?: string,
+  ) => {
+    const timeStr = time && time !== "-" ? time : "-";
+    return `🚨 *CONTAINER OB* 🚨
 
 📦 Container : *${container}*
 🏗️ Terminal   : *${port.toUpperCase()}*
@@ -356,7 +371,10 @@ Status saat ini
 
 🟡 *${status} (${ob})*
 
-Sistem akan melakukan pengecekan otomatis secara berkala.`,
+🕒 Waktu      : *${timeStr}*
+
+Sistem akan melakukan pengecekan otomatis secara berkala.`;
+  },
 
   listTrack: (
     total: number,

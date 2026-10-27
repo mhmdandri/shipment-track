@@ -61,7 +61,7 @@ export function UpcomingEtaPipeline({ shipments }: UpcomingEtaPipelineProps) {
                 badgeColor = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse";
                 badgeText = "Arriving Today";
               } else if (daysDiff === 1) {
-                badgeColor = "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
+                badgeColor = "bg-primary/10 text-primary border-primary/20";
                 badgeText = "Tomorrow";
               } else if (daysDiff <= 7) {
                 badgeColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";

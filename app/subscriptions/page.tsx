@@ -3,10 +3,12 @@ import {
   SubscriptionWithCount,
   getAllSubscriptionsWithCount,
 } from "@/service/subscription-service";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function SubscriptionsPage() {
+  await requireAdmin();
   let subscriptionsWithCount: SubscriptionWithCount[] = [];
 
   try {

@@ -48,6 +48,7 @@ export class DashboardService {
       this.prisma.reminder.findMany({
         where: { completed: false, dueDate: { lt: todayStart } },
         orderBy: { dueDate: "asc" },
+        take: 100,
         ...baseInclude,
       }),
       this.prisma.reminder.findMany({
@@ -56,6 +57,7 @@ export class DashboardService {
           dueDate: { gte: todayStart, lte: todayEnd },
         },
         orderBy: { priority: "desc" },
+        take: 100,
         ...baseInclude,
       }),
       this.prisma.reminder.findMany({
@@ -79,6 +81,7 @@ export class DashboardService {
         },
       },
       orderBy: { eta: "asc" },
+      take: 100,
     });
   }
 }

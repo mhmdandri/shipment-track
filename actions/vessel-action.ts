@@ -71,8 +71,14 @@ export async function enableVesselMonitoringAction(
 ): Promise<
   ActionResponse<{ message: string; trackingResult?: VesselTrackingResult }>
 > {
-  await requireAuth();
-  return enableVesselMonitoringInternal(vesselName, port, waNumber, voyageNo);
+  const user = await requireAuth();
+  const target = user.role === "ADMIN" || user.role === "OWNER"
+    ? waNumber
+    : user.subscriptionTargetId ?? undefined;
+  if (user.role !== "ADMIN" && user.role !== "OWNER" && !target) {
+    return { success: false, error: "Akun belum memiliki subscription WhatsApp." };
+  }
+  return enableVesselMonitoringInternal(vesselName, port, target, voyageNo);
 }
 
 /**
@@ -85,9 +91,14 @@ export async function disableVesselMonitoringAction(
   id?: string,
 ): Promise<ActionResponse<{ message: string }>> {
   try {
-    await requireAuth();
+    const user = await requireAuth();
     const cleanVessel = normalizeVesselName(vesselName);
     const cleanPort = port.trim().toLowerCase();
+
+    const isAdmin = user.role === "ADMIN" || user.role === "OWNER";
+    if (!isAdmin && !user.subscriptionTargetId) {
+      return { success: false, error: "Akun belum memiliki subscription WhatsApp." };
+    }
 
     let targetId = id;
     if (!targetId) {
@@ -97,6 +108,7 @@ export async function disableVesselMonitoringAction(
           port: cleanPort,
           ...(voyageIn !== undefined ? { voyageIn } : {}),
           isActive: true,
+          ...(isAdmin ? {} : { waNumber: user.subscriptionTargetId }),
         },
       });
       if (existing) {
@@ -139,10 +151,16 @@ export async function enableMultiPortVesselMonitoringAction(
   voyageNo?: string,
   waNumber?: string,
 ): Promise<ActionResponse<{ message: string }>> {
-  await requireAuth();
+  const user = await requireAuth();
+  const target = user.role === "ADMIN" || user.role === "OWNER"
+    ? waNumber
+    : user.subscriptionTargetId ?? undefined;
+  if (user.role !== "ADMIN" && user.role !== "OWNER" && !target) {
+    return { success: false, error: "Akun belum memiliki subscription WhatsApp." };
+  }
   return enableMultiPortVesselMonitoringInternal(
     vesselName,
     voyageNo,
-    waNumber,
+    target,
   );
 }

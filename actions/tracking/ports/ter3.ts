@@ -115,6 +115,7 @@ export async function saveSession(session: Ter3Session): Promise<void> {
   } catch (e) {
     console.error("Failed to save TER3 session to DB:", e);
   }
+
 }
 
 export async function login(): Promise<
@@ -189,6 +190,14 @@ export async function login(): Promise<
       error: "Koneksi ke portal PARAMA Pelindo gagal atau timeout.",
     };
   }
+}
+
+export async function getTer3Session(): Promise<
+  { success: true; session: Ter3Session } | { success: false; error: string }
+> {
+  const cached = loadCachedSession() ?? (await loadSessionFromDB());
+  if (cached) return { success: true, session: cached };
+  return login();
 }
 
 /**

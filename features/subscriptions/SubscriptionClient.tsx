@@ -19,6 +19,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -583,27 +590,26 @@ export default function SubscriptionClient({ initialSubscriptions }: Props) {
                 <Label htmlFor="plan" className="text-xs font-semibold">
                   Subscription Plan
                 </Label>
-                <select
-                  id="plan"
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                <Select
                   value={plan}
-                  onChange={(e) => {
-                    const selected = e.target.value;
+                  onValueChange={(selected) => {
                     setPlan(selected);
                     if (selected === "STARTER") setMaxContainers(10);
                     else if (selected === "BUSINESS") setMaxContainers(25);
-                    else if (
-                      selected === "ENTERPRISE" ||
-                      selected === "UNLIMITED"
-                    )
+                    else if (selected === "ENTERPRISE" || selected === "UNLIMITED")
                       setMaxContainers(0);
                   }}
                 >
-                  <option value="STARTER">STARTER (10 Containers)</option>
-                  <option value="BUSINESS">BUSINESS (25 Containers)</option>
-                  <option value="ENTERPRISE">ENTERPRISE (Unlimited)</option>
-                  <option value="UNLIMITED">CUSTOM UNLIMITED</option>
-                </select>
+                  <SelectTrigger id="plan" className="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="STARTER">STARTER (10 Containers)</SelectItem>
+                    <SelectItem value="BUSINESS">BUSINESS (25 Containers)</SelectItem>
+                    <SelectItem value="ENTERPRISE">ENTERPRISE (Unlimited)</SelectItem>
+                    <SelectItem value="UNLIMITED">CUSTOM UNLIMITED</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">

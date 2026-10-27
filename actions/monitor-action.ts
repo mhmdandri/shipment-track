@@ -16,20 +16,35 @@ export async function enableTerminalMonitoring(
   status: string,
   waNumber?: string,
   vesselName?: string,
-  voyageNo?: string
+  voyageNo?: string,
+  time?: string,
 ): Promise<ActionResponse<{ message: string }>> {
-  await requireAuth();
-  return enableTerminalMonitoringInternal(containerNo, port, status, waNumber, vesselName, voyageNo);
+  const user = await requireAuth();
+  const target = user.role === "ADMIN" || user.role === "OWNER"
+    ? waNumber
+    : user.subscriptionTargetId ?? undefined;
+  if (user.role !== "ADMIN" && user.role !== "OWNER" && !target) {
+    return { success: false, error: "Akun belum memiliki subscription WhatsApp." };
+  }
+  return enableTerminalMonitoringInternal(containerNo, port, status, target, vesselName, voyageNo, time);
 }
 
 export async function disableTerminalMonitoring(
   containerNo: string
 ): Promise<ActionResponse<{ message: string }>> {
   try {
-    await requireAuth();
+    const user = await requireAuth();
     const cleanContainerNo = containerNo.trim().toUpperCase();
-    const existing = await prisma.terminalMonitor.findUnique({
-      where: { containerNo: cleanContainerNo },
+    const isAdmin = user.role === "ADMIN" || user.role === "OWNER";
+    if (!isAdmin && !user.subscriptionTargetId) {
+      return { success: false, error: "Akun belum memiliki subscription WhatsApp." };
+    }
+
+    const existing = await prisma.terminalMonitor.findFirst({
+      where: {
+        containerNo: cleanContainerNo,
+        ...(isAdmin ? {} : { waNumber: user.subscriptionTargetId }),
+      },
     });
 
     if (!existing || !existing.isActive) {
@@ -74,6 +89,7 @@ export async function enableBatchTerminalMonitoring(
     status: string;
     vesselName?: string;
     voyageNo?: string;
+    time?: string;
   }>,
   waNumber?: string
 ): Promise<
@@ -88,8 +104,14 @@ export async function enableBatchTerminalMonitoring(
   }
 
   try {
-    await requireAuth();
-    const rawWaNumber = waNumber?.trim() || "";
+    const user = await requireAuth();
+    const requestedTarget = user.role === "ADMIN" || user.role === "OWNER"
+      ? waNumber
+      : user.subscriptionTargetId ?? undefined;
+    if (user.role !== "ADMIN" && user.role !== "OWNER" && !requestedTarget) {
+      return { success: false, error: "Akun belum memiliki subscription WhatsApp." };
+    }
+    const rawWaNumber = requestedTarget?.trim() || "";
     const cleanWaNumber = rawWaNumber ? normalizeWaTargetId(rawWaNumber) : undefined;
 
     // Strict SaaS Subscription Check for total count
@@ -113,7 +135,8 @@ export async function enableBatchTerminalMonitoring(
         item.status,
         cleanWaNumber,
         item.vesselName,
-        item.voyageNo
+        item.voyageNo,
+        item.time,
       );
 
       if (res.success) {

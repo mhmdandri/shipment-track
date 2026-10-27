@@ -1,10 +1,6 @@
-try {
-  require("dotenv/config");
-} catch {
-  // Environment variables are already loaded in production / Docker
-}
+import "dotenv/config";
 
-module.exports = {
+const config = {
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
@@ -13,3 +9,5 @@ module.exports = {
     url: process.env.DATABASE_URL,
   },
 };
+
+export default config;

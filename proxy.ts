@@ -58,8 +58,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // Check if requested path is public
-  const isPublicPage = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
-  const isPublicApi = PUBLIC_API_PATHS.some((path) => pathname.startsWith(path));
+  const isPublicPage = PUBLIC_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+  const isPublicApi = PUBLIC_API_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
 
   if (isPublicPage || isPublicApi) {
     return NextResponse.next();

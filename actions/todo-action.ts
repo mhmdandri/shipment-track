@@ -27,10 +27,11 @@ export async function toggleTodoAction(id: string, isDone: boolean, shipmentId: 
   try {
     await requireAuth();
     const cleanId = idParamSchema.parse(id);
-    await prisma.todo.update({
-      where: { id: cleanId },
+    const result = await prisma.todo.updateMany({
+      where: { id: cleanId, shipmentId },
       data: { isDone }
     });
+    if (result.count !== 1) throw new Error("Todo tidak ditemukan pada shipment tersebut");
     revalidatePath(`/shipments/${shipmentId}`);
     return { success: true };
   } catch (error: unknown) {
@@ -43,9 +44,10 @@ export async function deleteTodoAction(id: string, shipmentId: string) {
   try {
     await requireAuth();
     const cleanId = idParamSchema.parse(id);
-    await prisma.todo.delete({
-      where: { id: cleanId }
+    const result = await prisma.todo.deleteMany({
+      where: { id: cleanId, shipmentId }
     });
+    if (result.count !== 1) throw new Error("Todo tidak ditemukan pada shipment tersebut");
     revalidatePath(`/shipments/${shipmentId}`);
     return { success: true };
   } catch (error: unknown) {
@@ -53,4 +55,3 @@ export async function deleteTodoAction(id: string, shipmentId: string) {
     return { success: false, error: errorMessage };
   }
 }
-

@@ -101,7 +101,8 @@ export async function processContainerMonitors(): Promise<CronProcessingResult[]
                   monitor.port,
                   result.status || "UNKNOWN",
                   result.ob,
-                  result.obName
+                  result.obName,
+                  result.time || "-",
                 );
               } else if (isYard && !wasYard) {
                 waMsg = whatsappMessage.statusChangedToGNSTK(
@@ -129,7 +130,7 @@ export async function processContainerMonitors(): Promise<CronProcessingResult[]
             }
 
             if (isYard && !wasYard) {
-              const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${newStatus}</b>\nTime: ${result.time || "N/A"}\n\nPlease proceed with the next operational steps.`;
+              const telegramMsg = `🚨 <b>YARD ALLOCATION UPDATE</b> 🚨\n\nContainer <code>${monitor.containerNo}</code> at <b>${monitor.port.toUpperCase()}</b> has received a yard allocation!\nStatus: <b>${newStatus}</b>\nTime: ${result.time || "-"}\n\nPlease proceed with the next operational steps.`;
               await sendTelegramMessage(telegramMsg).catch((e) =>
                 console.error("Telegram error in cron:", e)
               );

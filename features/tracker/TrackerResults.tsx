@@ -186,7 +186,7 @@ export function TrackerResults({ result }: TrackerResultsProps) {
     if (statuses.every(s => s === "returned")) {
       return { 
         label: "EMPTY RETURNED", 
-        color: "bg-gray-100 text-gray-700 border-gray-300 dark:bg-zinc-800/40 dark:text-zinc-300 dark:border-zinc-700",
+        color: "bg-muted text-muted-foreground border-border",
         desc: "All empty containers returned to carrier depot. Cycle completed."
       };
     }
@@ -200,7 +200,7 @@ export function TrackerResults({ result }: TrackerResultsProps) {
     if (statuses.some(s => s === "discharged")) {
       return { 
         label: "CARGO DISCHARGED", 
-        color: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
+        color: "bg-primary/10 text-primary border-primary/20",
         desc: "Containers discharged from vessel at berthing port terminal." 
       };
     }

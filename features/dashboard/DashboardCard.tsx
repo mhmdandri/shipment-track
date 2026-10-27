@@ -8,8 +8,8 @@ export function DashboardCards({ stats }: { stats: DashboardStats }) {
       title: "Active Shipments",
       value: stats.totalActive,
       icon: Ship,
-      iconClass: "text-blue-600",
-      bgClass: "bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900",
+      iconClass: "text-primary",
+      bgClass: "bg-primary/10 border-primary/20",
     },
     {
       title: "Need Action Today",

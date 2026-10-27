@@ -1,5 +1,7 @@
 import { VesselTracker, VesselTrackingResult, VesselScheduleItem } from "../types";
 import { selectSingleBestSchedule } from "../helpers";
+import { fetchWithRetry } from "@/lib/fetch-with-retry";
+import { getTer3Session } from "../../ports/ter3";
 
 export const ter3VesselTracker: VesselTracker = {
   async trackVessel(
@@ -9,6 +11,18 @@ export const ter3VesselTracker: VesselTracker = {
     const cleanVessel = vesselName.trim().toUpperCase();
 
     try {
+      const sessionResult = await getTer3Session();
+      if (!sessionResult.success) {
+        return {
+          success: false,
+          port: "ter3",
+          vesselName: cleanVessel,
+          schedules: [],
+          selectedSchedule: null,
+          error: sessionResult.error,
+        };
+      }
+
       const payload = JSON.stringify({
         search: cleanVessel,
         page: 1,
@@ -16,16 +30,21 @@ export const ter3VesselTracker: VesselTracker = {
         terminalCode: "T003",
       });
 
-      const response = await fetch("https://parama.pelindo.co.id:8031/api/getVesselVoyage", {
+      const response = await fetchWithRetry("https://parama.pelindo.co.id:8031/api/getVesselVoyage", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Cookie: sessionResult.session.cookieStr,
+          Authorization: sessionResult.session.sessionId,
+          token: sessionResult.session.sessionId,
         },
         body: payload,
-        signal: AbortSignal.timeout(10000),
         cache: "no-store",
+        retries: 1,
+        retryDelayMs: 750,
+        timeoutMs: 30000,
       });
 
       if (!response.ok && response.status !== 400) {
@@ -100,14 +119,19 @@ export const ter3VesselTracker: VesselTracker = {
         selectedSchedule: selectSingleBestSchedule(schedules),
       };
     } catch (error) {
-      console.error("Error fetching TER3 Pelindo vessel API:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (error instanceof DOMException && error.name === "TimeoutError") {
+        console.warn(`[TER3] Vessel API timed out for ${cleanVessel}.`);
+      } else {
+        console.error("Error fetching TER3 Pelindo vessel API:", errorMessage);
+      }
       return {
         success: false,
         port: "ter3",
         vesselName: cleanVessel,
         schedules: [],
         selectedSchedule: null,
-        error: error instanceof Error ? error.message : "Failed to fetch TER3 API",
+        error: errorMessage || "Failed to fetch TER3 API",
       };
     }
   },

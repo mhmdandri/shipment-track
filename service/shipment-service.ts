@@ -105,16 +105,14 @@ export class ShipmentService {
     skipReminderUpdate = false,
   ) {
     const completedAt = completed ? new Date() : null;
-    await this.repo.updateTask(taskId, completed, completedAt, notes);
-
     const shipment = await this.repo.findById(shipmentId);
     if (!shipment) throw new NotFoundError("Shipment parameters not matched.");
 
     const task = shipment.tasks.find((t) => t.id === taskId);
-    if (task) {
-      const logMessage = `Step '${task.title}' marked as ${completed ? "completed" : "incomplete"}.`;
-      await this.repo.createActivityLog(shipmentId, logMessage);
-    }
+    if (!task) throw new NotFoundError("Task not found for shipment.");
+    await this.repo.updateTask(taskId, shipmentId, completed, completedAt, notes);
+    const logMessage = `Step '${task.title}' marked as ${completed ? "completed" : "incomplete"}.`;
+    await this.repo.createActivityLog(shipmentId, logMessage);
 
     const sortedTasks = [...shipment.tasks].sort(
       (a, b) => a.stepOrder - b.stepOrder,
@@ -154,17 +152,16 @@ export class ShipmentService {
       if (reminderTitle) {
         const reminder = await this.repo.findReminderByTitle(shipmentId, reminderTitle);
         if (reminder && reminder.completed !== completed) {
-          await this.repo.updateReminder(reminder.id, completed);
+          await this.repo.updateReminder(reminder.id, completed, shipmentId);
         }
       }
     }
   }
 
   async toggleReminderProgress(reminderId: string, completed: boolean) {
-    await this.repo.updateReminder(reminderId, completed);
-
     const reminder = await this.repo.findReminderById(reminderId);
-    if (!reminder) return;
+    if (!reminder) throw new NotFoundError("Reminder not found.");
+    await this.repo.updateReminder(reminderId, completed, reminder.shipmentId);
 
     const taskTitle = getMatchingTaskTitle(reminder.title);
     if (taskTitle) {
@@ -182,7 +179,7 @@ export class ShipmentService {
     const task = shipment.tasks.find((t) => t.id === taskId);
     if (!task) throw new NotFoundError("Task not found");
 
-    await this.repo.updateTask(taskId, task.completed, task.completedAt, notes);
+    await this.repo.updateTask(taskId, shipmentId, task.completed, task.completedAt, notes);
 
     const logMessage = `Updated note on step '${task.title}': "${notes}"`;
     await this.repo.createActivityLog(shipmentId, logMessage);

@@ -103,8 +103,8 @@ export function SummaryBoard({
                   terminalInfo.label === "N/A" 
                     ? "bg-secondary text-secondary-foreground border-border dark:border-zinc-800" 
                     : terminalInfo.isDepot
-                      ? "bg-gray-50 text-gray-600 border-gray-200 dark:bg-zinc-800/40 dark:text-zinc-400 dark:border-zinc-700"
-                      : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/60"
+                      ? "bg-muted text-muted-foreground border-border"
+                      : "bg-primary/10 text-primary border-primary/20"
                 }`}
               >
                 {terminalInfo.label}

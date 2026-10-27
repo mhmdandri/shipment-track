@@ -227,6 +227,7 @@ export default function TerminalTrackerClient() {
         waTarget,
         vesselName.trim() || undefined,
         voyageNo.trim() || undefined,
+        singleResult.time,
       );
 
       if (res.success) {
@@ -253,6 +254,7 @@ export default function TerminalTrackerClient() {
         status: r.status!,
         vesselName: vesselName.trim() || undefined,
         voyageNo: voyageNo.trim() || undefined,
+        time: r.time,
       }));
 
     if (validItems.length === 0) {
