@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/app/generated/prisma/client";
 import { trackTerminalContainer } from "@/actions/tracking";
 import {
   trackVesselSchedule,
@@ -226,6 +227,20 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
     const chunkResults = await Promise.all(
       chunk.map(async (vMonitor): Promise<CronProcessingResult> => {
         try {
+          // Verify record still exists and is active (may have been merged by a sibling in same chunk)
+          const currentRecord = await prisma.vesselMonitor.findUnique({
+            where: { id: vMonitor.id },
+            select: { id: true, isActive: true },
+          });
+          if (!currentRecord || !currentRecord.isActive) {
+            return {
+              type: "vessel",
+              vesselName: vMonitor.vesselName,
+              port: vMonitor.port,
+              status: "Skipped (already resolved or merged)",
+            };
+          }
+
           // Handle unscheduled vessel monitoring across all 5 ports
           if (vMonitor.port === "all") {
             const multiRes = await searchVesselAllPorts(vMonitor.vesselName);
@@ -256,27 +271,88 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               const newClosingPhysicDate = parseVesselDate(s.closingPhysic);
 
               const isSailingOrCompleted = isVesselSailingOrCompleted(s.status, s.etd);
+              const resolvedVoyageIn = (s.voyIn || vMonitor.voyageIn || "").trim();
+              const resolvedVoyageOut = s.voyOut || vMonitor.voyageOut;
 
-              await prisma.vesselMonitor.update({
-                where: { id: vMonitor.id },
-                data: {
-                  port: foundPort,
-                  status: s.status,
-                  line: s.line || vMonitor.line,
-                  voyageIn: s.voyIn || vMonitor.voyageIn,
-                  voyageOut: s.voyOut || vMonitor.voyageOut,
-                  service: s.service || vMonitor.service,
-                  etb: newEtbDate,
-                  ata: newAtaDate,
-                  etd: newEtdDate,
-                  atd: newAtdDate,
-                  openStacking: newOpenStackDate,
-                  closingDoc: newClosingDocDate,
-                  closingPhysic: newClosingPhysicDate,
-                  isActive: !isSailingOrCompleted,
-                  updatedAt: new Date(),
+              // Check if another monitor record already exists for this exact vessel at foundPort
+              const existingTarget = await prisma.vesselMonitor.findUnique({
+                where: {
+                  vesselName_port_voyageIn: {
+                    vesselName: vMonitor.vesselName,
+                    port: foundPort,
+                    voyageIn: resolvedVoyageIn,
+                  },
                 },
               });
+
+              if (existingTarget && existingTarget.id !== vMonitor.id) {
+                // Merge into existing target record and remove redundant "all" placeholder
+                const mergedWaNumber = existingTarget.waNumber || vMonitor.waNumber;
+                await prisma.vesselMonitor.update({
+                  where: { id: existingTarget.id },
+                  data: {
+                    status: s.status,
+                    line: s.line || existingTarget.line || vMonitor.line,
+                    voyageOut: resolvedVoyageOut || existingTarget.voyageOut,
+                    service: s.service || existingTarget.service || vMonitor.service,
+                    etb: newEtbDate,
+                    ata: newAtaDate,
+                    etd: newEtdDate,
+                    atd: newAtdDate,
+                    openStacking: newOpenStackDate,
+                    closingDoc: newClosingDocDate,
+                    closingPhysic: newClosingPhysicDate,
+                    isActive: !isSailingOrCompleted,
+                    waNumber: mergedWaNumber,
+                    updatedAt: new Date(),
+                  },
+                });
+
+                await prisma.vesselMonitor.delete({
+                  where: { id: vMonitor.id },
+                }).catch(() => {});
+              } else {
+                try {
+                  await prisma.vesselMonitor.update({
+                    where: { id: vMonitor.id },
+                    data: {
+                      port: foundPort,
+                      status: s.status,
+                      line: s.line || vMonitor.line,
+                      voyageIn: resolvedVoyageIn,
+                      voyageOut: resolvedVoyageOut,
+                      service: s.service || vMonitor.service,
+                      etb: newEtbDate,
+                      ata: newAtaDate,
+                      etd: newEtdDate,
+                      atd: newAtdDate,
+                      openStacking: newOpenStackDate,
+                      closingDoc: newClosingDocDate,
+                      closingPhysic: newClosingPhysicDate,
+                      isActive: !isSailingOrCompleted,
+                      updatedAt: new Date(),
+                    },
+                  });
+                } catch (updateErr) {
+                  if (
+                    updateErr instanceof Prisma.PrismaClientKnownRequestError &&
+                    updateErr.code === "P2002"
+                  ) {
+                    const conflict = await prisma.vesselMonitor.findFirst({
+                      where: {
+                        vesselName: vMonitor.vesselName,
+                        port: foundPort,
+                        voyageIn: resolvedVoyageIn,
+                      },
+                    });
+                    if (conflict && conflict.id !== vMonitor.id) {
+                      await prisma.vesselMonitor.delete({ where: { id: vMonitor.id } }).catch(() => {});
+                    }
+                  } else {
+                    throw updateErr;
+                  }
+                }
+              }
 
               // Dispatch Telegram Alert
               const currentVoy = s.voyIn || s.voyOut || targetVoyage || "N/A";
@@ -374,26 +450,107 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
 
             if (hasAnyChange) {
               const oldStatus = vMonitor.status;
+              const resolvedVoyageIn = (s.voyIn || vMonitor.voyageIn || "").trim();
+              const resolvedVoyageOut = s.voyOut || vMonitor.voyageOut;
 
-              await prisma.vesselMonitor.update({
-                where: { id: vMonitor.id },
-                data: {
-                  status: s.status,
-                  line: s.line || vMonitor.line,
-                  voyageIn: s.voyIn || vMonitor.voyageIn,
-                  voyageOut: s.voyOut || vMonitor.voyageOut,
-                  service: s.service || vMonitor.service,
-                  etb: newEtbDate,
-                  ata: newAtaDate,
-                  etd: newEtdDate,
-                  atd: newAtdDate,
-                  openStacking: newOpenStackDate,
-                  closingDoc: newClosingDocDate,
-                  closingPhysic: newClosingPhysicDate,
-                  isActive: !isSailingOrCompleted,
-                  updatedAt: new Date(),
-                },
-              });
+              if (resolvedVoyageIn !== vMonitor.voyageIn) {
+                const existingTarget = await prisma.vesselMonitor.findUnique({
+                  where: {
+                    vesselName_port_voyageIn: {
+                      vesselName: vMonitor.vesselName,
+                      port: vMonitor.port,
+                      voyageIn: resolvedVoyageIn,
+                    },
+                  },
+                });
+
+                if (existingTarget && existingTarget.id !== vMonitor.id) {
+                  // Merge into existing target and delete redundant row
+                  const mergedWaNumber = existingTarget.waNumber || vMonitor.waNumber;
+                  await prisma.vesselMonitor.update({
+                    where: { id: existingTarget.id },
+                    data: {
+                      status: s.status,
+                      line: s.line || existingTarget.line || vMonitor.line,
+                      voyageOut: resolvedVoyageOut || existingTarget.voyageOut,
+                      service: s.service || existingTarget.service || vMonitor.service,
+                      etb: newEtbDate,
+                      ata: newAtaDate,
+                      etd: newEtdDate,
+                      atd: newAtdDate,
+                      openStacking: newOpenStackDate,
+                      closingDoc: newClosingDocDate,
+                      closingPhysic: newClosingPhysicDate,
+                      isActive: !isSailingOrCompleted,
+                      waNumber: mergedWaNumber,
+                      updatedAt: new Date(),
+                    },
+                  });
+
+                  await prisma.vesselMonitor.delete({
+                    where: { id: vMonitor.id },
+                  }).catch(() => {});
+                } else {
+                  try {
+                    await prisma.vesselMonitor.update({
+                      where: { id: vMonitor.id },
+                      data: {
+                        status: s.status,
+                        line: s.line || vMonitor.line,
+                        voyageIn: resolvedVoyageIn,
+                        voyageOut: resolvedVoyageOut,
+                        service: s.service || vMonitor.service,
+                        etb: newEtbDate,
+                        ata: newAtaDate,
+                        etd: newEtdDate,
+                        atd: newAtdDate,
+                        openStacking: newOpenStackDate,
+                        closingDoc: newClosingDocDate,
+                        closingPhysic: newClosingPhysicDate,
+                        isActive: !isSailingOrCompleted,
+                        updatedAt: new Date(),
+                      },
+                    });
+                  } catch (updateErr) {
+                    if (
+                      updateErr instanceof Prisma.PrismaClientKnownRequestError &&
+                      updateErr.code === "P2002"
+                    ) {
+                      const conflict = await prisma.vesselMonitor.findFirst({
+                        where: {
+                          vesselName: vMonitor.vesselName,
+                          port: vMonitor.port,
+                          voyageIn: resolvedVoyageIn,
+                        },
+                      });
+                      if (conflict && conflict.id !== vMonitor.id) {
+                        await prisma.vesselMonitor.delete({ where: { id: vMonitor.id } }).catch(() => {});
+                      }
+                    } else {
+                      throw updateErr;
+                    }
+                  }
+                }
+              } else {
+                await prisma.vesselMonitor.update({
+                  where: { id: vMonitor.id },
+                  data: {
+                    status: s.status,
+                    line: s.line || vMonitor.line,
+                    voyageOut: resolvedVoyageOut,
+                    service: s.service || vMonitor.service,
+                    etb: newEtbDate,
+                    ata: newAtaDate,
+                    etd: newEtdDate,
+                    atd: newAtdDate,
+                    openStacking: newOpenStackDate,
+                    closingDoc: newClosingDocDate,
+                    closingPhysic: newClosingPhysicDate,
+                    isActive: !isSailingOrCompleted,
+                    updatedAt: new Date(),
+                  },
+                });
+              }
 
               // Construct detailed summary of modified fields
               const changesSummary: string[] = [];
@@ -558,6 +715,26 @@ export async function processVesselMonitors(): Promise<CronProcessingResult[]> {
               : "Unchanged (Schedule unconfirmed, retaining active monitoring)",
           };
         } catch (error) {
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === "P2002"
+          ) {
+            console.warn(
+              `[Vessel Cron] Resolved unique constraint collision for ${vMonitor.vesselName} (${vMonitor.port}). Deactivating duplicate...`
+            );
+            await prisma.vesselMonitor
+              .update({
+                where: { id: vMonitor.id },
+                data: { isActive: false },
+              })
+              .catch(() => {});
+            return {
+              type: "vessel",
+              vesselName: vMonitor.vesselName,
+              port: vMonitor.port,
+              status: "Deactivated duplicate (unique constraint collision resolved)",
+            };
+          }
           console.error(`Error processing vessel monitor ${vMonitor.vesselName}:`, error);
           return {
             type: "vessel",

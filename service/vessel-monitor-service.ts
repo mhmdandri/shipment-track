@@ -191,6 +191,15 @@ export async function enableVesselMonitoringInternal(
           isActive: true,
         },
       });
+      if (cleanPort !== "all") {
+        await tx.vesselMonitor.deleteMany({
+          where: {
+            vesselName: cleanVessel,
+            port: "all",
+            voyageIn: { in: [targetVoyageIn, ""] },
+          },
+        }).catch(() => {});
+      }
       return current;
     });
 
@@ -264,6 +273,25 @@ export async function enableMultiPortVesselMonitoringInternal(
         voyageIn: cleanVoyage,
       },
     };
+
+    // If already actively monitored on a specific port, no need to monitor "all"
+    const alreadyMonitoredPort = await prisma.vesselMonitor.findFirst({
+      where: {
+        vesselName: cleanVessel,
+        port: { not: "all" },
+        isActive: true,
+        ...(cleanVoyage ? { voyageIn: cleanVoyage } : {}),
+      },
+    });
+
+    if (alreadyMonitoredPort) {
+      return {
+        success: true,
+        data: {
+          message: `Kapal ${cleanVessel} sudah aktif dipantau di pelabuhan ${alreadyMonitoredPort.port.toUpperCase()} (Voyage: ${alreadyMonitoredPort.voyageIn || "-"}).`,
+        },
+      };
+    }
 
     const existing = await prisma.vesselMonitor.findUnique({ where: uniqueKey });
 

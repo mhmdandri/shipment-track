@@ -42,7 +42,8 @@ export async function fetchWithRetry(url: string, options: FetchWithRetryOptions
       }
 
       if (i < retries) {
-        console.warn(`Fetch attempt ${i + 1} failed for ${url}. Retrying in ${retryDelayMs}ms...`);
+        const reason = error instanceof Error ? ` (${error.message})` : "";
+        console.warn(`Fetch attempt ${i + 1} failed for ${url}${reason}. Retrying in ${retryDelayMs}ms...`);
         await new Promise(res => setTimeout(res, retryDelayMs));
       }
     }

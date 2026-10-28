@@ -43,8 +43,8 @@ export const ter3VesselTracker: VesselTracker = {
         body: payload,
         cache: "no-store",
         retries: 1,
-        retryDelayMs: 750,
-        timeoutMs: 30000,
+        retryDelayMs: 500,
+        timeoutMs: 12000,
       });
 
       if (!response.ok && response.status !== 400) {
@@ -120,7 +120,10 @@ export const ter3VesselTracker: VesselTracker = {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (error instanceof DOMException && error.name === "TimeoutError") {
+      const isTimeout =
+        (error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError")) ||
+        (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError" || errorMessage.toLowerCase().includes("aborted") || errorMessage.toLowerCase().includes("timeout")));
+      if (isTimeout) {
         console.warn(`[TER3] Vessel API timed out for ${cleanVessel}.`);
       } else {
         console.error("Error fetching TER3 Pelindo vessel API:", errorMessage);

@@ -19,7 +19,7 @@ export async function fetchHtml(
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
       body: params.toString(),
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(15000),
     });
 
     if (response.ok) {
@@ -27,7 +27,8 @@ export async function fetchHtml(
       return { ok: true, status: response.status, html };
     }
   } catch (err) {
-    console.warn("Primary KOJA tracking endpoint error, checking fallback:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[KOJA] Primary container tracking endpoint unavailable (${msg}), trying fallback...`);
   }
 
   // Fallback to legacy endpoint if primary is down

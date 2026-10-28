@@ -93,7 +93,15 @@ export const kojaVesselTracker: VesselTracker = {
         selectedSchedule: selectSingleBestSchedule(schedules),
       };
     } catch (error) {
-      console.error("Error scraping TPK KOJA vessel schedule:", error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const isTimeout =
+        (error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError")) ||
+        (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError" || errorMsg.toLowerCase().includes("aborted") || errorMsg.toLowerCase().includes("timeout")));
+      if (isTimeout) {
+        console.warn(`[KOJA] Vessel schedule fetch timed out for ${cleanVessel}.`);
+      } else {
+        console.error("Error scraping TPK KOJA vessel schedule:", errorMsg);
+      }
       return {
         success: false,
         port: "koja",
