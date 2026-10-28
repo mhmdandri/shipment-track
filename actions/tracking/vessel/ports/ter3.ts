@@ -26,7 +26,7 @@ export const ter3VesselTracker: VesselTracker = {
       const payload = JSON.stringify({
         search: cleanVessel,
         page: 1,
-        row: 50,
+        row: 15,
         terminalCode: "T003",
       });
 
@@ -42,9 +42,9 @@ export const ter3VesselTracker: VesselTracker = {
         },
         body: payload,
         cache: "no-store",
-        retries: 1,
+        retries: 0,
         retryDelayMs: 500,
-        timeoutMs: 12000,
+        timeoutMs: 4000,
       });
 
       if (!response.ok && response.status !== 400) {
@@ -124,10 +124,16 @@ export const ter3VesselTracker: VesselTracker = {
         (error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError")) ||
         (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError" || errorMessage.toLowerCase().includes("aborted") || errorMessage.toLowerCase().includes("timeout")));
       if (isTimeout) {
-        console.warn(`[TER3] Vessel API timed out for ${cleanVessel}.`);
-      } else {
-        console.error("Error fetching TER3 Pelindo vessel API:", errorMessage);
+        // Silently treat timeout as vessel not found on TER3 (Pelindo port 8031 is frequently slow/unresponsive)
+        return {
+          success: true,
+          port: "ter3",
+          vesselName: cleanVessel,
+          schedules: [],
+          selectedSchedule: null,
+        };
       }
+      console.warn(`[TER3] Vessel schedule query error for ${cleanVessel}:`, errorMessage);
       return {
         success: false,
         port: "ter3",

@@ -94,7 +94,7 @@ export async function loadSessionFromDB(): Promise<Ter3Session | null> {
     if (dbSession) {
       const parsed = JSON.parse(dbSession.value) as Ter3Session;
       ter3SessionCache = parsed;
-      console.log("[TER3] Loaded session from Database.");
+      // ter3SessionCache = parsed;
       return parsed;
     }
   } catch (e) {
@@ -111,7 +111,7 @@ export async function saveSession(session: Ter3Session): Promise<void> {
       update: { value: JSON.stringify(session) },
       create: { key: "TER3_SESSION", value: JSON.stringify(session) },
     });
-    console.log("[TER3] Saved new session to Database.");
+    // Saved new session to Database.
   } catch (e) {
     console.error("Failed to save TER3 session to DB:", e);
   }
